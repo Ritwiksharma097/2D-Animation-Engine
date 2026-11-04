@@ -1,0 +1,1317 @@
+{
+ "character": "ren",
+ "action": "walk_keypose",
+ "source": [
+  "assets/ren/walk_keypose/01.png",
+  "assets/ren/walk_keypose/02.png",
+  "assets/ren/walk_keypose/03.png",
+  "assets/ren/walk_keypose/04.png"
+ ],
+ "frame_count": 4,
+ "status_in_manifest": "approved",
+ "owner_feedback": "Liked. Owner wants extra in-between frames for smoothness without losing identity or the poses.",
+ "settings": {
+  "loop_mode": "loop",
+  "ground_y": 535.0,
+  "facing": "right",
+  "travel_px_per_frame": 41.9,
+  "travel_source": "manifest old_timing",
+  "game_scale": 0.4777,
+  "durations_ms": [
+   83.33333333333333,
+   83.33333333333333,
+   83.33333333333333,
+   83.33333333333333
+  ],
+  "annotations": null,
+  "thresholds": {
+   "diff_pixel": 0.15,
+   "duplicate": 0.03,
+   "detail_boil": 0.25,
+   "uneven_hi": 1.8,
+   "uneven_lo": 0.5,
+   "uneven_cv": 0.35,
+   "height_rel": 0.04,
+   "ref_height_rel": 0.06,
+   "ref_proportion_rel": 0.12,
+   "palette_tv": 0.15,
+   "palette_de": 6.0,
+   "baseline_px": 3,
+   "foot_band": 0.12,
+   "plant_tol": 0.012,
+   "slide_step_px": 4.0,
+   "slide_step_rel": 0.15,
+   "passing_ratio": 0.45
+  }
+ },
+ "metrics": {
+  "pose_distance_matrix": [
+   [
+    0.0,
+    0.4334,
+    0.0957,
+    0.4532
+   ],
+   [
+    0.4334,
+    0.0,
+    0.4443,
+    0.1394
+   ],
+   [
+    0.0957,
+    0.4443,
+    0.0,
+    0.4602
+   ],
+   [
+    0.4532,
+    0.1394,
+    0.4602,
+    0.0
+   ]
+  ],
+  "detail_distance_matrix": [
+   [
+    0.0,
+    0.3348,
+    0.1444,
+    0.3177
+   ],
+   [
+    0.3348,
+    0.0,
+    0.3847,
+    0.119
+   ],
+   [
+    0.1444,
+    0.3847,
+    0.0,
+    0.3624
+   ],
+   [
+    0.3177,
+    0.119,
+    0.3624,
+    0.0
+   ]
+  ],
+  "change": {
+   "steps": [
+    [
+     0,
+     1,
+     0.4334063793523253
+    ],
+    [
+     1,
+     2,
+     0.4442563482466747
+    ],
+    [
+     2,
+     3,
+     0.46024390243902435
+    ],
+    [
+     3,
+     0,
+     0.45320921117099466
+    ]
+   ],
+   "step_median": 0.4487327797088347,
+   "step_cv": 0.022439450436678544,
+   "near_duplicates": [],
+   "distinct_drawings": 4,
+   "cluster_labels": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "out_of_order": [],
+   "half_cycle_lookalikes": [
+    [
+     0,
+     2,
+     0.09572983533351942
+    ],
+    [
+     1,
+     3,
+     0.1394472361809045
+    ],
+    [
+     2,
+     0,
+     0.09572983533351942
+    ],
+    [
+     3,
+     1,
+     0.1394472361809045
+    ]
+   ],
+   "detail_steps": [
+    [
+     0,
+     1,
+     0.33476579286635155
+    ],
+    [
+     1,
+     2,
+     0.3846823324630113
+    ],
+    [
+     2,
+     3,
+     0.3624039765024853
+    ],
+    [
+     3,
+     0,
+     0.31765232974910396
+    ]
+   ]
+  },
+  "geometry": [
+   {
+    "bbox": [
+     192,
+     116,
+     483,
+     534
+    ],
+    "height": 419,
+    "width": 292,
+    "baseline": 534,
+    "area": 54637,
+    "head_width_ratio": 0.4152744630071599,
+    "bulk": 0.3112137661553534,
+    "touches_edge": false
+   },
+   {
+    "bbox": [
+     235,
+     115,
+     425,
+     535
+    ],
+    "height": 421,
+    "width": 191,
+    "baseline": 535,
+    "area": 48470,
+    "head_width_ratio": 0.41092636579572445,
+    "bulk": 0.27346945684125007,
+    "touches_edge": false
+   },
+   {
+    "bbox": [
+     197,
+     121,
+     488,
+     534
+    ],
+    "height": 414,
+    "width": 292,
+    "baseline": 534,
+    "area": 54331,
+    "head_width_ratio": 0.42028985507246375,
+    "bulk": 0.316991061635044,
+    "touches_edge": false
+   },
+   {
+    "bbox": [
+     235,
+     115,
+     427,
+     535
+    ],
+    "height": 421,
+    "width": 193,
+    "baseline": 535,
+    "area": 46416,
+    "head_width_ratio": 0.41092636579572445,
+    "bulk": 0.2618807160871356,
+    "touches_edge": false
+   }
+  ],
+  "feet": [
+   {
+    "clusters": [
+     {
+      "x": 260.46478873239437,
+      "y": 532.0,
+      "x0": 192,
+      "x1": 281,
+      "centroid_x": 238.76624293785312,
+      "planted": true,
+      "area": 2832
+     },
+     {
+      "x": 404.9136690647482,
+      "y": 534.0,
+      "x0": 377,
+      "x1": 483,
+      "centroid_x": 426.375548245614,
+      "planted": true,
+      "area": 3648
+     }
+    ],
+    "stride": 187.6093053077609,
+    "baseline": 534,
+    "band_top": 485,
+    "tol": 5
+   },
+   {
+    "clusters": [
+     {
+      "x": 325.8628762541806,
+      "y": 535.0,
+      "x0": 276,
+      "x1": 367,
+      "centroid_x": 317.58658433904014,
+      "planted": true,
+      "area": 3563
+     },
+     {
+      "x": 400.5838926174497,
+      "y": 496.0,
+      "x0": 370,
+      "x1": 416,
+      "centroid_x": 396.745,
+      "planted": false,
+      "area": 400
+     }
+    ],
+    "stride": 79.15841566095986,
+    "baseline": 535,
+    "band_top": 485,
+    "tol": 5
+   },
+   {
+    "clusters": [
+     {
+      "x": 264.34090909090907,
+      "y": 532.0,
+      "x0": 197,
+      "x1": 287,
+      "centroid_x": 242.829293274155,
+      "planted": true,
+      "area": 2929
+     },
+     {
+      "x": 414.29411764705884,
+      "y": 534.0,
+      "x0": 385,
+      "x1": 488,
+      "centroid_x": 432.5249549007817,
+      "planted": true,
+      "area": 3326
+     }
+    ],
+    "stride": 189.69566162662673,
+    "baseline": 534,
+    "band_top": 485,
+    "tol": 5
+   },
+   {
+    "clusters": [
+     {
+      "x": 329.61829652996846,
+      "y": 535.0,
+      "x0": 279,
+      "x1": 374,
+      "centroid_x": 321.92978142076504,
+      "planted": true,
+      "area": 3660
+     },
+     {
+      "x": 369.3137254901961,
+      "y": 494.0,
+      "x0": 346,
+      "x1": 381,
+      "centroid_x": 366.59565217391304,
+      "planted": false,
+      "area": 230
+     }
+    ],
+    "stride": 44.665870753148,
+    "baseline": 535,
+    "band_top": 485,
+    "tol": 5
+   }
+  ],
+  "identity": {
+   "reference": "ren/idle/01.png",
+   "same_cell_size": true,
+   "reference_geometry": {
+    "bbox": [
+     255,
+     116,
+     418,
+     535
+    ],
+    "height": 420,
+    "width": 164,
+    "baseline": 535,
+    "area": 40411,
+    "head_width_ratio": 0.3904761904761905,
+    "bulk": 0.2290873015873016,
+    "touches_edge": false
+   },
+   "reference_palette": [
+    "#0a0503",
+    "#f7b585",
+    "#564d36",
+    "#6f3b29",
+    "#e6d0c6",
+    "#3d281d",
+    "#f28e51",
+    "#a55236"
+   ],
+   "reference_palette_hist": [
+    0.1617,
+    0.077525,
+    0.29,
+    0.096,
+    0.037975,
+    0.27735,
+    0.026825,
+    0.032625
+   ],
+   "palette_hist": [
+    [
+     0.142575,
+     0.0799,
+     0.223225,
+     0.103375,
+     0.0334,
+     0.36195,
+     0.029325,
+     0.02625
+    ],
+    [
+     0.150625,
+     0.066675,
+     0.22455,
+     0.1162,
+     0.026825,
+     0.35465,
+     0.02275,
+     0.037725
+    ],
+    [
+     0.147425,
+     0.07995,
+     0.219425,
+     0.1063,
+     0.03445,
+     0.355275,
+     0.0299,
+     0.027275
+    ],
+    [
+     0.150825,
+     0.06415,
+     0.2427,
+     0.119175,
+     0.030925,
+     0.331675,
+     0.02385,
+     0.0367
+    ]
+   ],
+   "palette_tv": [
+    0.09684999999999999,
+    0.1026,
+    0.093725,
+    0.08157500000000001
+   ],
+   "palette_extra_de": [
+    -0.04909324645996094,
+    0.038519859313964844,
+    -0.05991411209106445,
+    0.13975048065185547
+   ],
+   "height_ratio": [
+    0.9976190476190476,
+    1.0023809523809524,
+    0.9857142857142858,
+    1.0023809523809524
+   ],
+   "head_width_ratio_rel": [
+    1.0635077711158973,
+    1.0523724002085626,
+    1.0763520678685048,
+    1.0523724002085626
+   ],
+   "bulk_rel": [
+    1.3584941810349742,
+    1.1937346808244416,
+    1.3837129314399979,
+    1.1431481111026878
+   ]
+  },
+  "walk": {
+   "contact_source": "heuristic",
+   "stride_px": [
+    187.6093053077609,
+    79.15841566095986,
+    189.69566162662673,
+    44.665870753148
+   ],
+   "pose_kind": [
+    "contact",
+    "passing",
+    "contact",
+    "passing"
+   ],
+   "contact_frames": [
+    0,
+    2
+   ],
+   "passing_frames": [
+    1,
+    3
+   ],
+   "steps_per_loop": 2,
+   "passing_runs": [
+    [
+     1
+    ],
+    [
+     3
+    ]
+   ],
+   "min_max_stride_ratio": 0.23546068671334575,
+   "contacts": [
+    [
+     {
+      "name": "cluster0",
+      "x": 260.46478873239437,
+      "y": 532.0,
+      "planted": true
+     },
+     {
+      "name": "cluster1",
+      "x": 404.9136690647482,
+      "y": 534.0,
+      "planted": true
+     }
+    ],
+    [
+     {
+      "name": "cluster0",
+      "x": 325.8628762541806,
+      "y": 535.0,
+      "planted": true
+     },
+     {
+      "name": "cluster1",
+      "x": 400.5838926174497,
+      "y": 496.0,
+      "planted": false
+     }
+    ],
+    [
+     {
+      "name": "cluster0",
+      "x": 264.34090909090907,
+      "y": 532.0,
+      "planted": true
+     },
+     {
+      "name": "cluster1",
+      "x": 414.29411764705884,
+      "y": 534.0,
+      "planted": true
+     }
+    ],
+    [
+     {
+      "name": "cluster0",
+      "x": 329.61829652996846,
+      "y": 535.0,
+      "planted": true
+     },
+     {
+      "name": "cluster1",
+      "x": 369.3137254901961,
+      "y": 494.0,
+      "planted": false
+     }
+    ]
+   ],
+   "steps": [
+    [
+     0,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     0
+    ]
+   ],
+   "step_candidate_travel": [
+    [
+     -65.39808752178624,
+     79.0507928105676
+    ],
+    [
+     61.52196716327154,
+     -88.43124139287823
+    ],
+    [
+     -65.2773874390594,
+     84.67582111709038
+    ],
+    [
+     69.1535077975741,
+     -75.29537253477974
+    ]
+   ],
+   "travel_used_px": 41.9,
+   "travel_used_per_step_px": null,
+   "travel_used_source": "manifest old_timing",
+   "steps_without_shared_contact": [],
+   "slide_per_step_px": [
+    37.1507928105676,
+    19.621967163271542,
+    42.77582111709038,
+    27.253507797574095
+   ],
+   "slide_total_px": 126.80208888850362,
+   "slide_max_px": 42.77582111709038,
+   "slide_total_game_px": 60.57335786203818,
+   "stride_based_travel_px": 94.3262417335969,
+   "unconstrained_best_travel_px": 69.25,
+   "slide_curve": [
+    [
+     0.0,
+     261.35094992169127
+    ],
+    [
+     1.0,
+     261.35094992169127
+    ],
+    [
+     2.0,
+     261.35094992169127
+    ],
+    [
+     3.0,
+     261.35094992169127
+    ],
+    [
+     4.0,
+     261.35094992169127
+    ],
+    [
+     5.0,
+     261.35094992169127
+    ],
+    [
+     6.0,
+     261.35094992169127
+    ],
+    [
+     7.0,
+     261.00365521047263
+    ],
+    [
+     8.0,
+     259.00365521047263
+    ],
+    [
+     9.0,
+     257.00365521047263
+    ],
+    [
+     10.0,
+     254.4020888885036
+    ],
+    [
+     11.0,
+     250.4020888885036
+    ],
+    [
+     12.0,
+     246.4020888885036
+    ],
+    [
+     13.0,
+     242.4020888885036
+    ],
+    [
+     14.0,
+     238.4020888885036
+    ],
+    [
+     15.0,
+     234.4020888885036
+    ],
+    [
+     16.0,
+     230.4020888885036
+    ],
+    [
+     17.0,
+     226.4020888885036
+    ],
+    [
+     18.0,
+     222.4020888885036
+    ],
+    [
+     19.0,
+     218.4020888885036
+    ],
+    [
+     20.0,
+     214.4020888885036
+    ],
+    [
+     21.0,
+     210.4020888885036
+    ],
+    [
+     22.0,
+     206.4020888885036
+    ],
+    [
+     23.0,
+     202.4020888885036
+    ],
+    [
+     24.0,
+     198.4020888885036
+    ],
+    [
+     25.0,
+     194.4020888885036
+    ],
+    [
+     26.0,
+     190.4020888885036
+    ],
+    [
+     27.0,
+     186.4020888885036
+    ],
+    [
+     28.0,
+     182.4020888885036
+    ],
+    [
+     29.0,
+     178.4020888885036
+    ],
+    [
+     30.0,
+     174.4020888885036
+    ],
+    [
+     31.0,
+     170.4020888885036
+    ],
+    [
+     32.0,
+     166.4020888885036
+    ],
+    [
+     33.0,
+     162.4020888885036
+    ],
+    [
+     34.0,
+     158.4020888885036
+    ],
+    [
+     35.0,
+     154.4020888885036
+    ],
+    [
+     36.0,
+     150.4020888885036
+    ],
+    [
+     37.0,
+     146.4020888885036
+    ],
+    [
+     38.0,
+     142.4020888885036
+    ],
+    [
+     39.0,
+     138.4020888885036
+    ],
+    [
+     40.0,
+     134.4020888885036
+    ],
+    [
+     41.0,
+     130.4020888885036
+    ],
+    [
+     42.0,
+     126.40208888850361
+    ],
+    [
+     43.0,
+     122.40208888850361
+    ],
+    [
+     44.0,
+     118.40208888850361
+    ],
+    [
+     45.0,
+     114.40208888850361
+    ],
+    [
+     46.0,
+     110.40208888850361
+    ],
+    [
+     47.0,
+     106.40208888850361
+    ],
+    [
+     48.0,
+     102.40208888850361
+    ],
+    [
+     49.0,
+     98.40208888850361
+    ],
+    [
+     50.0,
+     94.40208888850361
+    ],
+    [
+     51.0,
+     90.40208888850361
+    ],
+    [
+     52.0,
+     86.40208888850361
+    ],
+    [
+     53.0,
+     82.40208888850361
+    ],
+    [
+     54.0,
+     78.40208888850361
+    ],
+    [
+     55.0,
+     74.40208888850361
+    ],
+    [
+     56.0,
+     70.40208888850361
+    ],
+    [
+     57.0,
+     66.40208888850361
+    ],
+    [
+     58.0,
+     62.40208888850361
+    ],
+    [
+     59.0,
+     58.40208888850361
+    ],
+    [
+     60.0,
+     54.40208888850361
+    ],
+    [
+     61.0,
+     50.40208888850361
+    ],
+    [
+     62.0,
+     47.35815456196053
+    ],
+    [
+     63.0,
+     45.35815456196053
+    ],
+    [
+     64.0,
+     43.35815456196053
+    ],
+    [
+     65.0,
+     41.35815456196053
+    ],
+    [
+     66.0,
+     39.35815456196053
+    ],
+    [
+     67.0,
+     37.35815456196053
+    ],
+    [
+     68.0,
+     35.35815456196053
+    ],
+    [
+     69.0,
+     33.35815456196053
+    ],
+    [
+     70.0,
+     33.051138966812346
+    ],
+    [
+     71.0,
+     33.051138966812346
+    ],
+    [
+     72.0,
+     33.051138966812346
+    ],
+    [
+     73.0,
+     33.051138966812346
+    ],
+    [
+     74.0,
+     33.051138966812346
+    ],
+    [
+     75.0,
+     33.051138966812346
+    ],
+    [
+     76.0,
+     33.051138966812346
+    ],
+    [
+     77.0,
+     33.051138966812346
+    ],
+    [
+     78.0,
+     33.051138966812346
+    ],
+    [
+     79.0,
+     33.051138966812346
+    ],
+    [
+     80.0,
+     34.949553345677145
+    ],
+    [
+     81.0,
+     36.949553345677145
+    ],
+    [
+     82.0,
+     38.949553345677145
+    ],
+    [
+     83.0,
+     40.949553345677145
+    ],
+    [
+     84.0,
+     42.949553345677145
+    ],
+    [
+     85.0,
+     45.59791111149639
+    ],
+    [
+     86.0,
+     49.59791111149639
+    ],
+    [
+     87.0,
+     53.59791111149639
+    ],
+    [
+     88.0,
+     57.59791111149639
+    ],
+    [
+     89.0,
+     61.59791111149639
+    ],
+    [
+     90.0,
+     65.59791111149639
+    ],
+    [
+     91.0,
+     69.59791111149639
+    ],
+    [
+     92.0,
+     73.59791111149639
+    ],
+    [
+     93.0,
+     77.59791111149639
+    ],
+    [
+     94.0,
+     81.59791111149639
+    ],
+    [
+     95.0,
+     85.59791111149639
+    ],
+    [
+     96.0,
+     89.59791111149639
+    ],
+    [
+     97.0,
+     93.59791111149639
+    ],
+    [
+     98.0,
+     97.59791111149639
+    ],
+    [
+     99.0,
+     101.59791111149639
+    ],
+    [
+     100.0,
+     105.59791111149639
+    ],
+    [
+     101.0,
+     109.59791111149639
+    ],
+    [
+     102.0,
+     113.59791111149639
+    ],
+    [
+     103.0,
+     117.59791111149639
+    ],
+    [
+     104.0,
+     121.59791111149639
+    ],
+    [
+     105.0,
+     125.59791111149639
+    ],
+    [
+     106.0,
+     129.5979111114964
+    ],
+    [
+     107.0,
+     133.5979111114964
+    ],
+    [
+     108.0,
+     137.5979111114964
+    ],
+    [
+     109.0,
+     141.5979111114964
+    ],
+    [
+     110.0,
+     145.5979111114964
+    ],
+    [
+     111.0,
+     149.5979111114964
+    ],
+    [
+     112.0,
+     153.5979111114964
+    ],
+    [
+     113.0,
+     157.5979111114964
+    ],
+    [
+     114.0,
+     161.5979111114964
+    ],
+    [
+     115.0,
+     165.5979111114964
+    ],
+    [
+     116.0,
+     169.5979111114964
+    ],
+    [
+     117.0,
+     173.5979111114964
+    ],
+    [
+     118.0,
+     177.5979111114964
+    ],
+    [
+     119.0,
+     181.5979111114964
+    ],
+    [
+     120.0,
+     185.5979111114964
+    ],
+    [
+     121.0,
+     189.5979111114964
+    ],
+    [
+     122.0,
+     193.5979111114964
+    ],
+    [
+     123.0,
+     197.5979111114964
+    ],
+    [
+     124.0,
+     201.5979111114964
+    ],
+    [
+     125.0,
+     205.5979111114964
+    ],
+    [
+     126.0,
+     209.5979111114964
+    ],
+    [
+     127.0,
+     213.5979111114964
+    ],
+    [
+     128.0,
+     217.5979111114964
+    ],
+    [
+     129.0,
+     221.5979111114964
+    ],
+    [
+     130.0,
+     225.5979111114964
+    ],
+    [
+     131.0,
+     229.5979111114964
+    ],
+    [
+     132.0,
+     233.5979111114964
+    ],
+    [
+     133.0,
+     237.5979111114964
+    ],
+    [
+     134.0,
+     241.5979111114964
+    ],
+    [
+     135.0,
+     245.5979111114964
+    ],
+    [
+     136.0,
+     249.5979111114964
+    ],
+    [
+     137.0,
+     253.5979111114964
+    ],
+    [
+     138.0,
+     257.5979111114964
+    ],
+    [
+     139.0,
+     261.5979111114964
+    ],
+    [
+     140.0,
+     265.5979111114964
+    ],
+    [
+     141.0,
+     269.5979111114964
+    ],
+    [
+     142.0,
+     273.5979111114964
+    ],
+    [
+     143.0,
+     277.5979111114964
+    ],
+    [
+     144.0,
+     281.5979111114964
+    ],
+    [
+     145.0,
+     285.5979111114964
+    ],
+    [
+     146.0,
+     289.5979111114964
+    ],
+    [
+     147.0,
+     293.5979111114964
+    ],
+    [
+     148.0,
+     297.5979111114964
+    ],
+    [
+     149.0,
+     301.5979111114964
+    ],
+    [
+     150.0,
+     305.5979111114964
+    ],
+    [
+     151.0,
+     309.5979111114964
+    ],
+    [
+     152.0,
+     313.5979111114964
+    ],
+    [
+     153.0,
+     317.5979111114964
+    ],
+    [
+     154.0,
+     321.5979111114964
+    ],
+    [
+     155.0,
+     325.5979111114964
+    ],
+    [
+     156.0,
+     329.5979111114964
+    ],
+    [
+     157.0,
+     333.5979111114964
+    ],
+    [
+     158.0,
+     337.5979111114964
+    ],
+    [
+     159.0,
+     341.5979111114964
+    ],
+    [
+     160.0,
+     345.5979111114964
+    ]
+   ],
+   "recommended_travel_px": 69.23049669343877,
+   "recommended_travel_game_px": 33.0714082704557,
+   "slide_at_recommended_px": [
+    9.820296117128834,
+    7.708529530167226,
+    15.445324423651613,
+    0.07698889586467317
+   ],
+   "slide_total_at_recommended_px": 33.051138966812346,
+   "recommended_per_frame_travel_px": [
+    79.0507928105676,
+    61.52196716327154,
+    84.67582111709038,
+    69.1535077975741
+   ],
+   "travel_per_loop_px": 167.6
+  }
+ },
+ "flags": [
+  {
+   "level": "suspect",
+   "code": "proportion_bulk",
+   "frames": [],
+   "message": "Mean area / height^2 (thinness) is 1.27x the identity reference."
+  },
+  {
+   "level": "suspect",
+   "code": "foot_slide",
+   "frames": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "message": "At travel 41.9 px/frame the planted foot slides at least more than 6.3px in 4/4 steps: 1->2:37, 2->3:20, 3->4:43, 4->1:27."
+  },
+  {
+   "level": "suspect",
+   "code": "travel_mismatch",
+   "frames": [],
+   "message": "Travel 41.9 px/frame differs from the slide-minimising 69.2 px/frame."
+  },
+  {
+   "level": "suspect",
+   "code": "slide_unavoidable",
+   "frames": [
+    3,
+    4
+   ],
+   "message": "Even at the best constant travel (69.2 px/frame) 1 step(s) slide more than 10.4px: stance-foot motion is uneven, so constant speed cannot hide it."
+  }
+ ],
+ "limits": {
+  "change": "Pose change is silhouette change (1 - IoU of opaque masks at 1/4 resolution, in cell position). It cannot tell a meaningful pose change from an equal-sized change in an unimportant area (a swinging satchel), and it ignores changes inside the outline (a face, a hand in front of the body). Detail change measures those, but also counts harmless shading differences.",
+  "duplicates": "Near-duplicate poses use a fixed silhouette threshold (3%); two drawings that differ only inside the outline (eyes, mouth) count as duplicates of pose even if detail differs.",
+  "order": "Out-of-order detection looks for frames closer to a non-neighbour than to both neighbours. In a side-view walk the frame half a cycle later is expected to look similar (legs swapped), so those partners are excluded and reported separately.",
+  "geometry": "Height, width and baseline come from the opaque-pixel bounding box; raised arms, a swinging bag or a cropped frame change them without the character changing.",
+  "identity": "Identity drift is judged only by size, two crude proportions and colour palette. It cannot see a changed face, hood shape or costume detail if colours and size stay similar. A reference in a different pose or scale (guard concept art) makes size comparisons meaningless, so they are skipped there.",
+  "feet": "Feet are estimated as opaque clusters in the bottom 12% of the figure. Overlapping feet merge into one cluster, long robes or shadows are mistaken for feet, and the contact point is the middle of the sole, so a normal heel-to-toe roll reads as a few pixels of slide.",
+  "slide": "Without annotations, the planted foot in each step is assumed to be whichever pairing of ground contacts would slide least. The reported slide is therefore a lower bound: the real slide may be larger if the wrong foot was matched. With annotations, contacts are matched by name and every shared planted contact must stay put; the result is only as good as the clicked points.",
+  "stride": "Stride is the horizontal spread of foot clusters; a lifted foot above the foot band does not count, so passing poses read as stride 0 by construction."
+ },
+ "summary": "ren/walk_keypose: 4 frames, about 4 distinct poses, median pose change per frame 44.9% of the silhouette (variation 0.02). Walk (contacts from heuristic): 2 contact and 2 passing pose(s), 2 step(s) per loop, narrowest/widest stride 24%. At 41.9 px/frame (manifest old_timing) the planted foot slides at least 127 px per loop (worst step 42.8 px). Slide-minimising constant travel is 69.2 px/frame, leaving 33 px of slide per loop. Suspect: proportion_bulk, foot_slide, travel_mismatch, slide_unavoidable.",
+ "images": {
+  "contact_sheet": "contact_sheet.png",
+  "onion": "onion.png",
+  "charts": "charts.png",
+  "identity": "identity.png",
+  "world_strip": "world_strip.png",
+  "world_strip_best_constant": "world_strip_best_constant.png",
+  "world_strip_per_frame": "world_strip_per_frame.png"
+ }
+}

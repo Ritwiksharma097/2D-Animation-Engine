@@ -11,7 +11,7 @@ Handoff log for the animation workbench. Update in every commit.
 | 2. Diagnostic images | done |
 | 3. Browser workbench | done (screenshots checked) |
 | 4. Annotations feed back | done (Ren keypose annotated via the UI) |
-| 5. Real-data REPORT.md | not started |
+| 5. Real-data REPORT.md | done |
 
 ## Environment notes (cloud session)
 
@@ -108,14 +108,38 @@ inputs changing playback speed (code paths exist; only the duration display was 
   shows planted-foot slide 0.0 px; with 41.9 px/frame it shows a red slide bar of 28.1 px on the
   toe_l step 2->3 (70 - 41.9), matching the report.
 
+## Step 5 notes
+
+REPORT.md compares tool findings with the owner's verdicts, with images in `out/report_examples/`
+(committed; the rest of `out/` is gitignored). All embedded PNGs were opened and looked at.
+Main findings: guard walk has no passing pose, 3 narrowings per loop, feet that never move backward
+(slides at any speed) and floats 5-11px above y=535; guard idle is ~6 distinct poses (9 frames one
+pose); both rejected Ren walks slide heavily and have larger heads than the idle; the approved
+keypose walk is best on every measure except slide: at the old 41.9 px/frame it slides ~90 game px
+per loop because the drawings imply ~89 px per drawing. Disagreements are listed in REPORT.md.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
   because spread legs and swinging arms change it. Weak evidence; compare walks to each other.
-- Palette metric does not catch the colour changes the owner described (not yet visually checked
-  whether colours actually differ).
+- Palette metric does not catch colour changes (looked at the fourteen identity sheet: colours look
+  the same to me too; hood shape differs, which the metric cannot see).
+- Heuristic travel search is clamped to 0.4-1.6x a stride estimate; for walk-in-place drawings the
+  "best" value is just the clamp edge.
+- Playwright: the pip package wants a newer Chromium build than the one pre-installed in the cloud box;
+  `screenshot_workbench.launch()` falls back to `/opt/pw-browsers/chromium-*`. On Windows, run
+  `python -m playwright install chromium` once.
+- Not verified: drag/shift-click contact editing, ping-pong playback, per-frame durations changing
+  playback (display only). Nothing has been run on Windows or Python 3.14 yet.
 
 ## Next step
 
-Step 5: run `python workbench/analyze.py --all`, copy chosen PNGs to `out/report_examples/`, and
-write REPORT.md comparing tool findings with the owner's verdicts.
+All five steps are done. Suggested next steps, in order:
+1. On the Windows PC: `pip install -r requirements.txt`, `python -m pytest workbench/tests`,
+   `python workbench/analyze.py --all`, `python workbench/serve.py`, and check the page by hand
+   (especially drag editing and ping-pong, which are unverified).
+2. Show the owner the keypose moving preview at 41.9 vs contact-derived travel (REPORT.md section).
+3. Annotate the guard walk and one rejected Ren walk, so heuristic and annotated results can be
+   compared on more than one action.
+4. Replace the whole-figure palette metric with per-region colour (hood / hair / sash) to catch
+   costume drift.
