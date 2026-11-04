@@ -653,6 +653,13 @@ Open owner decisions (not decided here; each lives in one place, listed in
 - Krita 5.2.11 is installed. `krita_export.py ren walk_keypose --spec ...` builds the pack. A headless check via `kritarunner -s <module> -f main` did not run the script, either from the current folder or from `%APPDATA%/krita/pykrita` (no output, no error), so the Krita menu steps are still untested. The temporary script was removed.
 - Imported six first-pass Ren reactions (`happy`, `interact`, `hurt_stumble`, `caught_game_over`, `look_around`, `ladder_up`) from `sprite_rework/sheets`, status "unreviewed". `analyze.py --all` now analyses 25 actions, 0 skipped.
 
+## Phase 5 checked on the owner's Windows PC (local assistant, 2026-11-04)
+
+- Python 3.14.3: 27 tests pass. Node 24: behaviour 6, framerate 1, level 9 and runtime 8 tests pass. `assets/` unchanged by phase 5.
+- Played the sandbox in the browser (served by `serve.py`), no console errors. Picked up the apple and threw it; the guard walked to it and ate; Ren passed behind the bush (drawn translucent), climbed the ledge, took the key, was spotted climbing down (cone red, chase), and still reached the exit ("got out with the key!", retry button).
+  Issues: the guard walked through Ren, who was standing behind him, without noticing, and the characters overlap. Being spotted while escaping did not lead to a catch (phase 6, step 29).
+- `build_dist.py` on Windows writes 44 files (25.8 MB). Served `dist/` with `python -m http.server`: every file loads with 200. Once, while the browser window wasn't being drawn, the sandbox stayed at "loading animations 0/13" (`img.decode()` never resolved); after a reload it loaded and ran.
+
 ## Next step
 
 Phase 5 is done (steps 23-28). Next, on the owner's Windows PC:

@@ -149,3 +149,53 @@ Phases 1-4 are done and were checked on the owner's Windows PC (see `PROGRESS.md
     - what has been verified on the owner's PC and what hasn't
 
 Out of scope: generating or redrawing art yourself, rigs, the actual game's story, levels and setting.
+
+# Phase 6 (large)
+
+Phases 1-5 are done and were checked on the owner's Windows PC (see `PROGRESS.md`). This is one long phase in place of several short ones. The rules are unchanged:
+- commit and push after each step
+- keep `PROGRESS.md` current
+- verify visually
+- report honestly
+- stop cleanly whenever the budget runs out
+
+Steps are in priority order, so the most valuable work lands first. The owner's open decisions stay open, in `annotations/_settings.json`. Placeholder shapes only: no story, setting or final levels.
+
+29. **Fixes from the owner-PC check of phase 5.**
+    - **Proximity.** In the sandbox, Ren and the guard walk through each other, and the guard walked right past Ren standing behind him without noticing. Add a short "notice" radius (hearing or bumping) and don't let characters overlap. Tune it in `tuning.json`.
+    - **Difficulty check.** In one playthrough the guard ate the apple quickly, then spotted Ren climbing down, yet Ren still reached the exit uncaught. Make the caught rule clear and visible (a suspicion meter on the HUD). Add a test where being in plain sight for the full time always ends in a catch.
+    - **Background tabs.** Served from `dist/`, the sandbox once stuck at "loading animations 0/13" when the browser window wasn't being drawn, and stayed stuck. Loading awaits `img.decode()`. Fall back to `onload`, or retry, so loading always finishes, even when the page starts in a background tab.
+    - **Shared page setup.** Move the sandbox's sharp-canvas, resize and touch handling into a shared module, and use it on every demo page (`play.html`, `guard_demo.html`, level playtest).
+    - **Hub page.** One page served by `serve.py` linking everything the owner uses: review, sandbox, demos, level editor, regions, specs. `start_workbench.bat` opens it.
+30. **Scenes and layering.**
+    - Parallax background layers, and foreground occluders drawn in front of characters.
+    - Depth sorting.
+    - **Hiding spots** as a first-class level object: Ren crouches in or behind one, and the guard can't see him there unless he's close. Use the existing crouch frames from `interact` as a placeholder pose, labelled as such in the HUD.
+    - **Doors and exits** that move between screens, with a fade.
+31. **Sequences (simple cutscenes), emotes and sound hooks.**
+    - A JSON timeline: walk to, play action, wait, face, emote, camera pan, fade, set flag. Triggered by hotspots, events or level start; skippable.
+    - Emote bubbles drawn by the engine (`!`, `?`, heart, `...`, zZz), so the game can tell its story with minimal text, as the owner wants.
+    - Sound: frame and state events map to sound ids. Placeholder WebAudio beeps until real sounds exist, plus a mute toggle.
+32. **Objects with state and simple puzzles.**
+    - Doors (locked/open), chests, levers and lamps, with state shown by placeholder shapes.
+    - Use an item on a hotspot ("key on door"), with conditions and flags in JSON.
+    - Save and restore level state in `localStorage`, with a reset.
+    - Node tests for the condition logic.
+33. **Level editor v2.** Place hotspots, patrol paths, hiding spots, doors, exits, objects and sequence triggers. Add a "play from here" button, and validation that lists problems: unreachable hotspots, patrol paths through solids, doors to missing screens, items no puzzle uses.
+34. **A two-screen sandbox** connected by a door, still placeholder and story-free, using steps 29-33: hide from the guard, find a key, open a locked door, a short sequence with emotes on entering screen 2, and get out. The point is to prove the engine features together, not to design the game.
+35. **Art request packs for the next art round.** For each action that needs new or redrawn art, write a folder under `requests/` containing:
+    - identity reference crops
+    - the spec sheet (if any)
+    - a checklist of measurable criteria
+    - an image-generation prompt template based on the prompts that worked before (see `assets/reference/GPT_HANDOFF.md` and the old rework README's prompt section, summarised in the handoff)
+    - the exact `intake.py` command to run on the result
+
+    The actions are: guard walk, guard ladder, guard idle (breathing, fewer drawings), Ren walk in-betweens, a Ren idle that does something, and Ren's drifting reactions. Rank them by how much each blocks the sandbox.
+36. **One-command full check.** `python check_all.py` runs pytest, every Node test, every Playwright check script, and the `dist/` build and check. It prints a pass/fail table with the time for each, and runs on Windows (no shell-specific syntax). Document the one-time Playwright browser install.
+37. **Performance.**
+    - Merge exports into atlases per character, and load per level instead of everything.
+    - A stress scene with 10 guards and Ren, reporting frame time.
+    - Make sure nothing allocates per frame in the hot loop where it's easy to avoid.
+38. **Docs.** Update `ENGINE.md`, `README.md`, `REPORT.md` (any new findings), `runtime/README.md` (the new APIs) and `PROGRESS.md`, so the next assistant can continue without reading the code first.
+
+Out of scope: generating or redrawing art yourself, rigs, and the actual game's story, levels and setting.
