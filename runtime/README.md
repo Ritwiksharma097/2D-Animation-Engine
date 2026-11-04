@@ -62,3 +62,44 @@ contacts landed; `drift` / `maxDrift` report how far a planted contact has moved
 `node --test runtime/test/runtime.test.mjs` (8 tests: travel and drift, turning, stopping before a face, ladder cycles and rung error, adapter
 supported / marginal / refused, climb path and refusal, jump arc and landing, one-shot events).
 Browser checks: `python workbench/tests/play_checks.py` and `python workbench/tests/guard_demo_checks.py`.
+
+# runtime/level.js: levels, navigation, camera
+
+`compileLevel(levelJson)` gives walk regions (floors split by ledges; sides are `face` or `edge`),
+platforms, ladders and hotspots. `worldFromLevel(compiled)` builds a `World`.
+`navGraph(compiled, character)` lists transitions, each with `ok` / `reason`, judged from that
+character's drawings:
+- climb up / down on either face, via the ledge-height adapter;
+- jumps, within `rules.jump_max_gap` / `jump_max_rise`;
+- ladders, only with a ladder clip carrying rung data (and up only; there is no ladder-down).
+
+`planRoute(compiled, edges, from, to)` finds the shortest route over ok transitions, or returns
+`{ok:false, reason}` listing the refused ones. `goTo(compiled, edges, character, x, y)` turns a click
+into a route and queues it. `Camera({viewW, levelW})` has `update(targetX, dtMs)` and `snap(x)`.
+Tests: `node --test runtime/test/level.test.mjs`.
+
+# runtime/behaviour.js: interactions and guard behaviour
+
+Decisions are pure functions, so they can be tested without animation; the classes connect them to
+Characters. All tuning is plain JSON.
+
+- `canSee(eye, dir, target, {range, halfAngleDeg}, solids)`: vision cone plus line of sight
+  (`segmentHitsRect`). `sightBlockers(compiled)` gives the solids of a level.
+- `decideGuard(state, perception, dt, config)` returns `{state, actions}`. Modes: `patrol` ->
+  `suspicious` (suspicion rises while he sees Ren and decays otherwise; at `suspicious_at` he looks
+  around, and when it decays he plays `angry`, then patrols) -> `chase` (at `alert_at` while seeing
+  Ren) -> `caught` (within `catch_range`). Food in `food.notice_range` sends him `distracted`
+  (walk to it) -> `eating` -> `patrol`. `lovestruck` is a hook: it plays `love` and overrides
+  everything until released. Defaults: `GUARD_DEFAULTS`.
+- `GuardBrain({guard, config, world, solids})` runs it on a guard Character: patrol between
+  `config.patrol` ends with `wait_at_ends_ms`. There is no guard look-around drawing, so
+  "suspicious" alternates his facing. Events: `mode`, `suspicious`, `caught`, `ate`.
+  `setFood(food, reach)` tells it about dropped food.
+- `decideIdleHint(state, idle, dt, {after_ms})`: after standing idle that long, play `look_around`
+  once (`hint: true`), as a hook for "looks at the player".
+- `Interactions({hotspots, inventory, defs})`: `take(character, hotspotId)` walks so the clip's
+  event point (e.g. Ren `interact` `pickup`, where his hand reaches the ground) lands on the item,
+  plays the role, and moves the item to the `Inventory` at the event. `drop`, `throwItem` (lands
+  after `flightMs`, emitting `landed`), `update(dt)`.
+
+Tests: `node --test runtime/test/behaviour.test.mjs` (7).

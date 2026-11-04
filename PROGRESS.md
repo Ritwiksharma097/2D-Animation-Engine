@@ -505,7 +505,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | --- | --- |
 | 23. Owner-PC fixes + new Ren reactions | done |
 | 24. Levels and navigation | done |
-| 25. Interactions and guard AI | not started |
+| 25. Interactions and guard AI | done (logic tested in Node; seen in the sandbox, step 26) |
 | 26. Mechanics sandbox | not started |
 | 27. Robustness and packaging | not started |
 | 28. ENGINE.md | not started |
@@ -545,6 +545,17 @@ Open owner decisions (not decided here; each lives in one place, listed in
 - Limits: jumps are only between surfaces at nearly the same height (Ren's drawings are a same-level
   jump); the planner's walking cost ignores time spent in climbs; the editor doesn't snap or check
   overlaps.
+
+## Step 25 notes
+
+- `runtime/behaviour.js` (API in runtime/README.md): vision cone + line of sight, `decideGuard`
+  (patrol / suspicious / chase / caught / distracted / eating / lovestruck hook), `GuardBrain`,
+  `decideIdleHint`, `Inventory`, `Interactions` (take at the clip's event point, drop, throw), all
+  configured by plain JSON. `node --test runtime/test/behaviour.test.mjs` 7/7. One bug caught while
+  writing: finishing eating must clear the food or he is distracted by it again.
+- Exports added for behaviour: ren interact (pickup event), caught_game_over, look_around,
+  hurt_stumble, happy (all **unreviewed** art), guard angry, love, happy.
+- The guard has no look-around drawing; "suspicious" alternates his facing.
 
 ## Known problems
 
@@ -591,7 +602,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 5: next is step 25 (interactions and guard AI).
+Phase 5: next is step 26 (mechanics sandbox).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

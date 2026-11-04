@@ -1,0 +1,270 @@
+{
+ "format": "workbench-export/1",
+ "character": "ren",
+ "action": "look_around",
+ "image": "look_around.png",
+ "cell_size": [
+  640,
+  576
+ ],
+ "anchor": [
+  320.0,
+  535.0
+ ],
+ "scale": 0.4777,
+ "scale_confirmed": true,
+ "scale_source": "manifest game_scale_in_old_demos (the scale the owner saw in the old demos)",
+ "travel_override": null,
+ "loop_mode": "once",
+ "facing": "right",
+ "travel_mode": "none",
+ "frames": [
+  {
+   "rect": [
+    557,
+    438,
+    188,
+    428
+   ],
+   "offset": [
+    219,
+    109
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "01.png",
+   "entry": 0
+  },
+  {
+   "rect": [
+    372,
+    438,
+    185,
+    429
+   ],
+   "offset": [
+    220,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "02.png",
+   "entry": 1
+  },
+  {
+   "rect": [
+    189,
+    438,
+    183,
+    430
+   ],
+   "offset": [
+    224,
+    107
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "03.png",
+   "entry": 2
+  },
+  {
+   "rect": [
+    571,
+    0,
+    188,
+    434
+   ],
+   "offset": [
+    219,
+    103
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "04.png",
+   "entry": 3
+  },
+  {
+   "rect": [
+    185,
+    0,
+    192,
+    435
+   ],
+   "offset": [
+    214,
+    102
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "05.png",
+   "entry": 4
+  },
+  {
+   "rect": [
+    377,
+    0,
+    194,
+    435
+   ],
+   "offset": [
+    212,
+    102
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "06.png",
+   "entry": 5
+  },
+  {
+   "rect": [
+    759,
+    0,
+    189,
+    434
+   ],
+   "offset": [
+    217,
+    103
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "07.png",
+   "entry": 6
+  },
+  {
+   "rect": [
+    0,
+    0,
+    185,
+    438
+   ],
+   "offset": [
+    220,
+    103
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "08.png",
+   "entry": 7
+  },
+  {
+   "rect": [
+    1701,
+    0,
+    186,
+    432
+   ],
+   "offset": [
+    219,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "09.png",
+   "entry": 8
+  },
+  {
+   "rect": [
+    948,
+    0,
+    190,
+    433
+   ],
+   "offset": [
+    220,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "10.png",
+   "entry": 9
+  },
+  {
+   "rect": [
+    1138,
+    0,
+    189,
+    433
+   ],
+   "offset": [
+    220,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "11.png",
+   "entry": 10
+  },
+  {
+   "rect": [
+    1327,
+    0,
+    186,
+    433
+   ],
+   "offset": [
+    220,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "12.png",
+   "entry": 11
+  },
+  {
+   "rect": [
+    0,
+    438,
+    189,
+    432
+   ],
+   "offset": [
+    220,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "13.png",
+   "entry": 12
+  },
+  {
+   "rect": [
+    1513,
+    0,
+    188,
+    433
+   ],
+   "offset": [
+    220,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "14.png",
+   "entry": 13
+  }
+ ],
+ "status_in_manifest": "unreviewed",
+ "suspect_flags": [
+  "few_distinct",
+  "near_duplicate",
+  "out_of_order",
+  "proportion_bulk",
+  "region_size_drift",
+  "uneven_stall"
+ ]
+}

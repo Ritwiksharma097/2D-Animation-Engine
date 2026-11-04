@@ -1,0 +1,276 @@
+{
+ "format": "workbench-export/1",
+ "character": "guard",
+ "action": "happy",
+ "image": "happy.png",
+ "cell_size": [
+  640,
+  576
+ ],
+ "anchor": [
+  320.0,
+  535.0
+ ],
+ "scale": 0.4777,
+ "scale_confirmed": false,
+ "scale_source": "ASSUMED: same as Ren (both drawn on 640x576 cells at a similar figure height). Owner to set.",
+ "travel_override": null,
+ "loop_mode": "once",
+ "facing": "right",
+ "travel_mode": "none",
+ "frames": [
+  {
+   "rect": [
+    1748,
+    0,
+    179,
+    423
+   ],
+   "offset": [
+    226,
+    113
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "01.png",
+   "entry": 0
+  },
+  {
+   "rect": [
+    0,
+    426,
+    179,
+    423
+   ],
+   "offset": [
+    222,
+    113
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "02.png",
+   "entry": 1
+  },
+  {
+   "rect": [
+    1358,
+    0,
+    210,
+    424
+   ],
+   "offset": [
+    227,
+    112
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "03.png",
+   "entry": 2
+  },
+  {
+   "rect": [
+    1568,
+    0,
+    180,
+    424
+   ],
+   "offset": [
+    226,
+    112
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "04.png",
+   "entry": 3
+  },
+  {
+   "rect": [
+    179,
+    426,
+    178,
+    423
+   ],
+   "offset": [
+    229,
+    113
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "05.png",
+   "entry": 4
+  },
+  {
+   "rect": [
+    357,
+    426,
+    203,
+    423
+   ],
+   "offset": [
+    234,
+    113
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "06.png",
+   "entry": 5
+  },
+  {
+   "rect": [
+    560,
+    426,
+    204,
+    423
+   ],
+   "offset": [
+    237,
+    113
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "07.png",
+   "entry": 6
+  },
+  {
+   "rect": [
+    0,
+    0,
+    213,
+    426
+   ],
+   "offset": [
+    231,
+    109
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "08.png",
+   "entry": 7
+  },
+  {
+   "rect": [
+    213,
+    0,
+    207,
+    425
+   ],
+   "offset": [
+    231,
+    110
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "09.png",
+   "entry": 8
+  },
+  {
+   "rect": [
+    420,
+    0,
+    207,
+    425
+   ],
+   "offset": [
+    228,
+    110
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "10.png",
+   "entry": 9
+  },
+  {
+   "rect": [
+    627,
+    0,
+    183,
+    425
+   ],
+   "offset": [
+    230,
+    110
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "11.png",
+   "entry": 10
+  },
+  {
+   "rect": [
+    810,
+    0,
+    182,
+    425
+   ],
+   "offset": [
+    231,
+    110
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "12.png",
+   "entry": 11
+  },
+  {
+   "rect": [
+    992,
+    0,
+    182,
+    425
+   ],
+   "offset": [
+    232,
+    110
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "13.png",
+   "entry": 12
+  },
+  {
+   "rect": [
+    1174,
+    0,
+    184,
+    425
+   ],
+   "offset": [
+    227,
+    110
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "14.png",
+   "entry": 13
+  }
+ ],
+ "status_in_manifest": "approved",
+ "suspect_flags": [
+  "baseline_off",
+  "few_distinct",
+  "near_duplicate",
+  "out_of_order",
+  "proportion_bulk",
+  "proportion_head",
+  "redrawn_detail",
+  "region_colour_drift",
+  "region_size_drift",
+  "uneven_jump",
+  "uneven_overall",
+  "uneven_stall"
+ ]
+}

@@ -155,7 +155,8 @@ def export(character, action, out_dir=EXPORT, travel_override=None, scale_overri
     return out
 
 
-DEMO = [("ren", "walk_keypose"), ("ren", "climb_up"), ("ren", "climb_down"), ("ren", "jump"), ("ren", "idle")]
+DEMO = [("ren", "walk_keypose"), ("ren", "climb_up"), ("ren", "climb_down"), ("ren", "jump"), ("ren", "idle"),
+        ("ren", "interact"), ("ren", "caught_game_over"), ("ren", "look_around"), ("ren", "hurt_stumble"), ("ren", "happy")]
 
 
 
@@ -170,6 +171,8 @@ def main(argv=None):
     if a.demo:   # the guard patrols in the playtests; scale and any travel override come from annotations/_settings.json
         export("guard", "idle")       # scale from annotations/_settings.json (guard's is unconfirmed)
         export("guard", "eating")
+        for extra in ("angry", "love", "happy"):
+            export("guard", extra)
         export("guard", "ladder_up")
         o = export("guard", "walk")   # travel: contact-derived unless annotations/_settings.json travel_overrides says otherwise
         print(f"guard/walk: travel {o['frames'][0]['travel_px']} px/frame" + (f" (OVERRIDE: {o['travel_override']['reason'][:60]}...)" if o.get("travel_override") else " (contact-derived)"))
