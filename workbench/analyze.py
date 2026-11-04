@@ -651,13 +651,11 @@ def run(character: str, action: str, travel: float | None = None, images: bool =
     od = output_dir(character, action)
     (od / "report.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
     if images:
-        try:
-            import diagnostics  # noqa: WPS433 (sibling module, optional at step 1)
-        except ImportError:
-            diagnostics = None
-        if diagnostics:
-            rep["images"] = diagnostics.write_all(act, rep, od)
-            (od / "report.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import diagnostics
+        rep["images"] = diagnostics.write_all(act, rep, od)
+        (od / "report.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
     return rep
 
 

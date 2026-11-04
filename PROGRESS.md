@@ -8,7 +8,7 @@ Handoff log for the animation workbench. Update in every commit.
 | --- | --- |
 | 0. FORMAT.md / PROGRESS.md | done |
 | 1. analyze.py library + CLI | done (11 unit tests pass) |
-| 2. Diagnostic images | not started |
+| 2. Diagnostic images | done |
 | 3. Browser workbench | not started |
 | 4. Annotations feed back | not started |
 | 5. Real-data REPORT.md | not started |
@@ -50,6 +50,25 @@ Handoff log for the animation workbench. Update in every commit.
   walks (total variation ~0.1 for all); head-width ratio does (keypose 1.06x idle, fourteen 1.14x,
   flatboy 1.25x).
 
+## Step 2 notes (diagnostics.py)
+
+Writes next to report.json: `contact_sheet.png`, `onion.png`, `charts.png` (change per step,
+height, baseline, proportions, stride with C/P marks, slide per step, slide-vs-travel curve, pose
+distance heatmap), `identity.png` (reference beside sampled frames, guide lines at the reference's
+top / 25% / baseline, palette shares), and for walks three world-space strips: at the given travel,
+at the best constant travel, and at per-frame travel matched to the planted foot.
+
+Visually checked (opened the PNGs and looked): guard walk contact sheet + charts + best-constant
+strip, Ren keypose strip, fourteen strip, flatboy identity, guard idle onion. Fixes made after
+looking: wrapped headers that were cut off, flag labels that overlapped, legends over titles,
+clipped onion legend, and the guard strip which was an unreadable blur of 28 overlapping figures
+(now the full figure is drawn every k frames, all frames in the 2x feet zoom).
+
+What the images showed: guard idle outlines nearly coincide (barely moves); guard walk lowest
+pixel sits 5-13px above the y=535 ground line and bobs; Ren keypose at 41.9 px/frame slides
+20-43px per step (stance foot moves 61-85px per drawing); fourteen slides worst at the passing
+frames (3->4, 10->11); flatboy's head is visibly larger than the idle reference.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -59,5 +78,5 @@ Handoff log for the animation workbench. Update in every commit.
 
 ## Next step
 
-Step 2: `workbench/diagnostics.py` writing contact sheet, onion skin, world-space strip,
-metric charts and identity side-by-side next to report.json.
+Step 3: browser workbench `workbench/index.html` (vanilla JS), served with
+`python -m http.server` from the repo root, plus a tiny save server for annotations.

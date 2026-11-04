@@ -32,3 +32,10 @@ English; `flags` are only ever "suspect"; `limits` says what each heuristic cann
 ```
 python -m pytest workbench/tests
 ```
+
+## Diagnostic images
+
+`analyze.py` also writes PNGs next to the report (skip with `--no-images`): `contact_sheet.png`,
+`onion.png`, `charts.png`, `identity.png` and, for walks, `world_strip.png` (at the given travel),
+`world_strip_best_constant.png` and `world_strip_per_frame.png`. Each image explains its own
+markings in its header.
