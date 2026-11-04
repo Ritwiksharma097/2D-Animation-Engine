@@ -508,7 +508,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | 25. Interactions and guard AI | done (logic tested in Node; seen in the sandbox, step 26) |
 | 26. Mechanics sandbox | done |
 | 27. Robustness and packaging | done |
-| 28. ENGINE.md | not started |
+| 28. ENGINE.md | done |
 
 ## Step 23 notes
 
@@ -602,6 +602,14 @@ Open owner decisions (not decided here; each lives in one place, listed in
   was tested with Playwright's emulated touchscreen, not a real phone. The pause test fakes
   `document.hidden`; a real tab switch was not tried.
 
+## Step 28 notes
+
+- `ENGINE.md`: architecture and data flow (assets -> annotations/edits -> analysis -> export ->
+  runtime -> levels -> pages / dist), how to add a character, an action and a level, a table of where
+  each owner decision lives, what was verified on the owner's PC (phases 1-4) and what wasn't
+  (all of phase 5, the Krita menu steps, real devices), and known limits. Checked its paths and
+  commands against the code and the step notes; it adds no new behaviour.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -647,7 +655,13 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 5: next is step 28 (`ENGINE.md`).
+Phase 5 is done (steps 23-28). Next, on the owner's Windows PC:
+1. `git pull`, `python -m pytest workbench/tests`, `node --test runtime/test/runtime.test.mjs`
+   (and `level`, `behaviour`, `framerate` test files), then `start_workbench.bat`.
+2. Open http://localhost:8000/sandbox/index.html and play it once (caught, apple, cover, climb, key,
+   exit); try `workbench/level_editor.html`; look at the guard demo's red slide note.
+3. `python workbench/build_dist.py` and `python -m http.server -d dist 8080`; open the sandbox there.
+4. Owner decisions still open: see ENGINE.md section 3.
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

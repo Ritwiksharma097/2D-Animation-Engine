@@ -8,6 +8,8 @@ Diagnoses sprite animation problems (sliding feet, repeated or uneven frames, id
 can be found from still images and numbers instead of by watching playback. See `CLAUDE.md` for the
 brief, `FORMAT.md` for the data formats, `PROGRESS.md` for status and `REPORT.md` for results.
 
+Overview of the whole pipeline and runtime: [`ENGINE.md`](ENGINE.md).
+
 ## Setup (Windows or Linux, Python 3.13/3.14)
 
 ```
