@@ -90,6 +90,36 @@ class Handler(SimpleHTTPRequestHandler):
                 REVIEWS.parent.mkdir(parents=True, exist_ok=True)
                 REVIEWS.write_text(json.dumps(doc, indent=1), encoding="utf-8")
             return self._json(200, {"saved": key})
+        if u.path in ("/api/identity", "/api/regions_check"):
+            import regions
+            q = parse_qs(u.query)
+            c = q.get("character", [""])[0]
+            if not re.fullmatch(NAME, c) or c not in analyze.load_manifest()["characters"]:
+                return self._json(400, {"error": "unknown character"})
+            try:
+                if u.path == "/api/identity":
+                    body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+                    seeds = {}
+                    for name, r in body["regions"].items():
+                        if not re.fullmatch(NAME, name):
+                            raise ValueError(f"bad region name {name!r}")
+                        x, y = (int(round(v)) for v in r["seed"])
+                        seeds[name] = {"seed": [x, y]}
+                    path = regions.save_seeds(c, seeds)
+                    analyze._REGION_MODELS.pop(c, None)
+                    return self._json(200, {"saved": analyze.rel(path), "regions": len(seeds)})
+                a = q.get("action", [""])[0]
+                model = regions.region_model(c)
+                if not model:
+                    raise ValueError("no seeds saved yet")
+                act = analyze.load_action(c, a)
+                per, summary, flags = regions.action_regions(act, model)
+                img = analyze.OUT / c / f"regions_page_{a}.png"
+                regions.compare_image(c, {a: (act, per, summary, flags)}, model, img)
+                return self._json(200, {"summary": summary, "flags": flags, "image": "/" + analyze.rel(img),
+                                        "bands": {n: m["band"] for n, m in model.items()}})
+            except Exception as e:
+                return self._json(400, {"error": repr(e)})
         if u.path == "/api/status":
             return self._json(200, STATUS)
         if u.path == "/api/scene":

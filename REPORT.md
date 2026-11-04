@@ -373,3 +373,11 @@ for whoever redraws the frames, in Krita or with image generation. They are not 
 stride-based speed (21.9 cell px per frame) his planted feet drift up to 118 game px per walk.
 The "show contact pins and drift" toggle displays this live for both characters.
 `workbench/tests/play_checks.py` asserts 15 behaviours, all passing.
+
+## Identity regions by clicking (step 17)
+
+`workbench/regions.html` is linked from the workbench and the review page. It shows the
+character's identity reference: click to place or move a region seed, add or delete regions,
+save to `annotations/<character>/_identity.json`, and check any action against the saved regions.
+The check shows a table and an overlay image. `workbench/tests/regions_checks.py` asserts the
+whole loop and restores the real seeds afterwards.

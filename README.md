@@ -125,3 +125,8 @@ python workbench/export.py --demo                # exports paths_by_height for t
 python workbench/specs.py all                                         # specs/*.png + *.json
 python workbench/spec_check.py specs/guard_walk.json path\to\new_frames   # meets / MISSES per criterion
 ```
+
+## Identity regions by clicking
+
+http://localhost:8000/workbench/regions.html (with `serve.py`): click seeds on the identity
+reference, Save, then Check any action. Test: `python workbench/tests/regions_checks.py`.

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Identity Regions</title>
+<style>
+  :root { --bg:#f6f6f4; --ink:#1e1e1e; --muted:#666; --line:#ddd; --warn:#c81e28; --ok:#1baf7a; --accent:#2a78d6; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:10px 16px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+  header h1 { font-size:17px; margin:0; }
+  main { display:flex; gap:16px; padding:12px 16px; flex-wrap:wrap; align-items:flex-start; }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:8px; padding:10px; }
+  canvas { display:block; cursor:crosshair; }
+  table { border-collapse:collapse; } td, th { padding:3px 8px; border-bottom:1px solid #eee; text-align:left; }
+  tr.sel { background:#eef4fd; } .sw { display:inline-block; width:12px; height:12px; border-radius:2px; vertical-align:middle; }
+  .bad { color:var(--warn); } .ok { color:var(--ok); } .muted { color:var(--muted); }
+  #result img { max-width:100%; border:1px solid #eee; margin-top:8px; }
+  button, select, input { font:inherit; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Identity regions</h1>
+  <label>character <select id="char"></select></label>
+  <span class="muted">Pick a region, then click on the identity reference where that part is (hood, hair, face, sash...). Saved to annotations/&lt;character&gt;/_identity.json.</span>
+  <a href="index.html">workbench</a> <a href="review.html">owner review</a>
+</header>
+<main>
+  <div class="panel"><div class="muted" id="refname"></div><canvas id="cv"></canvas></div>
+  <div class="panel" style="min-width:340px">
+    <table id="tbl"><thead><tr><th></th><th>region</th><th>seed (reference px)</th><th></th></tr></thead><tbody></tbody></table>
+    <div style="margin:8px 0"><input id="newname" placeholder="new region name" style="width:150px"> <button id="add">add region</button></div>
+    <div><button id="save">Save regions</button> <span id="msg" class="muted"></span></div>
+    <hr>
+    <div><label>check action <select id="action"></select></label> <button id="check">Check</button></div>
+    <div id="result"></div>
+  </div>
+</main>
+<script>
+"use strict";
+const COLS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#7850c8", "#c81e28"];
+const $ = s => document.querySelector(s);
+const cv = $("#cv"), ctx = cv.getContext("2d");
+let manifest, char, regions = {}, selected = null, img, box, k = 1;
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function json(u, o) { const r = await fetch(u, { cache: "no-store", ...o }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || r.status); return j; }
+
+function bbox(im) {  // crop to the figure so small references are big enough to click
+  const c = document.createElement("canvas"); c.width = im.width; c.height = im.height;
+  const x = c.getContext("2d"); x.drawImage(im, 0, 0);
+  const a = x.getImageData(0, 0, c.width, c.height).data;
+  let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0;
+  for (let y = 0; y < c.height; y++) for (let xx = 0; xx < c.width; xx++) if (a[(y * c.width + xx) * 4 + 3] > 128) { x0 = Math.min(x0, xx); x1 = Math.max(x1, xx); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  return { x0: Math.max(0, x0 - 10), y0: Math.max(0, y0 - 10), x1: Math.min(c.width, x1 + 10), y1: Math.min(c.height, y1 + 10) };
+}
+
+function draw() {
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.drawImage(img, box.x0, box.y0, box.x1 - box.x0, box.y1 - box.y0, 0, 0, cv.width, cv.height);
+  Object.entries(regions).forEach(([n, r], i) => {
+    const x = (r.seed[0] - box.x0) * k, y = (r.seed[1] - box.y0) * k;
+    ctx.beginPath(); ctx.arc(x, y, n === selected ? 9 : 7, 0, 7); ctx.fillStyle = COLS[i % COLS.length]; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = "#000"; ctx.stroke();
+    ctx.font = "13px system-ui"; ctx.fillStyle = "#000"; ctx.fillText(n, x + 11, y + 4);
+  });
+}
+
+function table() {
+  const tb = $("#tbl tbody"); tb.innerHTML = "";
+  Object.entries(regions).forEach(([n, r], i) => {
+    const tr = document.createElement("tr"); if (n === selected) tr.className = "sel";
+    tr.innerHTML = `<td><span class="sw" style="background:${COLS[i % COLS.length]}"></span></td><td>${esc(n)}</td><td>${r.seed[0]}, ${r.seed[1]}</td><td><button>delete</button></td>`;
+    tr.onclick = () => { selected = n; table(); draw(); };
+    tr.querySelector("button").onclick = e => { e.stopPropagation(); delete regions[n]; if (selected === n) selected = null; table(); draw(); $("#msg").textContent = "unsaved changes"; };
+    tb.appendChild(tr);
+  });
+}
+
+async function loadChar(c) {
+  char = c; regions = {}; selected = null;
+  const ref = manifest.characters[c].identity_reference;
+  $("#refname").textContent = `reference: assets/${ref}`;
+  img = new Image(); img.src = `../assets/${ref}`; await img.decode();
+  box = bbox(img); k = 620 / (box.y1 - box.y0);
+  cv.height = 620; cv.width = Math.round((box.x1 - box.x0) * k);
+  try { regions = (await json(`../annotations/${c}/_identity.json`)).regions; } catch {}
+  selected = Object.keys(regions)[0] ?? null;
+  const as = $("#action"); as.innerHTML = "";
+  for (const a of Object.keys(manifest.characters[c].actions)) as.add(new Option(a, a));
+  table(); draw(); $("#result").innerHTML = ""; $("#msg").textContent = "";
+  document.body.dataset.ready = "1";
+}
+
+cv.addEventListener("click", e => {
+  if (!selected) { $("#msg").textContent = "pick or add a region first"; return; }
+  const r = cv.getBoundingClientRect();
+  const x = Math.round((e.clientX - r.left) * cv.width / r.width / k + box.x0), y = Math.round((e.clientY - r.top) * cv.height / r.height / k + box.y0);
+  regions[selected] = { seed: [x, y] }; table(); draw(); $("#msg").textContent = "unsaved changes";
+});
+$("#add").onclick = () => {
+  const n = $("#newname").value.trim().replace(/\s+/g, "_");
+  if (!/^[A-Za-z0-9_-]+$/.test(n)) { $("#msg").textContent = "name: letters, digits, _ or -"; return; }
+  regions[n] = regions[n] || { seed: [Math.round((box.x0 + box.x1) / 2), Math.round((box.y0 + box.y1) / 2)] };
+  selected = n; $("#newname").value = ""; table(); draw(); $("#msg").textContent = "now click on the reference to place " + n;
+};
+$("#save").onclick = async () => {
+  try { const j = await json(`/api/identity?character=${char}`, { method: "POST", body: JSON.stringify({ regions }) }); $("#msg").className = "ok"; $("#msg").textContent = `saved ${j.regions} regions to ${j.saved}`; }
+  catch (e) { $("#msg").className = "bad"; $("#msg").textContent = "not saved (needs serve.py): " + e.message; }
+};
+$("#check").onclick = async () => {
+  const a = $("#action").value, res = $("#result");
+  res.innerHTML = "<span class='muted'>checking (uses the saved regions)...</span>";
+  try {
+    const j = await json(`/api/regions_check?character=${char}&action=${a}`, { method: "POST" });
+    const rows = Object.entries(j.summary).map(([n, s]) => {
+      const bad = s.share_ratio_median === null || s.share_ratio_median < 0.6 || s.share_ratio_median > 1.6 || (s.de_median ?? 99) > 6;
+      return `<tr class="${bad ? "bad" : ""}"><td>${esc(n)}</td><td>${s.share_ratio_median?.toFixed(2) ?? "missing"}x</td><td>${s.de_median?.toFixed(1) ?? "-"}</td></tr>`;
+    }).join("");
+    res.innerHTML = `<table><tr><th>region</th><th>size vs ref</th><th>colour dE</th></tr>${rows}</table>
+      <div class="muted">${j.flags.length ? j.flags.map(f => esc(f.message)).join("<br>") : "no region flags (not a pass)"}</div>
+      <img src="${j.image}?t=${Date.now()}" alt="region overlay">`;
+  } catch (e) { res.innerHTML = `<span class="bad">check failed (needs serve.py and saved regions): ${esc(e.message)}</span>`; }
+};
+
+(async () => {
+  manifest = await json("../assets/manifest.json");
+  for (const c of Object.keys(manifest.characters)) $("#char").add(new Option(c, c));
+  const want = new URLSearchParams(location.hash.slice(1)).get("c") || Object.keys(manifest.characters)[0];
+  $("#char").value = want; $("#char").onchange = () => loadChar($("#char").value);
+  await loadChar(want);
+})();
+</script>
+</body>
+</html>

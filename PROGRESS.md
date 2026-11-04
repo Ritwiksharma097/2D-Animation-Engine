@@ -286,7 +286,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | 14. Redraw specs | done |
 | 15. Owner review page | done |
 | 16. Playtest completeness | done |
-| 17. Identity regions by clicking | not started |
+| 17. Identity regions by clicking | done |
 
 ## Step 12 notes
 
@@ -376,6 +376,18 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
   set by the scene (gap), not by the drawings; climb start still jumps ~39 game px forward from
   where the walk has to stop.
 
+## Step 17 notes
+
+- `workbench/regions.html` (links in the workbench header and the review page): reference image
+  cropped to the figure, seeds as coloured markers; select a row and click to move a seed, add a
+  named region, delete, Save (`POST /api/identity`, validated names, writes `_identity.json` via
+  regions.save_seeds and clears analyze's cached model), Check (`POST /api/regions_check`: table +
+  overlay image for one action). `regions_checks.py` 5/5 PASS, restores the real seeds.
+  Screenshots 50-51 looked at.
+- Re-ran after step 17: 24 unit tests, ui_checks 16/16, scene_checks PASS (its live-edit number
+  changed from 41.9 -> 105 to 1.5 -> 64.7 px because the climb now uses the real path and
+  corrected hand points).
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -407,7 +419,14 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 3: next is step 17 (identity regions by clicking in the page).
+Phase 3 steps 12-17 are done. Suggested next steps, in order:
+1. On Windows: double-click `start_workbench.bat` (never run here) and review every action;
+   `python workbench/tests/play_checks.py`, `review_checks.py`, `regions_checks.py`, `ui_checks.py`.
+2. Owner decisions: guard climb reading (90 px ledge), whether the 39 px step-in before Ren's climb
+   is acceptable or the walk needs a narrower stopping pose, and the walk speed (180 ms/drawing).
+3. Commission new frames from `specs/guard_walk.png` and `specs/ren_walk_inbetweens.png`; check
+   them with `spec_check.py`.
+4. Other ledge heights need new reach drawings or a step-up / pull-up category (step 13).
 
 Phase 2 follow-ups (older list):
 1. On Windows: `python -m pytest workbench/tests`, `python workbench/tests/ui_checks.py`,
