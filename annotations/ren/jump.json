@@ -81,5 +81,13 @@
   "arc_height_px": 102.0,
   "source": "air frames = drawings whose lowest pixel is >15 px above the drawn floor (cloud assistant); arc height = the drawings' own highest lift, added on top as a parabola in the game",
   "durations_ms": "12 fps as in the old platform-jump demo"
+ },
+ "events": {
+  "takeoff": {
+   "frame": 5
+  },
+  "land": {
+   "frame": 8
+  }
  }
 }

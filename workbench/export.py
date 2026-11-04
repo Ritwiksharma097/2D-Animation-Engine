@@ -90,6 +90,15 @@ def export(character, action, out_dir=EXPORT, travel_override=None, scale_overri
            "scale_confirmed": S.game_scale(character)[1], "scale_source": S.game_scale(character)[2],
            "loop_mode": act.loop_mode, "facing": act.facing, "travel_mode": travel_mode, "frames": frames,
            "status_in_manifest": info.get("status"), "suspect_flags": sorted({f["code"] for f in rep["flags"]})}
+    if doc.get("events"):
+        # named events: 1-based drawing frame in the document -> 0-based played frame index in the export
+        entries = act.entries or list(range(n))
+        ev = {}
+        for name, e in doc["events"].items():
+            want = int(e["frame"]) - 1
+            k = entries.index(want) if want in entries else min(range(n), key=lambda i: abs(entries[i] - want))
+            ev[name] = {**e, "frame": k}
+        out["events"] = ev
     if doc.get("jump_timing"):
         out["jump"] = doc["jump_timing"]
     if scene:
@@ -146,6 +155,7 @@ def main(argv=None):
     if a.demo:   # the guard patrols in the playtest at Ren's scale; his walk speed = stride-based estimate (his contacts walk in place)
         g = A.analyze(A.load_action("guard", "walk"))["metrics"]["walk"]
         export("guard", "idle")       # scale from annotations/_settings.json (guard's is unconfirmed)
+        export("guard", "eating")
         o = export("guard", "walk", travel_override=round(g["stride_based_travel_px"], 2))
         print(f"guard/walk: travel {o['frames'][0]['travel_px']} px/frame (stride-based; the drawings themselves walk in place, so it slides)")
     for c, ac in todo:

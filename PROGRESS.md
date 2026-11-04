@@ -394,7 +394,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | --- | --- |
 | 18. Owner-PC fixes | done |
 | 19. Art intake | done |
-| 20. Runtime ("engine") | not started |
+| 20. Runtime ("engine") | done |
 | 21. Ladders end to end | not started |
 | 22. Krita round trip | not started |
 
@@ -446,6 +446,25 @@ Open owner decisions (not decided here; each lives in one place, listed in
 - Limits: background keying is a hard colour threshold with a soft ramp, not real matting; a figure
   touching another merges into one; contacts are not used for alignment yet (heads/ground only).
 
+## Step 20 notes
+
+- `runtime/anim.js` + `runtime/README.md` (API). Clips, World (floor + platforms, walk limits that
+  stop before faces), Character (queue of walk/turn/climb up/down/jump/play/wait, back to idle;
+  contact-driven travel; mirroring; ledge adapter that refuses heights outside the looser range;
+  named frame events; debug overlay with pins and drift). `node --test runtime/test`: 7/7 pass
+  (Node 22). Two test-data mistakes on the way (a walk with one foot planted all loop) were mine.
+- `out/export/play.html` rebuilt on the runtime; `play_checks.py` 16/16 PASS. Behaviour change:
+  at 70% the climb is now **refused** (the brief's "refusing unsupported heights"); 95% (marginal)
+  climbs. `out/export/guard_demo.html`: patrol, click to drop an apple, he turns, walks so his hand
+  meets the drawn apple (offset from the eating action's `pickup` point), eats, the prop vanishes on
+  `pickup`, "nom" on `bite`, then patrols again. `guard_demo_checks.py` 5/5 PASS; screenshot 70
+  looked at (mirrored, reaching the apple).
+- Events added in annotations: guard/eating `pickup` (drawing 4) + `bite` (7) (+ snap_to_ground
+  so he stands on the same floor as his snapped idle/walk; one flag to remove), ren/jump
+  `takeoff`/`land`, ren/climb_up `hands_on_ledge`/`on_top`. The `pickup` point is from drawing 02
+  before the snap shift (a few px).
+- No turn drawings exist: `turn` is a 120 ms hold then a mirror.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -484,7 +503,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 4: next is step 20 (runtime/).
+Phase 4: next is step 21 (ladders end to end).
 
 Phase 3 follow-ups (older list):
 1. On Windows: double-click `start_workbench.bat` (never run here) and review every action;

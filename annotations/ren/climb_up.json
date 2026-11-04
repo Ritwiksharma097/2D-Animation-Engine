@@ -375,5 +375,13 @@
    "timing": "played frame k at t = k/(n-1), as round(t*13) in the old demo"
   }
  },
- "contacts_note": "Contacts by the cloud assistant (not the owner): feet from the drawing's own floor line, hands from skin-colour palms or fingertips, checked by eye. Frames 2-7 reaching hand marked free; planted hands/knees are expected on the ledge top; feet may be on any surface. Revised: the trailing foot in drawings 8-12 is free (hanging); its position at the cell bottom comes only from lowest-pixel alignment. Phase 3: hand_r in drawings 2-7 is the fingertip (front-most arm pixel, its lowest point) and is planted on the ledge top, as the old demo pinned it; drawing 1's merged foot cluster is foot_r (the foot that stays)."
+ "contacts_note": "Contacts by the cloud assistant (not the owner): feet from the drawing's own floor line, hands from skin-colour palms or fingertips, checked by eye. Frames 2-7 reaching hand marked free; planted hands/knees are expected on the ledge top; feet may be on any surface. Revised: the trailing foot in drawings 8-12 is free (hanging); its position at the cell bottom comes only from lowest-pixel alignment. Phase 3: hand_r in drawings 2-7 is the fingertip (front-most arm pixel, its lowest point) and is planted on the ledge top, as the old demo pinned it; drawing 1's merged foot cluster is foot_r (the foot that stays).",
+ "events": {
+  "hands_on_ledge": {
+   "frame": 2
+  },
+  "on_top": {
+   "frame": 14
+  }
+ }
 }

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guard Demo</title>
+<style>
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; color:#1e1e1e; background:#f6f6f4; }
+  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; } h1 { font-size:16px; margin:0 0 4px; }
+  .note { color:#666; } .row { padding:6px 14px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+  canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; width:calc(100% - 28px); height:auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Guard: patrol, get distracted by food, return to patrol (on <code>runtime/anim.js</code>)</h1>
+  <div class="note">Click the floor to drop an apple. He walks to it (turning if needed), plays his approved eating action; the
+  apple prop is removed on the action's <code>pickup</code> event (his own drawn apple takes over) and "nom" shows on <code>bite</code>.
+  Then he goes back to patrolling. His walk is the rejected one (it slides), and his scale is unconfirmed.</div>
+</header>
+<div class="row"><label><input type="checkbox" id="dbg"> debug overlay</label> <span id="log" class="note"></span></div>
+<canvas id="cv" width="1200" height="420"></canvas>
+<script type="module">
+import { loadClips, World, Character, run } from "../../runtime/anim.js";
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d"), GROUND = 380;
+const clips = await loadClips(".", ["guard/idle", "guard/walk", "guard/eating"]);
+const world = new World({ floorY: GROUND });
+const guard = new Character({ id: "guard", clips, world, x: 200, names: { idle: "guard/idle", walk: "guard/walk", eat: "guard/eating" } });
+let food = null, nom = 0, log = [];
+const say = t => { log.unshift(t); log = log.slice(0, 4); document.getElementById("log").textContent = log.join("  |  "); };
+const eat = clips["guard/eating"], pick = eat.events.pickup;
+const reach = (pick.point[0] - eat.anchor[0]) * eat.scale;   // how far ahead of his anchor the drawn apple lies
+guard.on("pickup", () => { food = null; say("pickup: prop removed"); });
+guard.on("bite", () => { nom = 600; say("bite"); });
+guard.on("done", e => { if (e.command.type === "play" && e.command.role === "eat") say("finished eating: back to patrol"); });
+window.demo = { guard, world, clips, get food() { return food; } };
+
+cv.addEventListener("click", ev => {
+  const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) * cv.width / r.width;
+  if (food) return;
+  food = { x };
+  const dir = x >= guard.x ? 1 : -1;
+  guard.clear(); guard.queue.length = 0;
+  if (guard.state === "walk" || guard.state === "play") guard.next();   // interrupt the patrol at once
+  guard.walkTo(x - dir * reach);
+  if (dir !== guard.dir) guard.turn(dir);
+  guard.play("eat");
+  say(`apple dropped at ${x.toFixed(0)}`);
+});
+
+run([guard], dt => {
+  if (!guard.busy && !food) {   // patrol
+    const ends = [120, cv.width - 120];
+    guard.play("idle").walkTo(Math.abs(guard.x - ends[0]) < Math.abs(guard.x - ends[1]) ? ends[1] : ends[0]);
+  }
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = "#d6ccba"; ctx.fillRect(0, GROUND, cv.width, cv.height - GROUND);
+  if (food) { ctx.fillStyle = "#c81e28"; ctx.beginPath(); ctx.arc(food.x, GROUND - 9, 9, 0, 7); ctx.fill(); ctx.fillStyle = "#3a6b20"; ctx.fillRect(food.x - 1, GROUND - 22, 3, 6); }
+  guard.draw(ctx);
+  if (document.getElementById("dbg").checked) guard.drawDebug(ctx);
+  if (nom > 0) { nom -= dt; ctx.fillStyle = "#333"; ctx.font = "bold 18px system-ui"; ctx.fillText("nom", guard.x + guard.dir * 30, guard.y - 220); }
+});
+document.body.dataset.ready = "1";
+</script>
+</body>
+</html>

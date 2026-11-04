@@ -462,6 +462,14 @@
   "uneven_overall",
   "uneven_stall"
  ],
+ "events": {
+  "hands_on_ledge": {
+   "frame": 1
+  },
+  "on_top": {
+   "frame": 13
+  }
+ },
  "path": [
   [
    0.0,

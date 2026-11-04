@@ -139,3 +139,9 @@ python workbench/intake.py path\to\frames_folder --character ren --action walk_8
 ```
 
 Writes `incoming/<character>/<action>/` (never `assets/`); the review page shows it as "new, awaiting owner".
+
+## Runtime ("engine")
+
+`runtime/anim.js` plays exports in any page (API in `runtime/README.md`). Demos:
+http://localhost:8000/out/export/play.html and http://localhost:8000/out/export/guard_demo.html.
+Tests: `node --test runtime/test`.

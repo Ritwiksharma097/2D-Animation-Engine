@@ -272,6 +272,14 @@
   "uneven_overall",
   "uneven_stall"
  ],
+ "events": {
+  "takeoff": {
+   "frame": 4
+  },
+  "land": {
+   "frame": 7
+  }
+ },
  "jump": {
   "air_frames": [
    4,

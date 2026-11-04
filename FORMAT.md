@@ -192,3 +192,9 @@ one place.
 cell, ground y, head x and where they came from); `scale` (uniform); `frames[]` with `file`,
 `offset` (where the trimmed figure was placed in the cell), `size`, `clipped_by_cell`; `alignment`.
 Reviews of intakes use the key `<character>/incoming__<action>`.
+
+## Events (annotation `events` -> export `events`)
+
+`"events": {"pickup": {"frame": 4, "point": [400.9, 519.0], "note": "..."}}` in an action document;
+`frame` is the 1-based drawing number. The export converts it to the 0-based played-frame index.
+`point` (optional, cell px of that drawing, before edits) is passed to the runtime as a world point.
