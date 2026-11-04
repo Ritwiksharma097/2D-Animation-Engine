@@ -49,15 +49,21 @@ class Viewer {
     const st = $(this.el, ".status"); st.textContent = this.info.status; st.className = "status " + this.info.status;
     $(this.el, ".feedback").textContent = this.info.feedback || "";
     this.ann = null; this.report = null;
-    try { this.ann = await getJSON(`${ANN}${c}/${a}.json`); } catch (e) { /* no annotations yet */ }
-    try { this.report = await getJSON(`${OUT}${c}/${a}/report.json`); } catch (e) { /* not analysed yet */ }
+    if (!this.raw) try { this.ann = await getJSON(`${ANN}${c}/${a}.json`); } catch (e) { /* no annotations yet */ }
+    if (this.raw) st.textContent += "  (original: annotations and edits ignored)";
+    // the raw viewer needs the report of the unedited frames: analyze.py --no-annotations --tag original
+    try { this.report = await getJSON(`${OUT}${c}/${a}${this.raw ? "__original" : ""}/report.json`); } catch (e) { /* not analysed yet */ }
     const defMs = this.ann?.default_duration_ms ?? Math.round(1000 / 12);
     const list = this.ann?.frames?.length ? this.ann.frames
       : Array.from({ length: this.info.frames }, (_, i) => ({ file: `${pad2(i + 1)}.png` }));
+    const imgs = {};
     this.frames = await Promise.all(list.map(async f => ({
       file: f.file, duration_ms: f.duration_ms ?? defMs, contacts: structuredClone(f.contacts || {}), note: f.note,
-      img: await loadImage(`${ASSETS}${this.info.dir}/${f.file}`),
+      hold: f.hold || 1, drop: !!f.drop, offset: f.offset ? [...f.offset] : [0, 0], snap: f.snap_to_ground,
+      img: await (imgs[f.file] ??= loadImage(`${ASSETS}${this.info.dir}/${f.file}`)),
     })));
+    this.edits = { mirror: !!this.ann?.mirror, snap: !!this.ann?.snap_to_ground };
+    this.baselines = {};
     $(this.el, ".loop-mode").value = this.ann?.loop_mode || (this.info.loop ? "loop" : "once");
     this.cell = this.info.cell_size || manifest.conventions.cell_size;
     this.groundY = this.ann?.ground_anchor?.y ?? this.info.ground_y ?? manifest.conventions.ground_y;
@@ -68,20 +74,56 @@ class Viewer {
     else if (t?.mode === "per_frame") tm.value = "perframe";
     else { tm.value = "constant"; tp.value = +(t?.px_per_frame ?? this.report?.settings?.travel_px_per_frame ?? walk?.recommended_travel_px ?? 12).toFixed(1); }
     $(this.el, ".all-ms").value = defMs;
+    $(this.el, ".e-mirror").checked = this.edits.mirror; $(this.el, ".e-snap").checked = this.edits.snap;
     this.tintCache.clear(); this.dirty = false;
     this.rebuildSeq(); this.pos = 0; this.resetWorld();
+    $(this.el, ".edits-note").textContent = this.ann?.edits_note || "";
     this.renderTimeline(); this.renderFlags(); this.renderContacts(); this.resize(); this.draw();
   }
 
   rebuildSeq() {
-    const n = this.frames.length, m = this.loopMode;
-    this.seq = [...Array(n).keys()];
-    if (m === "pingpong" && n > 2) for (let i = n - 2; i > 0; i--) this.seq.push(i);
+    const kept = [...this.frames.keys()].filter(i => !this.frames[i].drop), n = kept.length;
+    this.seq = kept.length ? [...kept] : [0];
+    if (this.loopMode === "pingpong" && n > 2) for (let k = n - 2; k > 0; k--) this.seq.push(kept[k]);
     const sc = $(this.el, ".scrub"); sc.max = this.seq.length - 1;
     this.pos = Math.min(this.pos, this.seq.length - 1);
   }
 
-  resetWorld() { this.worldX = 0; this.pins = {}; this.lastSlide = null; }
+  resetWorld() { this.worldX = this.sign > 0 ? 0 : STAGE_W - this.cell[0]; this.pins = {}; this.lastSlide = null; }
+
+  // ---------------- edit layer (FORMAT.md "Edits"): mirror, then offset, then snap-to-ground
+  get sign() { return this.edits?.mirror ? -1 : 1; }
+  dur(i) { const f = this.frames[i]; return f.duration_ms * (f.hold || 1); }
+
+  baseline(i) {
+    const key = this.frames[i].file;
+    if (!(key in this.baselines)) {
+      const img = this.frames[i].img, c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+      const x = c.getContext("2d"); x.drawImage(img, 0, 0);
+      const a = x.getImageData(0, 0, c.width, c.height).data; let low = null;
+      for (let y = c.height - 1; y >= 0 && low === null; y--) for (let xx = 0; xx < c.width; xx++) if (a[(y * c.width + xx) * 4 + 3] > 128) { low = y; break; }
+      this.baselines[key] = low ?? this.groundY;
+    }
+    return this.baselines[key];
+  }
+
+  xf(i) {
+    const f = this.frames[i];
+    let dy = +f.offset[1] || 0;
+    if (f.snap ?? this.edits.snap) {
+      const feet = Object.entries(f.contacts).filter(([n, c]) => c.state === "planted" && (c.surface || "ground") === "ground" && /^(foot|toe|heel)_/.test(n));
+      dy += this.groundY - (feet.length ? Math.max(...feet.map(([, c]) => c.y)) : this.baseline(i));
+    }
+    return { mirror: this.edits.mirror, dx: Math.round(+f.offset[0] || 0), dy: Math.round(dy) };
+  }
+  toView(i, c) { const t = this.xf(i); return { x: (t.mirror ? this.cell[0] - 1 - c.x : c.x) + t.dx, y: c.y + t.dy }; }
+  fromView(i, p) { const t = this.xf(i), x = p.x - t.dx; return { x: t.mirror ? this.cell[0] - 1 - x : x, y: p.y - t.dy }; }
+  drawFrame(ctx, i, img, ox) {
+    const t = this.xf(i); ctx.save();
+    ctx.translate(ox + t.dx + (t.mirror ? this.cell[0] : 0), t.dy); if (t.mirror) ctx.scale(-1, 1);
+    ctx.drawImage(img, 0, 0); ctx.restore();
+  }
+  reportIndex(i) { const e = this.report?.entries; return e ? e.indexOf(i) : i; }
 
   // ---------------- travel
   travelFor(a, b) {
@@ -93,7 +135,8 @@ class Viewer {
     else if (tm === "perframe") {
       if (!walk) { v = 0; note = "no report"; }
       else {
-        const k = walk.steps.findIndex(([i, j]) => (i === a && j === b) || (i === b && j === a));
+        const ra = this.reportIndex(a), rb = this.reportIndex(b);
+        const k = walk.steps.findIndex(([i, j]) => (i === ra && j === rb) || (i === rb && j === ra));
         v = k >= 0 ? (walk.recommended_per_frame_travel_px[k] ?? walk.recommended_travel_px) : walk.recommended_travel_px;
         note = "per-frame from report";
       }
@@ -112,14 +155,16 @@ class Viewer {
       for (const [name, c] of Object.entries(this.frames[i].contacts))
         if (c.state === "planted") {
           const d = this.frames[j].contacts[name];
-          if (d && d.state === "planted" && (d.surface || "ground") === (c.surface || "ground")) ds.push(c.x - d.x);
+          if (d && d.state === "planted" && (d.surface || "ground") === (c.surface || "ground"))
+            ds.push(this.sign * (this.toView(i, c).x - this.toView(j, d).x));
         }
       return ds.length ? ds.reduce((s, x) => s + x, 0) / ds.length : null;
     };
     const v = step(a, b);
     if (v !== null) return { value: v, note: "from shared planted contact" };
     const all = [];
-    for (let i = 0; i < this.frames.length; i++) { const w = step(i, (i + 1) % this.frames.length); if (w !== null) all.push(w); }
+    const kept = this.seq.slice(0, [...new Set(this.seq)].length);
+    for (let k = 0; k < kept.length; k++) { const w = step(kept[k], kept[(k + 1) % kept.length]); if (w !== null) all.push(w); }
     if (!all.length) return { value: 0, note: "no shared planted contacts annotated" };
     return { value: all.reduce((s, x) => s + x, 0) / all.length, note: "no shared contact on this step: mean used" };
   }
@@ -140,7 +185,7 @@ class Viewer {
     this.pos = np;
     if (this.mode === "moving") {
       const t = dir > 0 ? this.travelFor(prev, this.idx) : -this.travelFor(this.idx, prev);
-      this.worldX += t;
+      this.worldX += this.sign * t;
       if (this.worldX > STAGE_W - 520 || this.worldX < -200) { this.worldX = this.worldX > 0 ? -150 : STAGE_W - 600; this.pins = {}; }
       this.updatePins(prev);
     }
@@ -153,8 +198,8 @@ class Viewer {
     if (!this.playing || !this.frames.length) return;
     this.elapsed += dt * parseFloat($(this.el, ".speed").value);
     let guard = 0;
-    while (this.playing && this.elapsed >= this.frame.duration_ms && guard++ < 50) {
-      const over = this.elapsed - this.frame.duration_ms;
+    while (this.playing && this.elapsed >= this.dur(this.idx) && guard++ < 50) {
+      const over = this.elapsed - this.dur(this.idx);
       this.advance(1); this.elapsed = over;
     }
     this.syncUI(); this.draw();
@@ -162,9 +207,9 @@ class Viewer {
 
   // contacts for a frame: annotated ones, else heuristic estimates from report.json
   contactsOf(i) {
-    const ann = Object.entries(this.frames[i].contacts).map(([name, c]) => ({ name, ...c, est: false }));
+    const ann = Object.entries(this.frames[i].contacts).map(([name, c]) => ({ name, ...c, ...this.toView(i, c), est: false }));
     if (ann.length) return ann;
-    const fc = this.report?.metrics?.feet?.[i]?.clusters || [];
+    const fc = this.report?.metrics?.feet?.[this.reportIndex(i)]?.clusters || [];  // measured on edited frames already
     return fc.map((c, k) => ({ name: `est${k}`, x: c.x, y: c.y, state: c.planted ? "planted" : "free", est: true }));
   }
 
@@ -240,11 +285,11 @@ class Viewer {
     // onion skin (in place only; in moving mode it would need past world offsets)
     if (!moving) {
       const back = +$(this.el, ".onion-back").value, ahead = +$(this.el, ".onion-ahead").value, op = +$(this.el, ".onion-op").value / 100;
-      for (let k = back; k >= 1; k--) { const i = this.seqAt(-k); if (i !== null) { ctx.globalAlpha = op * (1 - (k - 1) / (back + 1)); ctx.drawImage(this.tinted(i, COL.early), 0, 0); } }
-      for (let k = ahead; k >= 1; k--) { const i = this.seqAt(k); if (i !== null) { ctx.globalAlpha = op * (1 - (k - 1) / (ahead + 1)); ctx.drawImage(this.tinted(i, COL.late), 0, 0); } }
+      for (let k = back; k >= 1; k--) { const i = this.seqAt(-k); if (i !== null) { ctx.globalAlpha = op * (1 - (k - 1) / (back + 1)); this.drawFrame(ctx, i, this.tinted(i, COL.early), 0); } }
+      for (let k = ahead; k >= 1; k--) { const i = this.seqAt(k); if (i !== null) { ctx.globalAlpha = op * (1 - (k - 1) / (ahead + 1)); this.drawFrame(ctx, i, this.tinted(i, COL.late), 0); } }
       ctx.globalAlpha = 1;
     }
-    ctx.drawImage(this.frame.img, ox, 0);
+    this.drawFrame(ctx, this.idx, this.frame.img, ox);
     // contacts
     for (const c of this.contactsOf(this.idx)) {
       const x = ox + c.x, y = c.y, r = 7 / z;
@@ -274,12 +319,16 @@ class Viewer {
   syncUI() {
     $(this.el, ".scrub").value = this.pos;
     const flags = this.flagsFor(this.idx);
-    $(this.el, ".frame-label").textContent = `frame ${this.idx + 1}/${this.frames.length} (${this.frame.file}, ${this.frame.duration_ms} ms)${flags.length ? "  flags: " + flags.join(", ") : ""}`;
+    const f = this.frame;
+    $(this.el, ".frame-label").textContent = `entry ${this.idx + 1}/${this.frames.length} (${f.file}, ${this.dur(this.idx)} ms${f.hold > 1 ? `, held x${f.hold}` : ""})${flags.length ? "  flags: " + flags.join(", ") : ""}`;
+    $(this.el, ".e-dx").value = f.offset[0]; $(this.el, ".e-dy").value = f.offset[1];
+    $(this.el, ".e-hold").value = f.hold; $(this.el, ".e-drop").checked = f.drop;
+    $(this.el, ".e-snapinfo").textContent = (f.snap ?? this.edits.snap) ? `snap moves this frame ${this.xf(this.idx).dy - Math.round(+f.offset[1] || 0)} px` : "";
     for (const t of this.el.querySelectorAll(".tl")) t.classList.toggle("cur", +t.dataset.i === this.idx);
     this.renderContacts();
   }
 
-  flagsFor(i) { return (this.report?.flags || []).filter(f => f.frames.includes(i + 1)).map(f => f.code); }
+  flagsFor(i) { const k = this.reportIndex(i); return k < 0 ? [] : (this.report?.flags || []).filter(f => f.frames.includes(k + 1)).map(f => f.code); }
 
   renderTimeline() {
     const tl = $(this.el, ".timeline"); tl.innerHTML = "";
@@ -291,6 +340,8 @@ class Viewer {
       const inp = document.createElement("input"); inp.type = "number"; inp.min = 10; inp.step = 10; inp.value = f.duration_ms; inp.title = "duration ms";
       inp.onchange = () => { f.duration_ms = Math.max(10, +inp.value); this.dirty = true; this.syncUI(); };
       inp.onclick = e => e.stopPropagation();
+      if (f.drop) { d.style.opacity = 0.35; n.textContent += " dropped"; }
+      if (f.hold > 1) n.textContent += ` x${f.hold}`;
       d.append(c, n, inp);
       const fl = this.flagsFor(i);
       if (fl.length) { const dot = document.createElement("span"); dot.className = "flagdot"; dot.title = fl.join(", "); d.appendChild(dot); }
@@ -303,12 +354,13 @@ class Viewer {
   renderFlags() {
     const box = $(this.el, ".flags"); box.innerHTML = "";
     const r = this.report;
-    $(this.el, ".summary").textContent = r ? r.summary : "No report.json yet: run  python workbench/analyze.py " + `${this.char} ${this.action}`;
+    $(this.el, ".summary").textContent = r ? r.summary : "No report.json yet: run  python workbench/analyze.py " + `${this.char} ${this.action}` + (this.raw ? " --no-annotations --tag original" : "");
     for (const f of r?.flags || []) {
       const d = document.createElement("div"); d.className = "flag";
       d.innerHTML = `<code>${f.code}</code> ${f.frames.length ? "[" + f.frames.join(",") + "] " : ""}`;
       d.appendChild(document.createTextNode(f.message));
-      if (f.frames.length) d.onclick = () => { this.setPlaying(false); this.jump(this.seq.indexOf(f.frames[0] - 1)); };
+      const entry = this.report.entries ? this.report.entries[f.frames[0] - 1] : f.frames[0] - 1;
+      if (f.frames.length) d.onclick = () => { this.setPlaying(false); this.jump(Math.max(0, this.seq.indexOf(entry))); };
       box.appendChild(d);
     }
   }
@@ -341,7 +393,7 @@ class Viewer {
 
   nearest(p, maxd) {
     let best = null, bd = maxd;
-    for (const [name, c] of Object.entries(this.frame.contacts)) { const d = Math.hypot(c.x - p.x, c.y - p.y); if (d < bd) { bd = d; best = name; } }
+    for (const [name, c] of Object.entries(this.frame.contacts)) { const v = this.toView(this.idx, c), d = Math.hypot(v.x - p.x, v.y - p.y); if (d < bd) { bd = d; best = name; } }
     return best;
   }
 
@@ -354,7 +406,8 @@ class Viewer {
     else if (near) this.drag = near;
     else {
       const name = $(this.el, ".c-custom").value.trim() || $(this.el, ".c-name").value;
-      this.frame.contacts[name] = { x: +p.x.toFixed(1), y: +p.y.toFixed(1), state: $(this.el, ".c-state").value, surface: "ground" };
+      const q = this.fromView(this.idx, p);
+      this.frame.contacts[name] = { x: +q.x.toFixed(1), y: +q.y.toFixed(1), state: $(this.el, ".c-state").value, surface: "ground" };
       this.drag = name; this.dirty = true;
     }
     this.renderContacts(); this.draw();
@@ -362,7 +415,7 @@ class Viewer {
 
   onMove(e) {
     if (!this.drag) return;
-    const p = this.cellPoint(e), c = this.frame.contacts[this.drag];
+    const p = this.fromView(this.idx, this.cellPoint(e)), c = this.frame.contacts[this.drag];
     c.x = +p.x.toFixed(1); c.y = +p.y.toFixed(1); this.dirty = true; this.draw();
   }
 
@@ -373,13 +426,21 @@ class Viewer {
     else if (tm === "best" && walk) travel = { mode: "constant", px_per_frame: walk.recommended_travel_px };
     else if (tm === "perframe" && walk) travel = { mode: "per_frame", px_per_frame: walk.recommended_per_frame_travel_px };
     else travel = { mode: "from_contacts" };
+    const extra = { ...(this.ann || {}) };
+    delete extra.mirror; delete extra.snap_to_ground;
     return {
+      ...extra,
+      ...(this.edits.mirror ? { mirror: true } : {}), ...(this.edits.snap ? { snap_to_ground: true } : {}),
       format: "workbench-action/1", character: this.char, action: this.action, source_dir: this.info.dir,
       cell_size: this.cell, loop_mode: this.loopMode,
       default_duration_ms: +$(this.el, ".all-ms").value || 83, ground_anchor: { y: this.groundY }, facing: "right", travel,
       frames: this.frames.map(f => {
         const o = { file: f.file, duration_ms: f.duration_ms };
         if (Object.keys(f.contacts).length) o.contacts = f.contacts;
+        if (f.hold > 1) o.hold = f.hold;
+        if (f.drop) o.drop = true;
+        if (+f.offset[0] || +f.offset[1]) o.offset = [+f.offset[0], +f.offset[1]];
+        if (f.snap !== undefined) o.snap_to_ground = f.snap;
         if (f.note) o.note = f.note;
         return o;
       }),
@@ -430,6 +491,20 @@ class Viewer {
     on(".b-save", "click", () => this.save());
     on(".b-download", "click", () => this.download());
     on(".b-analyze", "click", () => this.reanalyze());
+    const edited = () => { this.dirty = true; this.rebuildSeq(); this.renderTimeline(); this.resetWorld(); this.draw(); };
+    on(".e-dx", "change", e => { this.frame.offset[0] = +e.target.value || 0; edited(); });
+    on(".e-dy", "change", e => { this.frame.offset[1] = +e.target.value || 0; edited(); });
+    on(".e-hold", "change", e => { this.frame.hold = Math.max(1, Math.round(+e.target.value || 1)); edited(); });
+    on(".e-drop", "change", e => { this.frame.drop = e.target.checked; edited(); });
+    on(".e-mirror", "change", e => { this.edits.mirror = e.target.checked; this.tintCache.clear(); edited(); });
+    on(".e-snap", "change", e => { this.edits.snap = e.target.checked; edited(); });
+    on(".b-suggest", "click", async () => {
+      try {
+        const r = await fetch(`/api/suggest-idle?character=${this.char}&action=${this.action}`, { method: "POST" });
+        const j = await r.json(); if (!r.ok) throw new Error(j.error);
+        await this.load(`${this.char}/${this.action}`); msg("Idle holds suggested and saved: " + j.summary);
+      } catch (e) { msg("Suggest needs workbench/serve.py: " + e.message + "  (CLI: python workbench/edits.py suggest-idle " + `${this.char} ${this.action} --write)`); }
+    });
   }
 }
 
@@ -455,7 +530,9 @@ async function init() {
   const mk = async (initial, hidden, prefix) => {
     const el = tpl.content.firstElementChild.cloneNode(true); if (hidden) el.classList.add("hidden");
     main.appendChild(el);
-    const v = new Viewer(el, initial); viewers.push(v); await v.load(initial); applyParams(v, prefix); return v;
+    const v = new Viewer(el, initial); viewers.push(v);
+    v.raw = params.get(prefix + "raw") === "1";
+    await v.load(initial); applyParams(v, prefix); return v;
   };
   await mk(params.get("a") || "guard/walk", false, "a.");
   const b = await mk(params.get("b") || "ren/walk_keypose", !params.get("b"), "b.");

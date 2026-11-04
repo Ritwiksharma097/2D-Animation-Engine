@@ -112,6 +112,19 @@
         <button class="b-analyze" title="needs workbench/serve.py">Re-run analysis</button>
       </div>
       <div class="box">
+        <h3>Edits (stored in annotations/, assets untouched)</h3>
+        <div class="row"><label><input type="checkbox" class="e-mirror"> mirror</label>
+          <label><input type="checkbox" class="e-snap"> snap to ground</label>
+          <button class="b-suggest" title="needs workbench/serve.py">Suggest idle holds</button></div>
+        <div class="row"><label>this frame: dx</label><input class="e-dx" type="number" step="1">
+          <label>dy</label><input class="e-dy" type="number" step="1">
+          <label>hold</label><input class="e-hold" type="number" min="1" step="1">
+          <label><input type="checkbox" class="e-drop"> drop</label></div>
+        <div class="row"><span class="e-snapinfo" style="color:var(--muted)"></span></div>
+        <div class="edits-note" style="color:var(--muted)"></div>
+        <div style="color:var(--muted)">Frame order = the document's list; save, then "Re-run analysis" to update flags.</div>
+      </div>
+      <div class="box">
         <h3>Contacts on this frame</h3>
         <div class="row">
           <label>point</label>

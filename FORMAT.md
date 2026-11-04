@@ -81,3 +81,29 @@ Written by `workbench/analyze.py`. Top level: `character`, `action`, `source`, `
 `{"level": "suspect", "code": ..., "frames": [...], "message": ...}`), `limits` (one sentence
 per heuristic saying what it cannot tell), and `summary` (plain English). Flags are only ever
 `suspect`; absence of a flag is not a pass.
+
+## Edits (non-destructive)
+
+Fixes live in the same action document and are applied by `workbench/edits.py` (analysis, export)
+and by the browser workbench (preview). `assets/` is never changed.
+
+| Field | Level | Meaning |
+| --- | --- | --- |
+| `frames` order | action | Playback order. An entry may name the same file as another entry. |
+| `frames[].hold` | frame | Integer >= 1. The drawing stays on screen for `hold` x `duration_ms`. |
+| `frames[].drop` | frame | `true` = kept in the document (so the change is visible) but not played or analysed. |
+| `frames[].offset` | frame | `[dx, dy]` in cell px, applied after mirroring. |
+| `snap_to_ground` | action, or frame override | Adds a vertical shift so the lowest planted ground foot/heel/toe contact, or, without contacts, the lowest opaque pixel, sits on `ground_anchor.y`. Added to `offset[1]`. |
+| `mirror` | action | Flip each frame horizontally about the cell (x' = width - 1 - x). Facing flips, so travel runs the other way. |
+| `edits_note` | action | Free text: why the edits were made (auto-suggest writes one). |
+
+Order of operations per frame: mirror, then `offset`, then snap. **Contacts are stored in source
+(unedited) coordinates** and transformed with the frame, so changing an offset never invalidates
+annotations. Reports list `entries` (document index of each analysed frame) because frame numbers
+in a report count played frames only.
+
+Auto-suggest for idles (`python workbench/edits.py suggest-idle <character> <action> --write`):
+consecutive frames whose silhouette is within the near-duplicate threshold (3%) of the run's first
+drawing become one entry with `hold` = run length; the absorbed frames are marked `drop`. Each held
+pose lasts run length x base duration x 2, clamped to 250-1500 ms. It refuses to overwrite a
+document that already has contacts or holds.

@@ -17,6 +17,7 @@ from playwright.sync_api import sync_playwright
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from screenshot_workbench import ROOT, SHOTS, free_port, launch  # noqa: E402
+sys.path.insert(0, str(HERE.parent))
 
 results: list[tuple[str, bool, str]] = []
 
@@ -83,7 +84,7 @@ def main():
             check("unsaved edits are not written", n == 2, f"{n} contacts after reload")
 
             # ---- ping-pong: step with the next button and record the order
-            open_page(page, base, "#a=guard/idle&zoom=0.5")
+            open_page(page, base, "#a=guard/idle&a.raw=1&zoom=0.5")  # raw: 14 frames, no holds/drops
             v = page.locator("section.viewer").first
             v.locator(".loop-mode").select_option("pingpong")
             order = [page.evaluate("workbench.viewers[0].idx")]
@@ -118,6 +119,37 @@ def main():
             ok = abs(mean.get(1, 0) - 1000) < 60 and abs(mean.get(3, 0) - 400) < 40 and abs(mean.get(2, 0) - 83) < 30
             check("durations drive playback", ok, f"set {durs} ms; measured mean hold per frame {mean}")
             page.screenshot(path=str(SHOTS / "12_durations.png"), full_page=True)
+            # ---- edit layer: guard idle holds/drops from annotations/guard/idle.json
+            open_page(page, base, "#a=guard/idle&b=guard/idle&b.raw=1&zoom=0.5")
+            seq = page.evaluate("workbench.viewers[0].seq")
+            doc = __import__("json").loads((ROOT / "annotations/guard/idle.json").read_text())
+            kept = [i for i, e in enumerate(doc["frames"]) if not e.get("drop")]
+            check("dropped entries leave playback", seq == kept, f"seq {seq} vs kept entries {kept}")
+            durs = page.evaluate("workbench.viewers[0].seq.map(i => workbench.viewers[0].dur(i))")
+            want = [e["duration_ms"] * e.get("hold", 1) for e in doc["frames"] if not e.get("drop")]
+            check("hold x duration used for playback", all(abs(a - b) < 0.5 for a, b in zip(durs, want)), f"{[round(d) for d in durs]} ms")
+            raw = page.evaluate("[workbench.viewers[1].seq.length, workbench.viewers[1].ann]")
+            check("raw viewer ignores edits", raw[0] == 14 and raw[1] is None, f"raw viewer plays {raw[0]} frames")
+            import edits as _ed, analyze as _an
+            low = _ed.lowest_pixel(_an.load_rgba(ROOT / "assets/guard/idle/01.png"))
+            snap = page.evaluate("workbench.viewers[0].xf(0).dy")
+            check("snap moves floating idle to ground", snap == 535 - low, f"frame 1 dy {snap} (lowest pixel {low} -> 535)")
+            page.screenshot(path=str(SHOTS / "14_idle_edits_vs_original.png"), full_page=True)
+
+            # ---- mirror: contact display + drag mapping stay consistent
+            open_page(page, base, "#a=ren/walk_keypose&zoom=1&frame=1")
+            v = page.locator("section.viewer").first
+            v.locator(".e-mirror").check()
+            view = page.evaluate("workbench.viewers[0].contactsOf(0).find(c => c.name === 'heel_l')")
+            check("mirror flips contact display", abs(view["x"] - (639 - 403)) < 0.6, f"heel_l shown at x={view['x']:.1f} (639-403=236)")
+            x, y = canvas_point(page, view["x"], view["y"])
+            page.mouse.move(x, y); page.mouse.down(); page.mouse.move(x + 20, y); page.mouse.up()
+            src = page.evaluate("workbench.viewers[0].frames[0].contacts.heel_l.x")
+            check("drag on mirrored frame edits source coords", abs(src - (403 - 20)) < 1.5, f"source x {src:.1f} (expected 383)")
+            page.screenshot(path=str(SHOTS / "15_mirror.png"), full_page=True)
+            t = page.evaluate("[workbench.viewers[0].sign, workbench.viewers[0].contactTravel(0, 1).value]")
+            check("mirrored travel still positive along facing", t[0] == -1 and t[1] > 0, f"sign {t[0]}, travel {t[1]:.1f}")
+
             check("no page errors", not errors, "; ".join(errors) or "none")
             br.close()
     finally:

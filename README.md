@@ -67,3 +67,17 @@ Screenshots for visual checks: `python workbench/tests/screenshot_workbench.py` 
 
 Interaction checks (assert drag, shift-click delete, ping-pong, durations):
 `python workbench/tests/ui_checks.py`.
+
+## Non-destructive edits
+
+Order, holds, drops, durations, per-frame offsets, snap-to-ground and mirror are stored in
+`annotations/<character>/<action>.json` (FORMAT.md, "Edits") and applied by analysis and the page.
+
+```
+python workbench/edits.py suggest-idle guard idle --write   # group near-duplicates into held poses
+python workbench/edits.py snap guard walk --write           # feet onto ground_y
+python workbench/analyze.py guard idle --no-annotations --tag original   # the "before" report
+python workbench/analyze.py guard idle
+```
+
+Compare in the browser: http://localhost:8000/workbench/#a=guard/idle&b=guard/idle&b.raw=1&play=1

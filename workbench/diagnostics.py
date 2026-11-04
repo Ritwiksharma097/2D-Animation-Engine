@@ -505,6 +505,58 @@ def identity_sheet(act, report, max_frames=8, scale=0.5):
     return stack([hd, im, sw])
 
 
+# ------------------------------------------------------------------ timing strip
+
+def timing_strip(act, report, px_per_ms=0.35, thumb_h=150):
+    """Each played frame as a thumbnail whose width is proportional to how long it is on screen."""
+    x0, y0, x1, y1 = union_bbox(act.frames, ground_y=act.ground_y)
+    total = sum(act.durations_ms)
+    W = int(total * px_per_ms) + 20
+    im = Image.new("RGB", (max(W, 640), thumb_h + 60), BG)
+    d = ImageDraw.Draw(im)
+    tw = int((x1 - x0) * thumb_h / (y1 - y0))
+    x = 10
+    for i, (f, ms) in enumerate(zip(act.frames, act.durations_ms)):
+        w = max(2, int(ms * px_per_ms))
+        d.rectangle([x, 20, x + w - 2, 20 + thumb_h], fill=(246, 246, 244), outline=GRID)
+        t = to_pil(f).crop((x0, y0, x1, y1)).resize((tw, thumb_h), Image.LANCZOS)
+        if w >= 12:
+            crop = t.crop((max(0, (tw - w + 2) // 2), 0, max(0, (tw - w + 2) // 2) + min(tw, w - 2), thumb_h))
+            im.paste(crop, (x + max(0, (w - 2 - crop.width) // 2), 20), crop)
+        label = act.files[i].name.removesuffix(".png") + (f" x{report['metrics']['holds'][i]}" if report["metrics"].get("holds") and report["metrics"]["holds"][i] > 1 else "")
+        d.text((x + 2, 4), label, fill=INK, font=font(11))
+        d.text((x + 2, 24 + thumb_h), f"{ms:.0f}ms", fill=MUTED, font=font(10))
+        x += w
+    for t_ms in range(0, int(total) + 1, 250):
+        xx = 10 + t_ms * px_per_ms
+        d.line([(xx, 40 + thumb_h), (xx, 48 + thumb_h)], fill=MUTED)
+        if t_ms % 500 == 0:
+            d.text((xx + 2, 44 + thumb_h), f"{t_ms / 1000:.1f}s", fill=MUTED, font=font(10))
+    hd = header(im.width, [title_line(report) + "  -  timing", f"One cycle = {total / 1000:.2f} s. Width of each cell = time on screen "
+                           f"({px_per_ms * 1000:.0f} px per second); label = source drawing (xN = held for N frames)."], 13)
+    return stack([hd, im])
+
+
+def before_after(character, action, names=("contact_sheet.png", "charts.png"), before_tag="original"):
+    """Stack the original (left) and edited (right) versions of the given diagnostics into before_after.png."""
+    import analyze
+    a_dir, b_dir = analyze.output_dir(character, action, before_tag), analyze.output_dir(character, action)
+    rows = []
+    for n in names:
+        if not (a_dir / n).exists() or not (b_dir / n).exists():
+            continue
+        L, R = Image.open(a_dir / n).convert("RGB"), Image.open(b_dir / n).convert("RGB")
+        row = Image.new("RGB", (L.width + R.width + 20, max(L.height, R.height) + 24), BG)
+        dd = ImageDraw.Draw(row)
+        dd.text((10, 4), f"BEFORE (assets as-is): {n}", fill=RED, font=font(14))
+        dd.text((L.width + 30, 4), f"AFTER (annotations/{character}/{action}.json edits): {n}", fill=AQUA, font=font(14))
+        row.paste(L, (0, 24)); row.paste(R, (L.width + 20, 24))
+        rows.append(row)
+    out = stack(rows)
+    out.save(b_dir / "before_after.png", optimize=True)
+    return b_dir / "before_after.png"
+
+
 # ------------------------------------------------------------------ entry
 
 def write_all(act, report, out_dir: Path) -> dict:
@@ -521,6 +573,7 @@ def write_all(act, report, out_dir: Path) -> dict:
     save("onion.png", onion(act, report))
     save("charts.png", charts(act, report))
     save("identity.png", identity_sheet(act, report))
+    save("timing.png", timing_strip(act, report))
     walk = report["metrics"]["walk"]
     if walk:
         save("world_strip.png", world_strip(act, report, label=f"at {walk['travel_used_px']:.1f} px/frame{' mean' if walk['travel_used_per_step_px'] else ''} ({walk['travel_used_source']})"))

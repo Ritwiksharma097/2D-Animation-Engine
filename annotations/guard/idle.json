@@ -1,0 +1,104 @@
+{
+ "format": "workbench-action/1",
+ "character": "guard",
+ "action": "idle",
+ "source_dir": "guard/idle",
+ "cell_size": [
+  640,
+  576
+ ],
+ "loop_mode": "loop",
+ "default_duration_ms": 83.3,
+ "ground_anchor": {
+  "y": 535
+ },
+ "facing": "right",
+ "frames": [
+  {
+   "file": "01.png",
+   "hold": 1,
+   "duration_ms": 250.0,
+   "note": "auto-suggest"
+  },
+  {
+   "file": "02.png",
+   "hold": 1,
+   "duration_ms": 250.0,
+   "note": "auto-suggest"
+  },
+  {
+   "file": "03.png",
+   "hold": 1,
+   "duration_ms": 250.0,
+   "note": "auto-suggest"
+  },
+  {
+   "file": "04.png",
+   "hold": 8,
+   "duration_ms": 166.6,
+   "note": "auto-suggest: holds frames 4-11"
+  },
+  {
+   "file": "05.png",
+   "drop": true,
+   "duration_ms": 83.3,
+   "note": "auto-suggest: near-duplicate of frame 4, absorbed into its hold"
+  },
+  {
+   "file": "06.png",
+   "drop": true,
+   "duration_ms": 83.3,
+   "note": "auto-suggest: near-duplicate of frame 4, absorbed into its hold"
+  },
+  {
+   "file": "07.png",
+   "drop": true,
+   "duration_ms": 83.3,
+   "note": "auto-suggest: near-duplicate of frame 4, absorbed into its hold"
+  },
+  {
+   "file": "08.png",
+   "drop": true,
+   "duration_ms": 83.3,
+   "note": "auto-suggest: near-duplicate of frame 4, absorbed into its hold"
+  },
+  {
+   "file": "09.png",
+   "drop": true,
+   "duration_ms": 83.3,
+   "note": "auto-suggest: near-duplicate of frame 4, absorbed into its hold"
+  },
+  {
+   "file": "10.png",
+   "drop": true,
+   "duration_ms": 83.3,
+   "note": "auto-suggest: near-duplicate of frame 4, absorbed into its hold"
+  },
+  {
+   "file": "11.png",
+   "drop": true,
+   "duration_ms": 83.3,
+   "note": "auto-suggest: near-duplicate of frame 4, absorbed into its hold"
+  },
+  {
+   "file": "12.png",
+   "hold": 2,
+   "duration_ms": 166.6,
+   "note": "auto-suggest: holds frames 12-13"
+  },
+  {
+   "file": "13.png",
+   "drop": true,
+   "duration_ms": 83.3,
+   "note": "auto-suggest: near-duplicate of frame 12, absorbed into its hold"
+  },
+  {
+   "file": "14.png",
+   "hold": 1,
+   "duration_ms": 250.0,
+   "note": "auto-suggest"
+  }
+ ],
+ "edits_note": "auto-suggested calmer idle: consecutive near-duplicate poses (<3% silhouette change) held as one drawing, timing x2.0, 250-1500 ms per held pose. A proposal for the owner to judge.",
+ "snap_to_ground": true
+}

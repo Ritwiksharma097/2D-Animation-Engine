@@ -123,7 +123,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | Step | State |
 | --- | --- |
 | 6. Close phase 1 gaps | done |
-| 7. Non-destructive edit layer | not started |
+| 7. Non-destructive edit layer | done |
 | 8. Ledge / ladder props | not started |
 | 9. Per-region identity | not started |
 | 10. Game export + playable page | not started |
@@ -144,6 +144,33 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 - Per-action `cell_size` / `ground_y` from the manifest are now used by analysis and by the page
   (climbs are 512x448, ground 439.6). Screenshot `13_climb_up_cell512.png` checked.
 - serve.py no longer logs every successful GET.
+
+## Step 7 notes (edit layer)
+
+- `workbench/edits.py` resolves order / hold / drop / durations / offset / snap-to-ground / mirror
+  (FORMAT.md "Edits"); `analyze.load_action` uses it, so every report and image is of the edited
+  action. `--no-annotations --tag original` writes the unedited analysis to
+  `out/<c>/<a>__original/`; `diagnostics.before_after()` stacks the pair into `before_after.png`.
+  New `timing.png` draws each played frame with width proportional to its time on screen.
+  5 unit tests in `test_edits.py` (19 total pass).
+- Page: per-frame dx / dy / hold / drop, action-level mirror and snap, "Suggest idle holds"
+  (serve.py `POST /api/suggest-idle`), dropped entries shown dimmed, holds as "xN". `#...&b.raw=1`
+  opens a viewer that ignores the document (the "before"). ui_checks.py now asserts 16 things
+  (16/16 pass): drops leave playback, hold x duration drive it, raw viewer plays 14 frames, snap
+  shift equals 535 - lowest pixel, mirror flips contact display, dragging on a mirrored frame
+  edits source coordinates, mirrored travel runs along the new facing.
+- Applied: `annotations/guard/idle.json` = auto-suggest (14 frames -> 6 held poses: 01, 02, 03,
+  04 held x8 for 1.33 s, 12 x2, 14; cycle 1.17 s -> 2.67 s) + snap to ground.
+  `annotations/guard/walk.json` = snap to ground only.
+- Before/after, looked at: `out/report_examples/phase2/guard_idle_before_after.png` (timing strip,
+  onion, contact sheet) and `guard_walk_before_after.png` (contact sheet, charts: lowest-pixel
+  chart now flat on 535). After: guard idle loses uneven_jump/stall/overall and baseline_off but
+  keeps near_duplicate / out_of_order (frames 2~4 and 4~6 are alike but not adjacent: the drawings
+  wander back and forth) and few_distinct. Guard walk loses baseline_off/baseline_jitter; all walk
+  problems (no passing pose, shuffling feet) remain, as expected: snapping can't fix the drawings.
+- Judgement is the owner's. To see it: `python workbench/serve.py`, then
+  http://localhost:8000/workbench/#a=guard/idle&b=guard/idle&b.raw=1&play=1 (left edited, right
+  original, synced play) and the same with `guard/walk`.
 
 ## Known problems
 
@@ -169,7 +196,9 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-All five steps are done. Suggested next steps, in order:
+Phase 2: next is step 8 (ledge/ladder props, calibrate on ren/climb_up + climb_down).
+
+Phase 1 follow-ups (older list):
 1. On the Windows PC: `pip install -r requirements.txt`, `python -m pytest workbench/tests`,
    `python workbench/analyze.py --all`, `python workbench/serve.py`, and check the page by hand
    (especially drag editing and ping-pong, which are unverified).

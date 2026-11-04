@@ -71,6 +71,18 @@ class Handler(SimpleHTTPRequestHandler):
             except Exception as e:  # report the failure to the page
                 return self._json(500, {"error": repr(e)})
             return self._json(200, {"summary": rep["summary"]})
+        if u.path == "/api/suggest-idle":
+            import contextlib
+            import io
+            import edits
+            q = parse_qs(u.query)
+            buf = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+                    edits.main(["suggest-idle", q["character"][0], q["action"][0], "--write"])
+            except SystemExit:
+                return self._json(400, {"error": buf.getvalue().strip().splitlines()[-1]})
+            return self._json(200, {"summary": buf.getvalue().splitlines()[0]})
         if ANN_RE.match(u.path):
             return self.do_PUT()
         return self._json(404, {"error": "unknown endpoint"})

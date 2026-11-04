@@ -83,6 +83,9 @@ class Action:
     reference_path: str | None = None
     annotations: dict | None = None
     annotation_path: Path | None = None
+    contacts: list[dict] | None = None   # per played frame, after edits (None = use annotations as-is)
+    entries: list[int] | None = None     # document entry index of each played frame
+    edits: dict = field(default_factory=dict)  # summary of applied edits for the report
     meta: dict = field(default_factory=dict)
 
 
@@ -113,13 +116,19 @@ def load_action(character: str, action: str, travel: float | None = None,
     ann = None
     if use_annotations and ann_path.exists():
         ann = json.loads(ann_path.read_text(encoding="utf-8"))
-    default_ms = (ann or {}).get("default_duration_ms", 1000 / 12)
-    if ann and ann.get("frames"):
-        files = [src / f["file"] for f in ann["frames"]]
-        durations = [float(f.get("duration_ms", default_ms)) for f in ann["frames"]]
-    else:
-        files = sorted(src.glob("*.png"))
-        durations = [default_ms] * len(files)
+    import edits as ed
+    ground_y = float((ann or {}).get("ground_anchor", {}).get("y", info.get("ground_y", man["conventions"].get("ground_y", 535))))
+    src_files = [f.name for f in sorted(src.glob("*.png"))]
+    used = {e["file"] for e in ed.entries(ann, src_files, 0)}
+    sources = {f: load_rgba(src / f) for f in used}
+    played = ed.apply(ann, sources, src_files, ground_y)
+    files = [src / f.file for f in played]
+    durations = [f.duration_ms for f in played]
+    n_entries = len(ed.entries(ann, src_files, 0))
+    applied = {"mirror": bool((ann or {}).get("mirror")), "snap_to_ground": bool((ann or {}).get("snap_to_ground")),
+               "dropped": n_entries - len(played), "held": sum(1 for f in played if f.hold > 1),
+               "offset_frames": sum(1 for f in played if f.dx or f.dy),
+               "reordered": [f.file for f in played] != src_files[:len(played)] and bool(ann)}
     ref_rel = ch.get("identity_reference")
     ref = load_rgba(ASSETS / ref_rel) if ref_rel and (ASSETS / ref_rel).exists() else None
     loop_mode = (ann or {}).get("loop_mode") or ("loop" if info.get("loop") else "once")
@@ -135,12 +144,15 @@ def load_action(character: str, action: str, travel: float | None = None,
         travel, t_src, t_mode = None, "derived from planted contacts (annotation file)", "from_contacts"
     elif parse_travel(info.get("old_timing")) is not None:
         travel, t_src, t_mode = parse_travel(info.get("old_timing")), "manifest old_timing", "constant"
+    facing = (ann or {}).get("facing", "right")
+    if applied["mirror"]:
+        facing = "left" if facing == "right" else "right"
     return Action(
         character=character, action=action, files=files,
-        frames=[load_rgba(f) for f in files], durations_ms=durations,
-        loop_mode=loop_mode,
-        ground_y=float((ann or {}).get("ground_anchor", {}).get("y", info.get("ground_y", man["conventions"].get("ground_y", 535)))),
-        facing=(ann or {}).get("facing", "right"),
+        frames=[f.image for f in played], durations_ms=durations,
+        loop_mode=loop_mode, ground_y=ground_y, facing=facing,
+        contacts=[f.contacts for f in played] if ann else None, entries=[f.entry for f in played], edits=applied,
+        meta={"holds": [f.hold for f in played]},
         travel=travel, travel_source=t_src, travel_mode=t_mode,
         game_scale=ch.get("game_scale_in_old_demos"),
         is_walk="walk" in action, status=info.get("status", ""), feedback=info.get("feedback", ""),
@@ -418,7 +430,10 @@ def walk_analysis(act: Action, foot: list[dict]) -> dict:
     n = len(act.frames)
     loop = act.loop_mode == "loop"
     sign = 1.0 if act.facing == "right" else -1.0
-    ann_contacts = contacts_from_annotations(act.annotations, n) if act.annotations else None
+    if act.contacts is not None:
+        ann_contacts = contacts_from_annotations({"frames": [{"contacts": c} for c in act.contacts]}, n)
+    else:
+        ann_contacts = contacts_from_annotations(act.annotations, n) if act.annotations else None
     if ann_contacts:
         contacts = [[c for c in cs if is_foot(c["name"])] for cs in ann_contacts]
         source = "annotations"
@@ -634,13 +649,13 @@ def analyze(act: Action) -> dict:
     report = {
         "character": act.character, "action": act.action,
         "source": [str(f.relative_to(ROOT)).replace("\\", "/") for f in act.files],
-        "frame_count": n, "status_in_manifest": act.status, "owner_feedback": act.feedback,
+        "frame_count": n, "entries": act.entries, "edits": act.edits, "status_in_manifest": act.status, "owner_feedback": act.feedback,
         "settings": {"loop_mode": act.loop_mode, "ground_y": act.ground_y, "facing": act.facing,
                      "travel_px_per_frame": act.travel, "travel_source": act.travel_source,
                      "game_scale": act.game_scale, "durations_ms": act.durations_ms,
                      "annotations": str(act.annotation_path.relative_to(ROOT)).replace("\\", "/") if act.annotation_path else None,
                      "thresholds": TH},
-        "metrics": {"pose_distance_matrix": d.round(4).tolist(), "detail_distance_matrix": detail.round(4).tolist(),
+        "metrics": {"holds": act.meta.get("holds"), "pose_distance_matrix": d.round(4).tolist(), "detail_distance_matrix": detail.round(4).tolist(),
                     "change": ch, "geometry": geo, "feet": foot, "identity": identity, "walk": walk},
         "flags": flags, "limits": LIMITS,
     }
@@ -671,17 +686,17 @@ def summarize(r: dict) -> str:
     return " ".join(lines)
 
 
-def output_dir(character: str, action: str) -> Path:
-    p = OUT / character / action
+def output_dir(character: str, action: str, tag: str = "") -> Path:
+    p = OUT / character / (f"{action}__{tag}" if tag else action)
     p.mkdir(parents=True, exist_ok=True)
     return p
 
 
 def run(character: str, action: str, travel: float | None = None, images: bool = True,
-        use_annotations: bool = True) -> dict:
+        use_annotations: bool = True, tag: str = "") -> dict:
     act = load_action(character, action, travel, use_annotations)
     rep = analyze(act)
-    od = output_dir(character, action)
+    od = output_dir(character, action, tag)
     (od / "report.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
     if images:
         import sys
@@ -731,7 +746,8 @@ def main(argv=None):
     p.add_argument("--all", action="store_true", help="analyse every action in the manifest")
     p.add_argument("--report-set", action="store_true", help="only the five actions discussed in REPORT.md")
     p.add_argument("--no-images", action="store_true")
-    p.add_argument("--no-annotations", action="store_true", help="ignore annotations/ and use heuristics")
+    p.add_argument("--no-annotations", action="store_true", help="ignore annotations/ (contacts and edits)")
+    p.add_argument("--tag", default="", help="write to out/<character>/<action>__<tag>/ (e.g. 'original' for a before/after pair)")
     a = p.parse_args(argv)
     if a.all:
         todo = all_actions()
@@ -746,7 +762,7 @@ def main(argv=None):
         reason = why_unusable(c, ac)
         if reason is None:
             try:
-                rep = run(c, ac, a.travel, not a.no_images, not a.no_annotations)
+                rep = run(c, ac, a.travel, not a.no_images, not a.no_annotations, a.tag)
             except Exception as e:  # keep going; report what failed and why
                 reason = f"analysis failed: {e!r}"
         if reason:
@@ -754,7 +770,7 @@ def main(argv=None):
             print(f"SKIPPED {c}/{ac}: {reason}\n")
             continue
         print(rep["summary"])
-        print(f"  -> {(OUT / c / ac / 'report.json').relative_to(ROOT)}\n")
+        print(f"  -> {(output_dir(c, ac, a.tag) / 'report.json').relative_to(ROOT)}\n")
     if len(todo) > 1:
         print(f"{len(todo) - len(skipped)} analysed, {len(skipped)} skipped" + "".join(f"\n  {c}/{ac}: {r}" for c, ac, r in skipped))
 
