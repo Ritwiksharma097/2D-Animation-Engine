@@ -618,7 +618,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | 30. Scenes and layering | done |
 | 31. Sequences, emotes, sound hooks | done |
 | 32. Objects with state, puzzles | done |
-| 33. Level editor v2 | not started |
+| 33. Level editor v2 | done |
 | 34. Two-screen sandbox | not started |
 | 35. Art request packs | not started |
 | 36. `check_all.py` | not started |
@@ -728,6 +728,31 @@ Open owner decisions (not decided here; each lives in one place, listed in
 - Limits: one reach animation for everything (no lever-pull or door drawings); the dark corner is a flat
   overlay, not lighting, and doesn't affect the guard yet.
 
+## Step 33 notes
+
+- `workbench/level_editor.html` v2: adds hiding spots, doors (with `to`), exits, objects (door / chest /
+  lever / lamp), guard patrols (drag either end), sequence trigger zones (`{"on": "enter", x0, x1}`) and
+  a start marker; every field of the selection is editable (numbers, text, JSON for nested values);
+  things placed on a floor follow the floor under them. Problems panel from `runtime/validate.js`
+  (listed above the transitions, red dashed boxes on the canvas, click to select). "Play from here"
+  stores the unsaved level in localStorage and opens the runner at the last clicked spot.
+- `sandbox/run.html` + `sandbox/runner.json`: a generic level runner (screens via doors with a fade,
+  patrols with guard brains, hiding, objects and puzzle rules, item pickup at the interact `pickup`
+  event, throwing distract items, sequences incl. enter-region triggers, emotes, sounds, idle hint,
+  caught -> retry from the screen's entry state, saved progress, HUD with level problems and
+  non-approved animations). Step 34 is content for it.
+- `runtime/validate.js` + Node tests 3 (every problem type; a clean level; enter triggers).
+  `/api/files` now also lists `levels/`, so a door to a level file that doesn't exist reads "no such
+  level file".
+- Finding: validation flags `levels/demo.json`'s key on platform P as unreachable for Ren (jump gap 150
+  px > 140, no ladder drawings). That platform was built in step 24 as a refusal example, so this is
+  the validator doing its job, not a new bug. `scene_a` gained a `patrols` entry (its guard used to
+  live only in `sandbox/scenes.json`).
+- Checks: `editor_v2_checks.py` 14/14; `level_checks.py` 8/8 (phase 5 editor behaviour still works);
+  Node 48/48. Screenshots d0-d2 looked at.
+- Limits: no undo; no snapping; patrols are straight spans on one floor; the editor judges reachability
+  for Ren only (the guard has no climb/jump drawings in the AI).
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -780,7 +805,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 6: next is step 33 (level editor v2).
+Phase 6: next is step 34 (two-screen sandbox).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

@@ -178,6 +178,15 @@ Test: `python workbench/tests/sandbox_checks.py`.
 the review page, sandbox, demos, level editor, regions, specs and docs. Check of the phase 6 fixes:
 `python workbench/tests/phase6_fixes_checks.py`.
 
+## Level editor v2 and the level runner
+
+http://localhost:8000/workbench/level_editor.html?level=scene_a : place floors, ledges, platforms,
+ladders, hotspots, hiding spots, doors, exits, objects (door / chest / lever / lamp), guard patrols and
+sequence trigger zones; the Problems panel lists what would go wrong (click one to select it); "play
+from here" opens `sandbox/run.html` with the unsaved level at the last clicked spot. The runner plays
+any level file: `sandbox/run.html?level=scene_a`. Checks: `python workbench/tests/editor_v2_checks.py`,
+`node --test runtime/test/validate.test.mjs`.
+
 ## Static build (`dist/`)
 
 ```

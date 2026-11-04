@@ -298,3 +298,23 @@ sounds exist; the AudioContext starts on the first click; mute is stored in `loc
 - **puzzle state** (what is saved): `{"states": {id: state}, "flags": {}, "inventory": [], "taken": []}`,
   kept in `localStorage` by the page (`store.save/load/clear`).
 - `lintPuzzle(level)` lists unknown objects in rules, items nothing uses, and items no one gives.
+
+## Start, patrols and region triggers (level keys `start`, `patrols`; read by `sandbox/run.html`, `runtime/validate.js`)
+
+```json
+"start":   {"on": "A", "x": 120},
+"patrols": [{"id": "guard", "who": "guard", "on": "A", "x0": 820, "x1": 1450, "start_x": 1350, "config": {"vision": {"range": 300}}}],
+"sequences": [{"id": "seq1", "trigger": {"on": "enter", "x0": 1140, "x1": 1260}, "steps": [...]}]
+```
+
+- `start`: where the player appears when the level is entered without a door (default: 50 px into the
+  first walk region).
+- `patrols`: one guard per entry, walking between `x0` and `x1` on floor `on`; `config` overrides the
+  runner's guard defaults (`sandbox/runner.json`).
+- `{"on": "enter", "x0", "x1"}`: a sequence that starts when the player walks into that x range.
+- `doors[].requires` / `exit.needs` (optional): a condition (as in puzzle `if`) that must hold to use it,
+  with `requires_message` / `needs_message`.
+- Hotspots with `"purpose": "distract"` (e.g. an apple) are throwable and are not puzzle items.
+- Validation (`validateLevel`): unreachable hotspots / objects / hiding spots / doors / exits for Ren's
+  drawings, patrols through a ledge face, a floor end or a closed blocking door, doors to missing screens
+  or doors, sequence triggers naming missing hotspots, and puzzle lint.

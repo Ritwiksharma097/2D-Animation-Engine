@@ -6,13 +6,14 @@
 <title>Level Editor</title>
 <style>
   body { margin:0; font:14px/1.4 system-ui, sans-serif; color:#1e1e1e; background:#f6f6f4; }
-  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   h1 { font-size:16px; margin:0; } .note { color:#666; }
   main { display:flex; gap:12px; padding:10px 14px; flex-wrap:wrap; align-items:flex-start; }
   canvas { background:#fff; border:1px solid #ddd; cursor:default; width:100%; height:auto; display:block; }
-  .stage { flex:1 1 900px; min-width:0; } .side { flex:0 0 340px; background:#fff; border:1px solid #ddd; border-radius:6px; padding:8px; }
-  .side input { width:80px; } .tr { margin:2px 0; } .ok { color:#1baf7a; } .bad { color:#c81e28; } .marg { color:#9a6b00; }
-  button, select { font:inherit; }
+  .stage { flex:1 1 900px; min-width:0; } .side { flex:0 0 360px; background:#fff; border:1px solid #ddd; border-radius:6px; padding:8px; max-height:90vh; overflow:auto; }
+  .side input, .side textarea { font:12px ui-monospace, monospace; } .side input[type=number] { width:80px; } .side input[type=text] { width:170px; }
+  .side textarea { width:100%; height:90px; } .tr { margin:2px 0; } .ok { color:#1baf7a; } .bad { color:#c81e28; } .marg { color:#9a6b00; }
+  .prob { color:#c81e28; margin:3px 0; cursor:pointer; } button, select { font:inherit; } .grp { display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
 </style>
 </head>
 <body>
@@ -20,77 +21,129 @@
   <h1>Level editor</h1>
   <label>level <input id="name" value="demo" style="width:90px"></label> <button id="load">load</button> <button id="save">save</button>
   <label>character <select id="char"><option value="ren">Ren</option><option value="guard">guard</option></select></label>
-  <button data-add="ledge">+ ledge</button> <button data-add="platform">+ platform</button> <button data-add="ladder">+ ladder</button>
-  <button data-add="floor">+ floor</button> <button data-add="hotspot">+ hotspot</button> <button id="del">delete</button>
+  <span class="grp">add: <button data-add="ledge">ledge</button> <button data-add="platform">platform</button> <button data-add="ladder">ladder</button>
+  <button data-add="floor">floor</button> <button data-add="hotspot">hotspot</button> <button data-add="hiding">hiding spot</button>
+  <button data-add="door">door</button> <button data-add="exit">exit</button> <button data-add="patrol">patrol</button> <button data-add="trigger">sequence trigger</button>
+  <select id="objkind"><option>door</option><option>chest</option><option>lever</option><option>lamp</option></select><button data-add="object">object</button></span>
+  <button id="del">delete</button> <button id="start">set start here</button> <button id="play">play from here</button>
   <span id="msg" class="note"></span>
-  <a href="../out/export/level_play.html">play the level</a>
 </header>
 <main>
   <div class="stage"><canvas id="cv" width="1300" height="300"></canvas>
-    <div class="note">Drag a prop to move it; drag its top edge to change its height, its left/right edge to resize. Lines are transitions for the
-    chosen character, judged from its drawings: green = it can, amber = marginal, red dashed = it can't (reason in the list).</div></div>
-  <div class="side"><b>Selected</b><div id="props" class="note">nothing</div><hr><b>Transitions</b><div id="trans"></div></div>
+    <div class="note">Drag a prop to move it; drag its top edge to change its height, its left/right edge to resize (patrols and trigger zones: drag an end).
+    Lines are transitions for the chosen character, judged from its drawings: green = it can, amber = marginal, red dashed = it can't.
+    "Play from here" opens the level runner at the last place you clicked, with this (unsaved) level. Click a problem to select what it is about.</div></div>
+  <div class="side"><b>Problems</b><div id="probs"></div><hr><b>Selected</b><div id="props" class="note">nothing</div><hr><b>Transitions</b><div id="trans"></div></div>
 </main>
 <script type="module">
 import { loadClips, Character } from "../runtime/anim.js";
 import { compileLevel, worldFromLevel, navGraph } from "../runtime/level.js";
+import { validateLevel } from "../runtime/validate.js";
+import { OBJECT_DEFAULTS } from "../runtime/objects.js";
 const $ = s => document.querySelector(s), cv = $("#cv"), ctx = cv.getContext("2d");
 const clips = await loadClips("../out/export", ["ren/walk_keypose", "ren/climb_up", "ren/climb_down", "ren/jump", "ren/idle", "guard/idle", "guard/walk", "guard/ladder_up"]);
 const NAMES = { ren: { idle: "ren/idle", walk: "ren/walk_keypose", climb_up: "ren/climb_up", climb_down: "ren/climb_down", jump: "ren/jump" },
                 guard: { idle: "guard/idle", walk: "guard/walk", ladder: "guard/ladder_up" } };
-let level, C, edges = [], sel = null, drag = null, k = 0.5;
-window.ed = { get level() { return level; }, get edges() { return edges; }, select: s => { sel = s; refresh(); } };
+let level, C, edges = [], renEdges = [], problems = [], sel = null, drag = null, k = 0.5, lastClick = null, others = {}, knownLevels = [];
+window.ed = { get level() { return level; }, get edges() { return edges; }, get problems() { return problems; }, select: s => { sel = s; refresh(); },
+              items: () => items(), get lastClick() { return lastClick; }, set lastClick(v) { lastClick = v; }, refresh: () => refresh() };
 
 const msg = t => { $("#msg").textContent = t; };
+async function listLevels() {
+  try { const j = await (await fetch("/api/files", { method: "POST" })).json(); knownLevels = j.files.filter(f => /^levels\/[^/]+\.json$/.test(f)).map(f => f.slice(7, -5)); }
+  catch { knownLevels = []; }
+}
+async function loadOthers() {   // the screens this level's doors lead to, for validation
+  others = {};
+  for (const d of level.doors || []) {
+    const n = d.to?.level; if (!n || n in others) continue;
+    try { const r = await fetch(`../levels/${n}.json`, { cache: "no-store" }); if (r.ok) others[n] = await r.json(); } catch { /* missing */ }
+  }
+}
 async function load(name) {
   try { level = await (await fetch(`../levels/${name}.json`, { cache: "no-store" })).json(); msg(`loaded levels/${name}.json`); }
   catch { msg(`levels/${name}.json not found`); return; }
-  sel = null; refresh(); document.body.dataset.ready = "1";
-}
-function items() {
-  const out = [];
-  for (const f of level.floors) out.push({ kind: "floor", o: f, x0: f.x0, x1: f.x1, top: f.y, bottom: level.size[1] });
-  for (const l of level.ledges || []) out.push({ kind: "ledge", o: l, x0: l.x0, x1: l.x1, top: l.top, bottom: level.floors.find(f => f.id === l.on)?.y ?? level.size[1] });
-  for (const p of level.platforms || []) out.push({ kind: "platform", o: p, x0: p.x0, x1: p.x1, top: p.top, bottom: p.top + 14 });
-  for (const l of level.ladders || []) out.push({ kind: "ladder", o: l, x0: l.x - 25, x1: l.x + 25, top: surfY(l.to) - 20, bottom: surfY(l.from) });
-  for (const h of level.hotspots || []) out.push({ kind: "hotspot", o: h, x0: h.x - 10, x1: h.x + 10, top: surfY(h.on) - 20, bottom: surfY(h.on) });
-  return out;
+  sel = null; lastClick = null; await loadOthers(); refresh(); document.body.dataset.ready = "1";
 }
 const surfY = id => (level.floors.find(f => f.id === id)?.y) ?? (level.ledges?.find(l => l.id === id)?.top) ?? (level.platforms?.find(p => p.id === id)?.top) ?? level.size[1];
+const floorAt = x => level.floors.find(f => f.x0 <= x && x <= f.x1) ?? level.floors[0];
+function items() {
+  const out = [], H = level.size[1];
+  for (const f of level.floors) out.push({ kind: "floor", o: f, x0: f.x0, x1: f.x1, top: f.y, bottom: H });
+  for (const l of level.ledges || []) out.push({ kind: "ledge", o: l, x0: l.x0, x1: l.x1, top: l.top, bottom: level.floors.find(f => f.id === l.on)?.y ?? H });
+  for (const p of level.platforms || []) out.push({ kind: "platform", o: p, x0: p.x0, x1: p.x1, top: p.top, bottom: p.top + 14 });
+  for (const l of level.ladders || []) out.push({ kind: "ladder", o: l, x0: l.x - 25, x1: l.x + 25, top: surfY(l.to) - 20, bottom: surfY(l.from) });
+  for (const h of level.hiding_spots || []) out.push({ kind: "hiding", o: h, x0: h.x0, x1: h.x1, top: surfY(h.on) - h.height, bottom: surfY(h.on) });
+  for (const d of level.doors || []) out.push({ kind: d.kind === "exit" ? "exit" : "door", o: d, x0: d.x - (d.width ?? 60) / 2, x1: d.x + (d.width ?? 60) / 2, top: surfY(d.on) - (d.height ?? 150), bottom: surfY(d.on) });
+  for (const o of level.objects || []) { const D = OBJECT_DEFAULTS[o.kind] ?? { width: 30, height: 60 }; out.push({ kind: "object", o, x0: o.x - Math.max(15, (o.width ?? D.width) / 2), x1: o.x + Math.max(15, (o.width ?? D.width) / 2), top: surfY(o.on) - (o.height ?? D.height), bottom: surfY(o.on) }); }
+  for (const h of level.hotspots || []) out.push({ kind: "hotspot", o: h, x0: h.x - 10, x1: h.x + 10, top: surfY(h.on) - 20, bottom: surfY(h.on) });
+  for (const p of level.patrols || []) out.push({ kind: "patrol", o: p, x0: Math.min(p.x0, p.x1), x1: Math.max(p.x0, p.x1), top: surfY(p.on) + 4, bottom: surfY(p.on) + 22 });
+  for (const s of level.sequences || []) if (s.trigger?.on === "enter") out.push({ kind: "trigger", o: s.trigger, seq: s, x0: s.trigger.x0, x1: s.trigger.x1, top: 30, bottom: 60 });
+  if (level.start) out.push({ kind: "start", o: level.start, x0: level.start.x - 12, x1: level.start.x + 12, top: surfY(level.start.on) - 40, bottom: surfY(level.start.on) });
+  return out;
+}
+const COLOR = { hiding: "#7a5a3a", door: "#8b6a4a", exit: "rgba(27,175,122,0.5)", object: "#6b7b8c", patrol: "#2a78d6", trigger: "rgba(155,89,182,0.35)", start: "#1baf7a" };
 function refresh() {
-  // ledges stand on the floor under their middle
   for (const l of level.ledges || []) { const f = level.floors.find(f => f.x0 <= (l.x0 + l.x1) / 2 && (l.x0 + l.x1) / 2 <= f.x1); if (f) l.on = f.id; }
+  for (const key of ["hiding_spots", "doors", "objects", "hotspots", "patrols"]) for (const o of level[key] || []) {   // things on a floor follow the floor under them
+    const x = o.x ?? (o.x0 + o.x1) / 2; if (level.floors.some(f => f.id === o.on) || !o.on) o.on = floorAt(x).id;
+  }
   k = cv.width / level.size[0]; cv.height = Math.round(level.size[1] * k);
   C = compileLevel(level);
+  const mk = who => new Character({ id: who, clips, world: worldFromLevel(C), x: C.regions[0].x0 + 50, surface: C.regions[0].id, names: NAMES[who] });
   const who = $("#char").value;
-  const ch = new Character({ id: who, clips, world: worldFromLevel(C), x: C.regions[0].x0 + 50, surface: C.regions[0].id, names: NAMES[who] });
-  edges = navGraph(C, ch);
+  edges = navGraph(C, mk(who)); renEdges = who === "ren" ? edges : navGraph(C, mk("ren"));
+  problems = validateLevel(level, C, renEdges, { others, knownLevels });
+  for (const p of problems) if (/missing screen/.test(p.message) && !knownLevels.includes(p.message.match(/"([^"]+)"/)?.[1])) p.message += " (no such level file)";
   draw(); panel();
 }
 function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.setTransform(k, 0, 0, k, 0, 0);
+  const bad = new Set(problems.map(p => p.id));
   for (const it of items()) {
-    const on = sel && sel.o === it.o;
+    const on = sel && sel.o === it.o, lw = 3 / k;
+    ctx.lineWidth = lw; ctx.font = `${12 / k}px system-ui`;
     if (it.kind === "ladder") {
-      ctx.strokeStyle = on ? "#2a78d6" : "#785a32"; ctx.lineWidth = 3 / k;
+      ctx.strokeStyle = on ? "#2a78d6" : "#785a32";
       for (const xr of [it.x0, it.x1]) { ctx.beginPath(); ctx.moveTo(xr, it.bottom); ctx.lineTo(xr, it.top); ctx.stroke(); }
       for (let y = it.bottom - (it.o.rung_spacing || 32); y > it.top; y -= it.o.rung_spacing || 32) { ctx.beginPath(); ctx.moveTo(it.x0, y); ctx.lineTo(it.x1, y); ctx.stroke(); }
-    } else if (it.kind === "hotspot") { ctx.fillStyle = on ? "#2a78d6" : "#eda100"; ctx.beginPath(); ctx.arc(it.o.x, it.bottom - 10, 9, 0, 7); ctx.fill(); }
-    else {
-      ctx.fillStyle = it.kind === "floor" ? "#d6ccba" : it.kind === "ledge" ? "#c9bc9f" : "#b9b0a0";
-      ctx.fillRect(it.x0, it.top, it.x1 - it.x0, it.bottom - it.top);
-      if (on) { ctx.strokeStyle = "#2a78d6"; ctx.lineWidth = 3 / k; ctx.strokeRect(it.x0, it.top, it.x1 - it.x0, it.bottom - it.top); }
-      ctx.fillStyle = "#333"; ctx.font = `${12 / k}px system-ui`; ctx.fillText(it.o.id + (it.kind === "ledge" ? ` ${(it.bottom - it.top).toFixed(0)}px` : ""), it.x0 + 4 / k, it.top + 14 / k);
+    } else if (it.kind === "hotspot") { ctx.fillStyle = on ? "#2a78d6" : it.o.purpose === "distract" ? "#c81e28" : "#eda100"; ctx.beginPath(); ctx.arc(it.o.x, it.bottom - 10, 9, 0, 7); ctx.fill(); ctx.fillStyle = "#333"; ctx.fillText(it.o.id, it.o.x - 12 / k, it.top - 4 / k); }
+    else if (it.kind === "patrol") {
+      ctx.strokeStyle = on ? "#0b3d91" : COLOR.patrol; ctx.setLineDash([10 / k, 6 / k]); ctx.beginPath(); ctx.moveTo(it.o.x0, it.top + 8); ctx.lineTo(it.o.x1, it.top + 8); ctx.stroke(); ctx.setLineDash([]);
+      for (const xe of [it.o.x0, it.o.x1]) { ctx.fillStyle = COLOR.patrol; ctx.fillRect(xe - 4, it.top, 8, 16); }
+      ctx.fillStyle = COLOR.patrol; ctx.fillText(`patrol ${it.o.id}`, it.x0 + 4, it.bottom + 12 / k);
+    } else if (it.kind === "trigger") {
+      ctx.fillStyle = COLOR.trigger; ctx.fillRect(it.x0, 0, it.x1 - it.x0, level.size[1]); ctx.fillStyle = "#6c3483"; ctx.fillText(`seq ${it.seq.id} (enter)`, it.x0 + 4, 44);
+    } else if (it.kind === "start") {
+      ctx.fillStyle = COLOR.start; ctx.beginPath(); ctx.moveTo(it.o.x, it.bottom); ctx.lineTo(it.x0, it.top); ctx.lineTo(it.x1, it.top); ctx.fill(); ctx.fillText("start", it.x0, it.top - 4 / k);
+    } else {
+      ctx.fillStyle = { floor: "#d6ccba", ledge: "#c9bc9f", platform: "#b9b0a0" }[it.kind] ?? COLOR[it.kind];
+      if (it.kind === "door" || it.kind === "exit" || it.kind === "hiding" || it.kind === "object") ctx.globalAlpha = 0.85;
+      ctx.fillRect(it.x0, it.top, it.x1 - it.x0, it.bottom - it.top); ctx.globalAlpha = 1;
+      ctx.fillStyle = "#333";
+      const label = it.kind === "ledge" ? `${it.o.id} ${(it.bottom - it.top).toFixed(0)}px` : it.kind === "door" ? `${it.o.id} > ${it.o.to?.level ?? "?"}:${it.o.to?.door ?? "?"}`
+                  : it.kind === "object" ? `${it.o.id} (${it.o.kind}, ${it.o.state ?? OBJECT_DEFAULTS[it.o.kind]?.state})` : it.kind === "hiding" ? `hide ${it.o.id}` : it.kind === "exit" ? `EXIT ${it.o.id}` : it.o.id;
+      ctx.fillText(label, it.x0 + 4 / k, it.top - 4 / k + (it.kind === "floor" || it.kind === "ledge" || it.kind === "platform" ? 18 / k : 0));
     }
+    if (on && !["ladder", "hotspot", "patrol", "trigger", "start"].includes(it.kind)) { ctx.strokeStyle = "#2a78d6"; ctx.strokeRect(it.x0, it.top, it.x1 - it.x0, it.bottom - it.top); }
+    if (bad.has(it.o.id)) { ctx.strokeStyle = "#c81e28"; ctx.setLineDash([5 / k, 4 / k]); ctx.strokeRect(it.x0 - 4, it.top - 4, it.x1 - it.x0 + 8, it.bottom - it.top + 8); ctx.setLineDash([]); }
   }
   for (const e of edges) {
     const ya = surfY(e.from.split("#")[0]) - 4, yb = surfY(e.to.split("#")[0]) - 4;
     ctx.strokeStyle = e.ok ? (e.marginal ? "#eda100" : "#1baf7a") : "#c81e28"; ctx.lineWidth = 2.5 / k; ctx.setLineDash(e.ok ? [] : [8 / k, 5 / k]);
     ctx.beginPath(); ctx.moveTo(e.fromX, ya); ctx.quadraticCurveTo((e.fromX + e.toX) / 2, Math.min(ya, yb) - 50, e.toX, yb); ctx.stroke(); ctx.setLineDash([]);
   }
+  if (lastClick) { ctx.strokeStyle = "#1baf7a"; ctx.lineWidth = 2 / k; ctx.beginPath(); ctx.arc(lastClick.x, lastClick.y, 10 / k, 0, 7); ctx.stroke(); }
 }
 function panel() {
+  const pr = $("#probs"); pr.innerHTML = "";
+  if (!problems.length) pr.innerHTML = `<div class="ok">no problems found</div>`;
+  for (const p of problems) {
+    const d = document.createElement("div"); d.className = "prob"; d.textContent = `• ${p.message}`;
+    d.onclick = () => { const it = items().find(i => i.o.id === p.id); if (it) { sel = it; refresh(); } };
+    pr.appendChild(d);
+  }
   const t = $("#trans"); t.innerHTML = "";
   for (const e of edges) {
     const d = document.createElement("div"); d.className = "tr " + (e.ok ? (e.marginal ? "marg" : "ok") : "bad");
@@ -99,30 +152,41 @@ function panel() {
   }
   const p = $("#props"); p.innerHTML = "";
   if (!sel) { p.textContent = "nothing (click a prop)"; return; }
-  for (const [key, v] of Object.entries(sel.o)) {
+  const target = sel.kind === "trigger" ? sel.seq : sel.o;
+  const head = document.createElement("div"); head.innerHTML = `<b>${sel.kind}</b>`; p.appendChild(head);
+  for (const [key, v] of Object.entries(target)) {
     const row = document.createElement("div");
-    if (typeof v === "number") {
-      row.innerHTML = `${key} <input type="number" value="${v}">`;
-      row.querySelector("input").onchange = e => { sel.o[key] = +e.target.value; refresh(); };
-    } else row.textContent = `${key}: ${v}`;
+    if (typeof v === "number") { row.innerHTML = `${key} <input type="number" value="${v}">`; row.querySelector("input").onchange = e => { target[key] = +e.target.value; refresh(); msg("unsaved changes"); }; }
+    else if (typeof v === "string" || typeof v === "boolean") { row.innerHTML = `${key} <input type="text">`; const i = row.querySelector("input"); i.value = String(v); i.onchange = e => { target[key] = typeof v === "boolean" ? e.target.value === "true" : e.target.value; refresh(); msg("unsaved changes"); }; }
+    else {
+      row.innerHTML = `${key}<br><textarea></textarea>`; const ta = row.querySelector("textarea"); ta.value = JSON.stringify(v, null, 1);
+      ta.onchange = e => { try { target[key] = JSON.parse(e.target.value); ta.style.borderColor = ""; refresh(); msg("unsaved changes"); } catch { ta.style.borderColor = "#c81e28"; msg(`${key}: not valid JSON`); } };
+    }
     p.appendChild(row);
   }
 }
 const pt = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width / k, y: (e.clientY - r.top) * cv.height / r.height / k }; };
+const SMALL = ["ladder", "hotspot", "start", "object", "door", "exit"];
 cv.addEventListener("mousedown", e => {
   const p = pt(e), its = items().reverse();   // props drawn last are on top
-  const it = its.find(i => i.kind !== "floor" && p.x >= i.x0 - 6 && p.x <= i.x1 + 6 && p.y >= i.top - 6 && p.y <= i.bottom + 2) ?? its.find(i => p.x >= i.x0 && p.x <= i.x1 && p.y >= i.top - 6);
+  lastClick = { x: Math.round(p.x), y: Math.round(p.y) };
+  const it = its.find(i => i.kind !== "floor" && i.kind !== "trigger" && p.x >= i.x0 - 6 && p.x <= i.x1 + 6 && p.y >= i.top - 6 && p.y <= i.bottom + 2)
+          ?? its.find(i => i.kind === "trigger" && p.x >= i.x0 && p.x <= i.x1 && p.y <= i.bottom + 10)
+          ?? its.find(i => i.kind === "floor" && p.x >= i.x0 && p.x <= i.x1 && p.y >= i.top - 6);
   sel = it ?? null; if (!it) { refresh(); return; }
-  const edge = 8 / k;
-  const mode = it.kind === "ladder" || it.kind === "hotspot" ? "move" : Math.abs(p.y - it.top) < edge ? "top" : Math.abs(p.x - it.x1) < edge ? "right" : Math.abs(p.x - it.x0) < edge ? "left" : "move";
+  const edge = 8 / k, end = it.kind === "patrol" || it.kind === "trigger";
+  const mode = SMALL.includes(it.kind) ? "move" : end ? (Math.abs(p.x - it.o.x1) < 12 / k ? "x1" : Math.abs(p.x - it.o.x0) < 12 / k ? "x0" : "move")
+             : Math.abs(p.y - it.top) < edge ? "top" : Math.abs(p.x - it.x1) < edge ? "right" : Math.abs(p.x - it.x0) < edge ? "left" : "move";
   drag = { mode, p, o: JSON.parse(JSON.stringify(it.o)), kind: it.kind };
   refresh();
 });
 window.addEventListener("mousemove", e => {
   if (!drag) return;
   const p = pt(e), dx = Math.round(p.x - drag.p.x), dy = Math.round(p.y - drag.p.y), o = sel.o, b = drag.o;
-  const topKey = drag.kind === "floor" ? "y" : "top";
-  if (drag.mode === "top") o[topKey] = b[topKey] + dy;
+  if (drag.mode === "x0" || drag.mode === "x1") o[drag.mode] = b[drag.mode] + dx;
+  else if (drag.mode === "top") {
+    if (drag.kind === "floor") o.y = b.y + dy; else if (drag.kind === "hiding") o.height = Math.max(20, b.height - dy); else o.top = b.top + dy;
+  }
   else if (drag.mode === "right") o.x1 = Math.max(b.x0 + 20, b.x1 + dx);
   else if (drag.mode === "left") o.x0 = Math.min(b.x1 - 20, b.x0 + dx);
   else if ("x" in o) o.x = b.x + dx;
@@ -130,27 +194,46 @@ window.addEventListener("mousemove", e => {
   refresh();
 });
 window.addEventListener("mouseup", () => { if (drag) { drag = null; msg("unsaved changes"); } });
+const uid = p => { const ids = new Set(items().map(i => i.o.id)); let n = 1; while (ids.has(`${p}${n}`)) n++; return `${p}${n}`; };
 document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => {
-  const kind = b.dataset.add, f = level.floors[0], n = Date.now() % 10000;
-  if (kind === "ledge") (level.ledges ??= []).push({ id: `L${n}`, x0: f.x0 + 200, x1: f.x0 + 360, top: f.y - 94, on: f.id });
-  if (kind === "platform") (level.platforms ??= []).push({ id: `P${n}`, x0: f.x0 + 200, x1: f.x0 + 400, top: f.y - 180 });
-  if (kind === "floor") { const last = level.floors[level.floors.length - 1]; level.floors.push({ id: `F${n}`, x0: last.x1 + 100, x1: last.x1 + 600, y: last.y }); level.size[0] = Math.max(level.size[0], last.x1 + 600); }
-  if (kind === "ladder") { const p = (level.platforms || [])[0]; if (!p) { msg("add a platform first"); return; } (level.ladders ??= []).push({ id: `LD${n}`, x: p.x0 - 40, from: f.id, to: p.id, rung_spacing: 32 }); }
-  if (kind === "hotspot") (level.hotspots ??= []).push({ id: `H${n}`, x: f.x0 + 100, on: f.id, kind: "item", item: "item", use: "interact" });
-  refresh(); msg("unsaved changes");
+  const kind = b.dataset.add, x = lastClick?.x ?? level.floors[0].x0 + 200, f = floorAt(x);
+  if (kind === "ledge") (level.ledges ??= []).push({ id: uid("L"), x0: x, x1: x + 160, top: f.y - 94, on: f.id });
+  if (kind === "platform") (level.platforms ??= []).push({ id: uid("P"), x0: x, x1: x + 200, top: f.y - 180 });
+  if (kind === "floor") { const last = level.floors[level.floors.length - 1]; level.floors.push({ id: uid("F"), x0: last.x1 + 100, x1: last.x1 + 600, y: last.y }); level.size[0] = Math.max(level.size[0], last.x1 + 600); }
+  if (kind === "ladder") { const p = (level.platforms || [])[0]; if (!p) { msg("add a platform first"); return; } (level.ladders ??= []).push({ id: uid("LD"), x: p.x0 - 40, from: f.id, to: p.id, rung_spacing: 32 }); }
+  if (kind === "hotspot") (level.hotspots ??= []).push({ id: uid("H"), x, on: f.id, kind: "item", item: "item", use: "interact" });
+  if (kind === "hiding") (level.hiding_spots ??= []).push({ id: uid("hide"), on: f.id, x0: x - 45, x1: x + 45, height: 110, kind: "behind", reveal_radius: 45 });
+  if (kind === "door") (level.doors ??= []).push({ id: uid("D"), on: f.id, x, to: { level: "other_screen", door: "D1" } });
+  if (kind === "exit") (level.doors ??= []).push({ id: uid("exit"), on: f.id, x, kind: "exit" });
+  if (kind === "patrol") (level.patrols ??= []).push({ id: uid("guard"), who: "guard", on: f.id, x0: x - 150, x1: x + 150, start_x: x });
+  if (kind === "trigger") (level.sequences ??= []).push({ id: uid("seq"), trigger: { on: "enter", x0: x - 60, x1: x + 60 }, steps: [{ do: "emote", who: "ren", kind: "!", ms: 900, wait: true }] });
+  if (kind === "object") { const ok = $("#objkind").value; (level.objects ??= []).push({ id: uid(ok), kind: ok, x, on: f.id, ...(ok === "door" ? { state: "closed", blocks: true } : {}), ...(ok === "chest" ? { contains: [] } : {}) }); }
+  refresh(); msg(`added ${kind} (unsaved)`);
 });
 $("#del").onclick = () => {
   if (!sel || sel.kind === "floor" && level.floors.length === 1) return;
-  for (const key of ["floors", "ledges", "platforms", "ladders", "hotspots"]) if (level[key]) level[key] = level[key].filter(o => o !== sel.o);
+  if (sel.kind === "trigger") level.sequences = level.sequences.filter(s => s !== sel.seq);
+  else if (sel.kind === "start") delete level.start;
+  else for (const key of ["floors", "ledges", "platforms", "ladders", "hotspots", "hiding_spots", "doors", "objects", "patrols"]) if (level[key]) level[key] = level[key].filter(o => o !== sel.o);
   sel = null; refresh(); msg("unsaved changes");
 };
+$("#start").onclick = () => { if (!lastClick) { msg("click where the player should start"); return; } level.start = { on: floorAt(lastClick.x).id, x: lastClick.x }; refresh(); msg("start set (unsaved)"); };
+$("#play").onclick = () => {
+  const name = $("#name").value, x = lastClick?.x ?? level.start?.x ?? C.regions[0].x0 + 50;
+  const surf = [...(level.platforms || []), ...(level.ledges || [])].find(p => p.x0 <= x && x <= p.x1 && lastClick && lastClick.y < p.top + 10)?.id ?? floorAt(x).id;
+  try { localStorage.setItem("workbench.editor.draft", JSON.stringify({ name, level })); } catch { msg("can't store the draft (storage blocked)"); return; }
+  window.open(`../sandbox/run.html?draft=1&level=${encodeURIComponent(name)}&x=${x}&on=${encodeURIComponent(surf)}&fresh=1`, "_blank");
+  msg(`playing ${name} from x ${x} on ${surf}`);
+};
 $("#save").onclick = async () => {
-  try { const r = await fetch(`/api/level?name=${$("#name").value}`, { method: "POST", body: JSON.stringify(level) }); const j = await r.json(); if (!r.ok) throw new Error(j.error); msg(`saved ${j.saved}`); }
+  try { const r = await fetch(`/api/level?name=${$("#name").value}`, { method: "POST", body: JSON.stringify(level) }); const j = await r.json(); if (!r.ok) throw new Error(j.error); msg(`saved ${j.saved}`); await listLevels(); }
   catch (e) { msg("not saved (needs serve.py): " + e.message); }
 };
 $("#load").onclick = () => load($("#name").value);
 $("#char").onchange = refresh;
-await load(new URLSearchParams(location.search).get("level") || "demo");
+await listLevels();
+const q = new URLSearchParams(location.search).get("level"); if (q) $("#name").value = q;
+await load(q || "demo");
 </script>
 </body>
 </html>

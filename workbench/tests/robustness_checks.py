@@ -48,7 +48,7 @@ def main():
             check("no page errors", not errs, errs)
             ctx.close()
             idx = br.new_page(); idx.goto(f"http://127.0.0.1:{port}/index.html")
-            check("dist index links the demos", idx.locator("a").count() == 6, idx.locator("a").all_inner_texts())
+            check("dist index links the demos", idx.locator("a").count() == 7, idx.locator("a").all_inner_texts())
             for href in ["out/export/play.html", "out/export/guard_demo.html", "out/export/level_play.html"]:
                 pg = br.new_page(); e = []; pg.on("pageerror", lambda x, e=e: e.append(str(x)))
                 bad = []; pg.on("response", lambda r, bad=bad: bad.append(r.url) if r.status >= 400 else None)

@@ -1,0 +1,33 @@
+{
+ "note": "Defaults for the level runner (sandbox/run.html): characters, guard brain, placeholders, sounds. A level's patrol can override the guard config. Game px, ms.",
+ "exports": "../out/export",
+ "levels_dir": "../levels",
+ "default_level": "scene_a",
+ "view": {"width": 1200, "height": 520},
+ "save_key": "workbench.runner.v1",
+ "ren": {"names": {"idle": "ren/idle", "walk": "ren/walk_keypose", "climb_up": "ren/climb_up", "climb_down": "ren/climb_down", "jump": "ren/jump",
+                   "interact": "ren/interact", "caught": "ren/caught_game_over", "look_around": "ren/look_around"},
+         "radius": 30, "headroom": 175, "idle_hint_after_ms": 9000},
+ "guard": {"names": {"idle": "guard/idle", "walk": "guard/walk", "angry": "guard/angry", "eat": "guard/eating"}, "radius": 34, "headroom": 215,
+           "wait_at_ends_ms": 1500,
+           "vision": {"range": 330, "halfAngleDeg": 28, "eye_height": 150, "target_height": 90},
+           "suspicion": {"rise_per_s": 0.9, "decay_per_s": 0.4, "suspicious_at": 0.3, "caught_at": 1.0, "look_ms": 2500},
+           "notice": {"radius": 90, "still_radius": 50, "rise_per_s": 0.6, "bump_to": 0.5},
+           "food": {"notice_range": 650, "eat_loops": 6}},
+ "guard_mode_emotes": {"suspicious": "?", "caught": "!", "patrol": "...", "eating": "heart"},
+ "placeholder_poses": {"crouch": {"role": "interact", "frames": [0, 1, 2, 3, 4], "label": "ren/interact drawings 1-5 held: PLACEHOLDER crouch (no hide drawing exists)"}},
+ "throw": {"max_range": 450, "flight_ms": 600},
+ "door_spawn_offset": 80,
+ "fade": {"out_ms": 350, "in_ms": 350},
+ "camera": {"dead_zone": 0.3, "ease": 0.12},
+ "sounds": {
+  "defs": {"step": {"freq": 180, "ms": 40, "type": "triangle", "gain": 0.04}, "door": {"freq": 220, "ms": 220, "slide": -120, "type": "sawtooth", "gain": 0.04},
+           "chime": {"freq": 660, "ms": 260, "slide": 220, "type": "sine", "gain": 0.06}, "alarm": {"freq": 880, "ms": 400, "slide": -300, "type": "square", "gain": 0.05},
+           "bump": {"freq": 120, "ms": 90, "type": "square", "gain": 0.05}, "hide": {"freq": 300, "ms": 120, "slide": -150, "type": "triangle", "gain": 0.04},
+           "unlock": {"freq": 520, "ms": 160, "slide": 260, "type": "sine", "gain": 0.06}, "locked": {"freq": 140, "ms": 160, "type": "square", "gain": 0.05},
+           "chest": {"freq": 400, "ms": 200, "slide": 200, "type": "triangle", "gain": 0.05}, "click": {"freq": 900, "ms": 30, "type": "square", "gain": 0.03},
+           "pickup": {"freq": 700, "ms": 90, "slide": 300, "type": "sine", "gain": 0.05}},
+  "ren": {"frame:ren/walk_keypose:0": "step", "frame:ren/walk_keypose:2": "step", "bump": "bump"},
+  "guard": {"frame:guard/walk:0": "step", "frame:guard/walk:7": "step"}
+ }
+}

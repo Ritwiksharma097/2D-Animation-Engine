@@ -87,6 +87,7 @@ export class Sequences {
     if (t.on !== trig.on) return false;
     if (t.on === "hotspot" && t.id !== trig.id) return false;
     if (t.on === "event" && t.name !== trig.name) return false;
+    if (t.on === "enter" && !(trig.x >= t.x0 && trig.x <= t.x1)) return false;   // walking into a region
     if (def.requires && !Object.entries(def.requires).every(([k, v]) => (this.flags[k] ?? false) === v)) return false;
     return !((def.once ?? true) && this.seen.has(def.id));
   }
@@ -95,6 +96,15 @@ export class Sequences {
     if (this.running) return null;
     const def = this.defs.find(d => this.matches(d, trig));
     if (!def) return null;
+    this.seen.add(def.id); this.log.push(def.id);
+    this.current = new Sequence(def, { ...this.ctx, flags: this.flags, overlay: this.current?.overlay ?? 0 });
+    return this.current;
+  }
+  /** Start a sequence by id regardless of its trigger (e.g. a puzzle effect {sequence: id}); `once` still applies. */
+  play(id) {
+    if (this.running) return null;
+    const def = this.defs.find(d => d.id === id);
+    if (!def || ((def.once ?? true) && this.seen.has(def.id))) return null;
     this.seen.add(def.id); this.log.push(def.id);
     this.current = new Sequence(def, { ...this.ctx, flags: this.flags, overlay: this.current?.overlay ?? 0 });
     return this.current;

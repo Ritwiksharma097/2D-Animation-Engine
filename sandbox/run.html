@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Level runner</title>
+<style>
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; color:#1e1e1e; background:#f6f6f4; }
+  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; } h1 { font-size:16px; margin:0 0 4px; }
+  .note { color:#666; } .row { padding:6px 14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; width:calc(100% - 28px); height:auto; }
+  #hud { font:12px ui-monospace, monospace; white-space:pre; color:#333; } .bad { color:#c81e28; } .good { color:#1baf7a; }
+  #inv button.sel { outline:2px solid #1559b3; background:#dfe9f7; } [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Level runner (not the game)</h1>
+  <div class="note">Plays any level file with every engine feature: screens and doors, hiding spots, objects and puzzles, sequences, emotes,
+  sounds and guard patrols. Click to walk, climb or use; click an item, then an object, to use it. Placeholder shapes; existing art only.
+  Defaults: <code>sandbox/runner.json</code>. URL: <code>?level=name&amp;x=..&amp;on=..</code>, <code>&amp;draft=1</code> plays the level editor's unsaved level,
+  <code>&amp;fresh=1</code> ignores saved progress.</div>
+</header>
+<div class="row"><b>inventory:</b> <span id="inv">-</span> <button id="throw" hidden>throw</button>
+  <label><input type="checkbox" id="dbg"> debug</label> <label><input type="checkbox" id="mute"> mute</label>
+  <button id="skip" hidden>skip scene (Esc)</button> <button id="retry" hidden>retry</button> <button id="reset">reset progress</button> <span id="msg"></span></div>
+<canvas id="cv" width="1200" height="520"></canvas>
+<div class="row"><div id="hud"></div></div>
+<script type="module">
+import { Character, run } from "../runtime/anim.js";
+import { setupStage, preloadClips } from "../runtime/page.js";
+import { compileLevel, worldFromLevel, navGraph, goTo, planRoute, queueRoute, Camera } from "../runtime/level.js";
+import { GuardBrain, sightBlockers, eventReach, decideIdleHint } from "../runtime/behaviour.js";
+import { sceneFromLevel, drawLayers, sceneDrawables, drawFade, updateHiding, Fader } from "../runtime/scene.js";
+import { Sequences } from "../runtime/sequence.js";
+import { Emotes } from "../runtime/emote.js";
+import { Sounds } from "../runtime/sound.js";
+import { objectsFromLevel, builtinRules, resolve, check, ObjectBodies, store, drawObject, drawDarkness } from "../runtime/objects.js";
+import { validateLevel } from "../runtime/validate.js";
+
+const T = await (await fetch("runner.json", { cache: "no-store" })).json();
+const Q = new URLSearchParams(location.search), W = T.view.width, H = T.view.height;
+const cv = document.getElementById("cv"), stage = setupStage(cv, W, H), ctx = stage.ctx, $ = s => document.querySelector(s);
+const clips = await preloadClips(T.exports, [...new Set([...Object.values(T.ren.names), ...Object.values(T.guard.names)])], cv);
+const sounds = new Sounds({ defs: T.sounds.defs }), fader = new Fader({ outMs: T.fade.out_ms, inMs: T.fade.in_ms }), crouch = T.placeholder_poses.crouch;
+$("#mute").checked = sounds.muted; $("#mute").onchange = () => sounds.setMuted($("#mute").checked);
+const msg = (t, cls = "") => { const m = $("#msg"); m.textContent = t; m.className = cls; };
+
+// ------------------------------------------------------------------ levels (files, or the editor's draft)
+const levels = {};
+let draft = null;
+if (Q.get("draft")) { try { draft = JSON.parse(localStorage.getItem("workbench.editor.draft")); } catch { draft = null; } }
+async function getLevel(name) {
+  if (levels[name]) return levels[name];
+  if (draft && draft.name === name) return (levels[name] = draft.level);
+  const r = await fetch(`${T.levels_dir}/${name}.json`, { cache: "no-store" });
+  if (!r.ok) throw new Error(`no level "${name}"`);
+  return (levels[name] = await r.json());
+}
+
+// ------------------------------------------------------------------ game state that persists across screens (saved)
+let G;   // {states, flags, inventory, taken: [hotspot keys], seen: [sequence ids], screen, x}
+const freshG = () => ({ states: {}, flags: {}, inventory: [], taken: [], seen: [], screen: null, x: null, on: null });
+G = (!Q.get("fresh") && !draft && store.load(T.save_key)) || freshG();
+const SEEN = new Set(G.seen);
+const save = () => { G.seen = [...SEEN]; if (!draft) store.save(T.save_key, G); };
+const puzzleState = () => ({ states: G.states, flags: G.flags, inventory: G.inventory, taken: G.taken });
+const setPuzzle = st => { G.states = st.states; Object.assign(FLAGS, st.flags); G.flags = FLAGS; G.inventory = st.inventory; G.taken = st.taken; };
+const FLAGS = G.flags;
+
+let S, selected = null, entrySnapshot = null;
+
+async function enter(name, x, on, dir = 1, { fromDoor = false } = {}) {
+  const level = await getLevel(name), C = compileLevel(level), world = worldFromLevel(C), scene = sceneFromLevel(level);
+  for (const d of level.doors || []) if (d.to?.level) await getLevel(d.to.level).catch(() => null);   // so validation can check door targets
+  const objects = objectsFromLevel(level);
+  for (const o of objects) if (!(o.id in G.states)) G.states[o.id] = o.state;
+  const regionOf = (floorOrId, px) => C.regions.find(r => (r.floor === floorOrId || r.id === floorOrId) && r.x0 <= px && px <= r.x1)?.id ?? C.platforms.find(p => p.id === floorOrId)?.id;
+  const start = level.start ?? { on: C.regions[0].floor, x: C.regions[0].x0 + 50 };
+  x ??= start.x; on ??= start.on;
+  const ren = new Character({ id: "ren", clips, world, x, surface: regionOf(on, x) ?? C.regions[0].id, dir, names: T.ren.names, radius: T.ren.radius });
+  new ObjectBodies(world, objects, () => G, o => regionOf(o.on, o.x));
+  const guards = [], brains = [];
+  for (const p of level.patrols || []) {
+    if ((p.who ?? "guard") !== "guard") continue;
+    const cfg = { ...T.guard, ...(p.config || {}), patrol: [Math.min(p.x0, p.x1), Math.max(p.x0, p.x1)] };
+    const g = new Character({ id: p.id, clips, world, x: p.start_x ?? p.x0, surface: regionOf(p.on, p.start_x ?? p.x0), names: T.guard.names, radius: T.guard.radius });
+    const b = new GuardBrain({ guard: g, config: cfg, world, solids: [] });
+    b.on("mode", e => { const k = T.guard_mode_emotes[e.to]; if (k && e.from) S.emotes.show(p.id, k, 1200); if (e.to === "caught") sounds.play("alarm"); });
+    b.on("caught", () => caught(g));
+    b.on("ate", () => { S.food = S.food.filter(f => f.guard !== b); });
+    sounds.bind(g, T.sounds.guard); guards.push(g); brains.push(b);
+  }
+  const actors = { ren, ...Object.fromEntries(guards.map(g => [g.id, g])) }, guardIds = guards.map(g => g.id);
+  if (guards.length) actors.guard = guards[0];   // sequences may say "guard" for the first one
+  const emotes = new Emotes(actors, { headroom: { ren: T.ren.headroom, ...Object.fromEntries(guardIds.map(id => [id, T.guard.headroom])), guard: T.guard.headroom } });
+  sounds.bind(ren, T.sounds.ren);
+  const seqs = new Sequences(level.sequences || [], { actors, emotes, sounds, flags: FLAGS, seen: SEEN, view: { w: W } });
+  const cam = new Camera({ viewW: W, levelW: level.size[0], deadZone: T.camera.dead_zone, ease: T.camera.ease }); cam.snap(x);
+  const rules = [...(level.puzzle || []), ...builtinRules(objects)];
+  const edges = navGraph(C, ren);
+  S = { name, level, C, world, scene, objects, rules, edges, ren, guards, brains, actors, emotes, seqs, cam, pending: null, over: false, food: [], thrown: [], hint: {},
+        problems: validateLevel(level, C, edges, { others: levels }) };
+  G.screen = name; G.x = x; G.on = on; save();
+  entrySnapshot = JSON.stringify({ G, x, on, dir });
+  $("#title").textContent = `Level runner: ${name}${draft && draft.name === name ? " (editor draft, not saved)" : ""}`;
+  window.rn = { get S() { return S; }, get G() { return G; }, fader, sounds, enter, act, T, get selected() { return selected; } };
+  inventoryUi();
+  if (fromDoor) S.startSeq = true; else seqs.fire({ on: "level_start" });
+}
+
+function caught(g) {
+  if (S.over) return;
+  S.over = true; const r = S.ren; r.clear(); if (r.state !== "idle" && !r.holding) r.next(); r.play("caught");
+  msg(`caught by ${g.id}! retry`, "bad"); $("#retry").hidden = false;
+}
+
+function useDoor(d) {
+  if (d.kind === "exit") {
+    if (d.needs && !check(d.needs, puzzleState())) { msg(d.needs_message ?? "can't leave yet", "bad"); S.emotes.show("ren", "?", 900); return; }
+    S.over = true; S.won = true; msg("got out: well done", "good"); S.emotes.show("ren", "heart", 1500); $("#retry").hidden = false; return;
+  }
+  if (d.requires && !check(d.requires, puzzleState())) { msg(d.requires_message ?? "it won't open", "bad"); S.emotes.show("ren", "?", 900); return; }
+  sounds.play("door");
+  fader.start(async () => {
+    const to = (await getLevel(d.to.level)).doors.find(x => x.id === d.to.door);
+    const L = levels[d.to.level], into = to.x < L.size[0] / 2 ? 1 : -1;
+    await enter(d.to.level, to.x + into * T.door_spawn_offset, to.on, into, { fromDoor: true });
+    msg(`entered ${d.to.level}`);
+  });
+}
+
+function act(action) {
+  const r = resolve(action, S.rules, puzzleState());
+  setPuzzle(r.state);
+  for (const e of r.events) {
+    if (e.type === "message") msg(e.value, /locked|dark|won't|don't|nothing|can't/.test(e.value) ? "bad" : "good");
+    if (e.type === "give") { S.emotes.show("ren", "!", 900); sounds.play("pickup"); }
+    if (e.type === "sound") sounds.play(e.value);
+    if (e.type === "sequence") S.seqs.play(e.value);
+    if (e.type === "emote") S.emotes.show(e.value.who, e.value.kind, 1200);
+  }
+  if (!r.rule && !action.use) msg("nothing to do with it");
+  inventoryUi(); save();
+}
+
+function inventoryUi() {
+  const el = $("#inv"); el.innerHTML = "";
+  if (!G.inventory.length) el.textContent = "-";
+  for (const it of G.inventory) {
+    const b = document.createElement("button"); b.textContent = it; b.className = selected === it ? "sel" : "";
+    b.onclick = () => { selected = selected === it ? null : it; inventoryUi(); msg(selected ? `use the ${it} on... (or throw it)` : ""); };
+    el.appendChild(b);
+  }
+  const thr = selected && (S?.level.hotspots || []).concat(Object.values(levels).flatMap(l => l.hotspots || [])).some(h => h.item === selected && h.purpose === "distract");
+  $("#throw").hidden = !thr; $("#throw").textContent = `throw the ${selected ?? ""}`;
+}
+$("#throw").onclick = () => { S.armedThrow = selected; msg(`click where the ${selected} should land`); };
+
+const hotspotKey = h => `${S.name}:${h.id}`;
+const liveHotspots = () => (S.level.hotspots || []).filter(h => !G.taken.includes(hotspotKey(h))).concat(S.food.map(f => f.hotspot).filter(Boolean));
+const surfY = on => S.world.surfaceY(S.C.regions.find(r => r.floor === on || r.id === on)?.id ?? on);
+
+stage.on("tap", (x, y) => {
+  sounds.unlock();
+  if (S.over || fader.busy || S.seqs.running) return;
+  x += S.cam.x;
+  const ren = S.ren;
+  if (S.armedThrow) {
+    const item = S.armedThrow; S.armedThrow = null; selected = null;
+    if (Math.abs(x - ren.x) > T.throw.max_range) { msg(`too far (max ${T.throw.max_range} px)`, "bad"); inventoryUi(); return; }
+    G.inventory = G.inventory.filter(i => i !== item); inventoryUi(); save();
+    S.thrown.push({ item, from: { x: ren.x, y: ren.y - 60 }, x, on: ren.surface, t: 0 }); return;
+  }
+  if (ren.busy) return;
+  const route = (tx, then, surface = null) => {
+    const surf = surface ?? S.C.regions.find(r => r.floor === String(ren.surface).split("#")[0] && r.x0 <= tx && tx <= r.x1)?.id ?? ren.surface;
+    const rt = planRoute(S.C, S.edges, { surface: ren.surface, x: ren.x }, { surface: surf, x: tx });
+    if (!rt.ok) { msg(`can't get there: ${rt.reason}`, "bad"); return; }
+    queueRoute(ren, rt.steps); S.pending = { ...then, stand: tx };
+  };
+  const side = tx => (ren.x <= tx ? -1 : 1);
+  const d = S.scene.doors.find(d => Math.abs(x - d.x) <= d.width / 2 + 20 && y >= d.y1 - d.height - 10 && y <= d.y1 + 10);
+  if (d) return route(d.x, { door: d });
+  const o = S.objects.find(o => Math.abs(x - o.x) <= Math.max(30, o.width / 2 + 10) && y > surfY(o.on) - o.height - 30 && y < surfY(o.on) + 10);
+  if (o) { const a = selected ? { use: selected, on: o.id } : { interact: o.id }; selected = null; inventoryUi(); return route(o.x + side(o.x) * (o.kind === "door" ? 55 : 45), { action: a, target: o.x }); }
+  const h = liveHotspots().find(h => Math.abs(x - h.x) <= 30 && Math.abs(y - (surfY(h.on) - 15)) < 50);
+  if (h) {
+    if (S.seqs.defs.some(s => s.trigger?.on === "hotspot" && s.trigger.id === h.id)) return route(h.x + side(h.x) * 60, { sequence: h.id });
+    if (h.item) return route(h.x - (h.x >= ren.x ? 1 : -1) * eventReach(clips[T.ren.names.interact], "pickup"), { take: h, target: h.x });
+  }
+  const spot = S.scene.hiding.find(h => x >= h.x0 - 10 && x <= h.x1 + 10 && y >= h.y0 - 20 && y <= h.y1 + 10);
+  if (spot) return route((spot.x0 + spot.x1) / 2, { hide: spot });
+  selected = null; inventoryUi();
+  const res = goTo(S.C, S.edges, ren, x, y);
+  if (!res.ok) msg(`can't get there: ${res.reason}`, "bad");
+});
+const skip = () => { if (S.seqs.skip()) msg("scene skipped"); };
+$("#skip").onclick = skip; addEventListener("keydown", e => { if (e.key === "Escape") skip(); });
+$("#retry").onclick = async () => {   // back to how things were when this screen was entered
+  $("#retry").hidden = true; msg("");
+  const snap = JSON.parse(entrySnapshot); G = snap.G; Object.keys(FLAGS).forEach(k => delete FLAGS[k]); Object.assign(FLAGS, G.flags); G.flags = FLAGS;
+  if (S.won) { G = freshG(); G.flags = FLAGS; Object.keys(FLAGS).forEach(k => delete FLAGS[k]); SEEN.clear(); await enter(Q.get("level") || T.default_level); return; }
+  await enter(S.name, snap.x, snap.on, snap.dir);
+};
+$("#reset").onclick = async () => { store.clear(T.save_key); G = freshG(); Object.keys(FLAGS).forEach(k => delete FLAGS[k]); G.flags = FLAGS; SEEN.clear(); selected = null; $("#retry").hidden = true; await enter(Q.get("level") || T.default_level); msg("progress reset"); };
+
+function hud() {
+  const r = S.ren, lines = [`screen ${S.name}   flags ${Object.keys(FLAGS).filter(k => FLAGS[k]).join(", ") || "-"}   states ${S.objects.map(o => `${o.id}=${G.states[o.id]}`).join(" ") || "-"}`];
+  lines.push(S.seqs.running ? `SEQUENCE ${S.seqs.current.def.id} step ${S.seqs.current.i + 1}/${S.seqs.current.def.steps.length} (${S.seqs.current.cur?.do}); input off` : "sequence: -");
+  const st = c => clips[c.clip.key]?.status_in_manifest ?? "?";
+  lines.push(`Ren   ${r.state.padEnd(6)} ${r.clip.key.padEnd(22)}${r.hidingIn ? " HIDDEN in " + r.hidingIn.id : ""}${r.state === "pose" ? "  " + crouch.label : ""}${st(r) !== "approved" ? "  NOT OWNER-APPROVED (" + st(r) + ")" : ""}`);
+  S.brains.forEach((b, i) => {
+    const Sc = b.cfg.suspicion, v = b.state.suspicion ?? 0, n = Math.round(20 * v / Sc.caught_at), g = S.guards[i];
+    lines.push(`${g.id.padEnd(5)} ${String(b.state.mode ?? "-").padEnd(10)} suspicion [${"#".repeat(n)}${".".repeat(20 - n)}] ${v.toFixed(2)}/${Sc.caught_at}  sees: ${b.last.seen ? "YES" : "no (" + b.last.reason + ")"}  ${g.clip.key}${st(g) !== "approved" ? " NOT OWNER-APPROVED (" + st(g) + ")" : ""}`);
+  });
+  lines.push(`sound: ${sounds.muted ? "MUTED" : sounds.ac ? "on" : "off until first click"}   ${S.problems.length ? `LEVEL PROBLEMS (${S.problems.length}): ${S.problems.map(p => p.message).join("; ")}` : "level validation: no problems"}`);
+  const el = $("#hud"); el.innerHTML = "";
+  for (const l of lines) { const d = document.createElement("div"); d.textContent = l; if (/PLACEHOLDER|YES|SEQUENCE|PROBLEMS|NOT OWNER/.test(l)) d.className = "bad"; el.appendChild(d); }
+}
+
+function cone(b, g) {
+  const e = b.eye(), v = b.cfg.vision, a = v.halfAngleDeg * Math.PI / 180, d = g.dir;
+  ctx.fillStyle = b.last.seen ? "rgba(200,30,40,0.18)" : "rgba(237,161,0,0.14)";
+  ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(e.x + d * v.range * Math.cos(a), e.y - v.range * Math.sin(a)); ctx.lineTo(e.x + d * v.range * Math.cos(a), e.y + v.range * Math.sin(a)); ctx.closePath(); ctx.fill();
+  const Sc = b.cfg.suspicion, f = (b.state.suspicion ?? 0) / Sc.caught_at, x = g.x - 40, y = g.y - 200;
+  ctx.fillStyle = "rgba(0,0,0,0.12)"; ctx.fillRect(x, y, 80, 9); ctx.fillStyle = f >= 1 ? "#c81e28" : "#eb6834"; ctx.fillRect(x, y, 80 * f, 9); ctx.strokeStyle = "#555"; ctx.lineWidth = 1; ctx.strokeRect(x, y, 80, 9);
+}
+
+const startLevel = draft?.name ?? Q.get("level") ?? (G.screen || T.default_level);
+const qx = Q.get("x") !== null ? +Q.get("x") : (startLevel === G.screen && !Q.get("level") ? G.x : null);
+await enter(startLevel, qx, Q.get("on") ?? (qx !== null && startLevel === G.screen ? G.on : null));
+if (G.inventory.length || G.taken.length) msg("restored saved progress (reset progress to start over)");
+
+run([{ update: dt => {
+  fader.update(dt);
+  const { ren } = S;
+  if (S.startSeq && !fader.busy) { S.startSeq = false; S.seqs.fire({ on: "level_start" }); }
+  S.seqs.update(dt); S.emotes.update(dt);
+  $("#skip").hidden = !S.seqs.running;
+  if (!S.over && !fader.busy && !S.seqs.running) {
+    if (S.pending && !ren.busy) {
+      const p = S.pending; S.pending = null;
+      if (Math.abs(ren.x - p.stand) > 35) { msg("can't reach it from here", "bad"); S.emotes.show("ren", "?", 900); }
+      else if (p.door) useDoor(p.door);
+      else if (p.sequence) S.seqs.fire({ on: "hotspot", id: p.sequence });
+      else if (p.hide) { ren.pose(crouch.role, { frames: crouch.frames, tag: "hide" }); sounds.play("hide"); }
+      else if (p.action || p.take) {
+        const dir = p.target >= ren.x ? 1 : -1; if (ren.dir !== dir) ren.turn(dir); ren.play("interact");
+        const once = () => {
+          ren.handlers.pickup = ren.handlers.pickup.filter(f => f !== once);
+          if (p.action) {
+            const seq = S.seqs.defs.find(s => s.trigger?.on === "hotspot" && s.trigger.id === p.action.interact);
+            if (seq && !p.action.use) S.seqs.fire({ on: "hotspot", id: p.action.interact }); else act(p.action);
+          } else {
+            const food = S.food.find(f => f.hotspot === p.take);
+            if (food) S.food = S.food.filter(f => f !== food); else G.taken.push(hotspotKey(p.take));
+            G.inventory.push(p.take.item); sounds.play("pickup"); msg(`took the ${p.take.item}`, "good"); inventoryUi(); save();
+          }
+        };
+        ren.on("pickup", once);
+      }
+    }
+    updateHiding(ren, S.scene.hiding);
+    const doorsShut = S.objects.filter(o => o.kind === "door" && G.states[o.id] !== "open").map(o => ({ id: o.id, x0: o.x - o.width / 2, x1: o.x + o.width / 2, y0: surfY(o.on) - o.height, y1: surfY(o.on) }));
+    const solids = [...sightBlockers(S.C), ...S.scene.occluders.filter(o => o.blocks_sight), ...doorsShut];
+    S.brains.forEach(b => { b.solids = solids; b.update(dt, ren); });
+    for (const t of S.thrown) {
+      t.t += dt;
+      if (t.t >= T.throw.flight_ms && !t.landed) {
+        t.landed = true; const hotspot = { id: `thrown_${t.item}_${Math.round(t.x)}`, x: t.x, on: t.on, item: t.item, purpose: "distract" };
+        const near = S.brains.filter(b => Math.abs(b.g.x - t.x) <= b.cfg.food.notice_range);
+        for (const b of near) b.setFood({ x: t.x }, eventReach(clips[T.guard.names.eat], "pickup"));
+        S.food.push({ hotspot, guard: near[0] ?? null }); msg(`the ${t.item} landed`);
+      }
+    }
+    S.thrown = S.thrown.filter(t => !t.landed);
+    for (const s of S.seqs.defs) if (s.trigger?.on === "enter") S.seqs.fire({ on: "enter", x: ren.x });
+    const ih = decideIdleHint(S.hint, !ren.busy && !ren.holding, dt, { after_ms: T.ren.idle_hint_after_ms }); S.hint = ih.state;
+    for (const a of ih.actions) ren.play(a.role);
+  }
+  ren.update(dt); for (const g of S.guards) g.update(dt);
+  if (S.seqs.cameraX !== null) S.cam.x = Math.max(0, Math.min(S.level.size[0] - W, S.seqs.cameraX)); else S.cam.update(ren.x, dt);
+} }], () => {
+  const camX = S.cam.x, L = S.level;
+  stage.begin(); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  drawLayers(ctx, S.scene.layers, camX, false);
+  stage.begin(camX);
+  ctx.fillStyle = "#d6ccba";
+  for (const f of L.floors) ctx.fillRect(f.x0, f.y, f.x1 - f.x0, H - f.y);
+  for (const l of L.ledges || []) ctx.fillRect(l.x0, l.top, l.x1 - l.x0, H - l.top);
+  ctx.fillStyle = "#b9b0a0"; for (const p of L.platforms || []) ctx.fillRect(p.x0, p.top, p.x1 - p.x0, 14);
+  for (const o of S.objects) drawObject(ctx, o, G.states[o.id], surfY(o.on));
+  for (const h of liveHotspots()) {
+    const y = surfY(h.on);
+    if (S.seqs.defs.some(s => s.trigger?.on === "hotspot" && s.trigger.id === h.id)) { ctx.fillStyle = "#8b6a4a"; ctx.fillRect(h.x - 3, y - 90, 6, 90); ctx.fillRect(h.x - 28, y - 110, 56, 30); ctx.fillStyle = "#fff"; ctx.font = "11px system-ui"; ctx.fillText(h.id, h.x - 20, y - 91); }
+    else { ctx.fillStyle = h.purpose === "distract" ? "#c81e28" : "#eda100"; ctx.beginPath(); ctx.arc(h.x, y - 9, 9, 0, 7); ctx.fill(); }
+  }
+  for (const t of S.thrown) { const u = Math.min(1, t.t / T.throw.flight_ms), y0 = S.ren.y - 9; ctx.fillStyle = "#c81e28"; ctx.beginPath(); ctx.arc(t.from.x + (t.x - t.from.x) * u, t.from.y + (y0 - t.from.y) * u - 80 * Math.sin(Math.PI * u), 8, 0, 7); ctx.fill(); }
+  S.brains.forEach((b, i) => cone(b, S.guards[i]));
+  for (const it of sceneDrawables(S.scene, [S.ren, ...S.guards])) it.draw(ctx);
+  drawDarkness(ctx, S.objects, G.states, L.floors[0].y);
+  if ($("#dbg").checked) { S.ren.drawDebug(ctx); S.guards.forEach(g => g.drawDebug(ctx)); for (const p of L.patrols || []) { ctx.strokeStyle = "#2a78d6"; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(p.x0, surfY(p.on) + 6); ctx.lineTo(p.x1, surfY(p.on) + 6); ctx.stroke(); ctx.setLineDash([]); } }
+  S.emotes.draw(ctx);
+  stage.begin();
+  drawLayers(ctx, S.scene.layers, camX, true);
+  drawFade(ctx, fader, W, H);
+  if (S.seqs.overlay) { ctx.fillStyle = `rgba(0,0,0,${S.seqs.overlay})`; ctx.fillRect(0, 0, W, H); }
+  if (S.over) { ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(0, 0, W, 40); ctx.fillStyle = "#fff"; ctx.font = "bold 18px system-ui"; ctx.fillText(S.won ? "GOT OUT" : "CAUGHT", 20, 27); }
+  hud();
+});
+document.body.dataset.ready = "1";
+</script>
+</body>
+</html>

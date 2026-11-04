@@ -105,15 +105,16 @@ export function resolve(action, rules, st) {
 export function lintPuzzle(level) {
   const objects = objectsFromLevel(level), ids = new Set(objects.map(o => o.id)), problems = [];
   const rules = [...(level.puzzle || []), ...builtinRules(objects)];
-  const items = new Set([...(level.hotspots || []).filter(h => h.item).map(h => h.item), ...objects.flatMap(o => o.contains), ...rules.flatMap(r => [...(r.then || []), ...(r.else || [])]).filter(e => e.give).map(e => e.give)]);
-  const used = new Set(rules.map(r => r.when.use).filter(Boolean));
+  const items = new Set([...(level.hotspots || []).filter(h => h.item && !h.purpose).map(h => h.item),   // purpose (e.g. "distract"): not a puzzle item
+ ...objects.flatMap(o => o.contains), ...rules.flatMap(r => [...(r.then || []), ...(r.else || [])]).filter(e => e.give).map(e => e.give)]);
+  const used = new Set([...rules.map(r => r.when.use).filter(Boolean), ...(level.exit_needs || [])]);
   for (const r of rules) {
     const on = r.when.interact ?? r.when.on;
     if (!ids.has(on)) problems.push(`rule ${r.id}: no object "${on}"`);
     for (const e of [...(r.then || []), ...(r.else || [])]) for (const id of Object.keys(e.set || {})) if (!ids.has(id)) problems.push(`rule ${r.id}: sets unknown object "${id}"`);
   }
-  for (const i of items) if (!used.has(i) && !(level.exit_needs || []).includes(i)) problems.push(`item "${i}" is never used by a puzzle`);
-  for (const u of used) if (!items.has(u)) problems.push(`rule needs item "${u}" that the level never gives`);
+  for (const i of items) if (!used.has(i)) problems.push(`item "${i}" is never used by a puzzle`);
+  for (const u of used) if (!items.has(u) && !(level.hotspots || []).some(h => h.item === u)) problems.push(`rule needs item "${u}" that the level never gives`);
   return problems;
 }
 
@@ -132,3 +133,32 @@ export const store = {
   load(key) { try { const t = globalThis.localStorage?.getItem(key); return t ? JSON.parse(t) : null; } catch { return null; } },
   clear(key) { try { globalThis.localStorage?.removeItem(key); } catch { /* storage blocked */ } },
 };
+
+/** Placeholder drawing of an object in its state, standing on floor y (world coordinates). */
+export function drawObject(ctx, o, state, y, { label = true } = {}) {
+  ctx.save();
+  if (o.kind === "door") {
+    if (state === "open") { ctx.strokeStyle = "#8b6a4a"; ctx.lineWidth = 3; ctx.strokeRect(o.x - o.width / 2, y - o.height, o.width, o.height); }
+    else { ctx.fillStyle = "#8b6a4a"; ctx.fillRect(o.x - o.width / 2, y - o.height, o.width, o.height); }
+    if (state === "locked") { ctx.fillStyle = "#eda100"; ctx.fillRect(o.x - 7, y - 80, 14, 12); ctx.strokeStyle = "#eda100"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(o.x, y - 80, 5, Math.PI, 0); ctx.stroke(); }
+  } else if (o.kind === "chest") {
+    ctx.fillStyle = "#9a6b3c"; ctx.fillRect(o.x - o.width / 2, y - o.height, o.width, o.height); ctx.fillStyle = "#7a5a3a";
+    if (state === "open") { ctx.save(); ctx.translate(o.x - o.width / 2, y - o.height); ctx.rotate(-1.1); ctx.fillRect(0, -10, o.width, 10); ctx.restore(); }
+    else ctx.fillRect(o.x - o.width / 2 - 3, y - o.height - 10, o.width + 6, 12);
+  } else if (o.kind === "lever") {
+    ctx.fillStyle = "#666"; ctx.fillRect(o.x - 14, y - 10, 28, 10);
+    ctx.strokeStyle = state === "on" ? "#1baf7a" : "#c81e28"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(o.x, y - 8); ctx.lineTo(o.x + (state === "on" ? 22 : -22), y - o.height); ctx.stroke();
+  } else if (o.kind === "lamp") {
+    ctx.fillStyle = "#555"; ctx.fillRect(o.x - 3, y - o.height, 6, o.height);
+    ctx.fillStyle = state === "on" ? "#ffd54a" : "#999"; ctx.beginPath(); ctx.arc(o.x, y - o.height, 11, 0, 7); ctx.fill();
+  }
+  if (label) { ctx.fillStyle = "#333"; ctx.font = "11px system-ui"; ctx.fillText(`${o.id}: ${state}`, o.x - 26, y + 16); }
+  ctx.restore();
+}
+
+/** A lamp that is off darkens its `lights` span (a flat placeholder overlay, not lighting). */
+export function drawDarkness(ctx, objects, states, groundY) {
+  for (const o of objects) if (o.kind === "lamp" && o.lights && states[o.id] !== "on") {
+    ctx.fillStyle = "rgba(20,20,30,0.72)"; ctx.fillRect(o.lights[0], 0, o.lights[1] - o.lights[0], groundY);
+  }
+}

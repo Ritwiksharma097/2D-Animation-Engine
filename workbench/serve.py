@@ -178,8 +178,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(200, {"saved": analyze.rel(path)})
         if u.path == "/api/status":
             return self._json(200, STATUS)
-        if u.path == "/api/files":   # for the hub: spec sheets and art request packs that exist
-            files = [analyze.rel(f) for d in ("specs", "requests") for f in sorted((ROOT / d).rglob("*")) if f.is_file()]
+        if u.path == "/api/files":   # for the hub and the level editor: spec sheets, art request packs and level files that exist
+            files = [analyze.rel(f) for d in ("specs", "requests", "levels") for f in sorted((ROOT / d).rglob("*")) if f.is_file()]
             return self._json(200, {"files": files})
         if u.path == "/api/scene":
             import props
