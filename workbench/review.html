@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Owner Review</title>
+<style>
+  :root { --bg:#f6f6f4; --panel:#fff; --ink:#1e1e1e; --muted:#666; --line:#ddd; --warn:#c81e28; --ok:#1baf7a; --accent:#2a78d6; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { position:sticky; top:0; z-index:2; background:var(--panel); border-bottom:1px solid var(--line); padding:10px 16px; display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+  header h1 { font-size:17px; margin:0; }
+  #prep { color:var(--muted); }
+  main { padding:12px 16px; display:grid; gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; display:grid; grid-template-columns:150px 1fr 300px; gap:14px; }
+  @media (max-width:900px) { .card { grid-template-columns:1fr; } }
+  .thumb { width:150px; height:135px; object-fit:contain; background:#fafafa; border:1px solid #eee; border-radius:4px; }
+  h2 { font-size:16px; margin:0 0 4px; }
+  .status { font-weight:600; text-transform:uppercase; font-size:12px; letter-spacing:.04em; }
+  .status.approved, .status.accepted { color:var(--ok); } .status.rejected { color:var(--warn); }
+  .feedback { color:var(--muted); margin:2px 0 8px; }
+  ul.flags { margin:4px 0; padding-left:18px; }
+  ul.flags li { margin:2px 0; }
+  details { margin-top:4px; } details summary { cursor:pointer; color:var(--accent); }
+  .links a { margin-right:10px; white-space:nowrap; }
+  .ba img { max-width:100%; border:1px solid #eee; margin-top:6px; }
+  .verdict textarea { width:100%; min-height:70px; font:inherit; }
+  .verdict select, .verdict button { font:inherit; }
+  .saved { color:var(--ok); } .err { color:var(--warn); }
+  .muted { color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Owner review: every action</h1>
+  <label>show <select id="filter"><option value="all">all</option><option value="flagged">with tool flags</option><option value="unreviewed">not reviewed yet</option><option value="edited">edited</option></select></label>
+  <span id="prep"></span>
+  <span class="muted">Your verdicts save to annotations/_reviews.json. Nothing here changes the drawings.</span>
+</header>
+<main id="list"></main>
+<script>
+"use strict";
+const PLAIN = {
+  uneven_jump: "Motion jumps: one step changes much more than the others",
+  uneven_stall: "Motion stalls: one step barely changes",
+  uneven_overall: "Uneven motion overall",
+  near_duplicate: "Some frames are nearly the same pose",
+  few_distinct: "Fewer distinct drawings than frames",
+  out_of_order: "Poses repeat or come back out of order",
+  redrawn_detail: "Pose barely moves but the inside is redrawn (flicker)",
+  height_drift: "Figure height changes between frames",
+  baseline_off: "Feet are not on the ground line (floating or sinking)",
+  baseline_jitter: "Feet bob against the ground between frames",
+  cropped: "Drawing touches the cell edge (may be cropped)",
+  scale_drift: "Size differs from the identity reference",
+  proportion_head: "Head proportion differs from the identity reference",
+  proportion_bulk: "Thickness differs from the identity reference (weak: pose affects it)",
+  region_colour_drift: "A body part's colour differs from the identity reference",
+  region_size_drift: "A body part's size differs from the identity reference",
+  region_missing: "A body part is missing or recoloured in most frames",
+  no_passing_pose: "Walk has no clear passing pose (feet never come together)",
+  step_count: "Walk does not have two even steps per loop",
+  foot_slide: "Feet slide on the ground at this speed",
+  travel_mismatch: "Walking speed doesn't match the drawn steps",
+  stance_not_moving: "Planted feet don't move back: the drawings walk in place",
+  slide_unavoidable: "No constant speed stops the feet sliding",
+  no_shared_contact: "Some steps have no foot planted in both frames",
+  palette_drift: "(old report) colour proportions differ from the reference",
+  palette_new_colours: "(old report) colours not in the reference palette",
+};
+const $ = s => document.querySelector(s);
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let manifest, reviews = { reviews: {} }, cards = [];
+
+async function json(url) { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) throw new Error(r.status); return r.json(); }
+async function exists(url) { try { return (await fetch(url, { method: "HEAD", cache: "no-store" })).ok; } catch { return false; } }
+
+async function card(c, a, info) {
+  const key = `${c}/${a}`, out = `../out/${c}/${a}/`;
+  let rep = null, ann = null;
+  try { rep = await json(out + "report.json"); } catch {}
+  try { ann = await json(`../annotations/${c}/${a}.json`); } catch {}
+  const isEdited = !!ann && (ann.mirror || ann.snap_to_ground || (ann.frames || []).some(e => (e.hold || 1) > 1 || e.drop || e.offset));
+  const first = (ann?.frames?.find(e => !e.drop)?.file) || "01.png";
+  const flags = rep?.flags || [];
+  const byCode = {};
+  for (const f of flags) (byCode[f.code] ??= []).push(f);
+  const imgs = Object.values(rep?.images || {}).map(f => `<a href="${out}${f}" target="_blank">${esc(f.replace(".png", "").replace(/_/g, " "))}</a>`);
+  for (const extra of ["scene.png", "before_after.png", "ledge_100.png"]) if (await exists(out + extra)) imgs.push(`<a href="${out}${extra}" target="_blank">${extra.replace(".png", "").replace(/_/g, " ")}</a>`);
+  const rv = reviews.reviews[key] || {};
+  const el = document.createElement("section");
+  el.className = "card"; el.dataset.flagged = flags.length ? "1" : ""; el.dataset.reviewed = rv.verdict ? "1" : ""; el.dataset.edited = isEdited ? "1" : "";
+  el.innerHTML = `
+    <div><img class="thumb" loading="lazy" src="../assets/${info.dir}/${first}" alt="${esc(key)} first frame"></div>
+    <div>
+      <h2>${esc(key)}</h2>
+      <div><span class="status ${esc(info.status)}">owner: ${esc(info.status)}</span> <span class="muted">${info.frames} frames${isEdited ? " · edited (assets untouched)" : ""}</span></div>
+      <div class="feedback">${esc(info.feedback || "")}</div>
+      <div><b>Tool says</b> ${flags.length ? "(suspect, never a pass):" : rep ? ": no flags (that is not a pass)." : ": <span class='muted'>not analysed yet</span>"}</div>
+      <ul class="flags">${Object.entries(byCode).map(([code, fs]) => `<li>${esc(PLAIN[code] || code)}${fs[0].frames?.length ? ` <span class="muted">(frames ${esc([...new Set(fs.flatMap(f => f.frames))].slice(0, 12).join(", "))})</span>` : ""}</li>`).join("")}</ul>
+      ${flags.length ? `<details><summary>details</summary><ul>${flags.map(f => `<li><code>${esc(f.code)}</code> ${esc(f.message)}</li>`).join("")}</ul><p class="muted">${esc(rep.summary)}</p></details>` : ""}
+      <div class="links">
+        <a href="index.html#a=${key}" target="_blank">open in workbench</a>
+        ${isEdited ? `<a href="index.html#a=${key}&b=${key}&b.raw=1&play=1" target="_blank">edited vs original (side by side)</a>` : ""}
+        ${(info.dir && /walk/.test(a)) ? `<a href="index.html#a=${key}&mode=moving" target="_blank">walking across the ground</a>` : ""}
+        ${/climb/.test(a) || /ladder/.test(a) ? `<a href="index.html#a=${key}&mode=scene" target="_blank">with the ledge / ladder</a>` : ""}
+      </div>
+      <div class="links muted">images: ${imgs.join(" ") || "none yet"}</div>
+      ${isEdited && await exists(out + "before_after.png") ? `<div class="ba"><details><summary>before / after</summary><img loading="lazy" src="${out}before_after.png" alt="before and after"></details></div>` : ""}
+    </div>
+    <div class="verdict">
+      <label>your verdict <select class="v"><option value="">(none)</option><option>approved</option><option>needs work</option><option>rejected</option><option>unsure</option></select></label>
+      <textarea class="cmt" placeholder="comment (what looks wrong or right)"></textarea>
+      <button class="save">Save</button> <span class="msg muted">${rv.updated ? "saved " + esc(rv.updated) : ""}</span>
+    </div>`;
+  el.querySelector(".v").value = rv.verdict || "";
+  el.querySelector(".cmt").value = rv.comment || "";
+  el.querySelector(".save").onclick = async () => {
+    const m = el.querySelector(".msg");
+    try {
+      const r = await fetch("/api/review", { method: "POST", body: JSON.stringify({ key, verdict: el.querySelector(".v").value, comment: el.querySelector(".cmt").value }) });
+      if (!r.ok) throw new Error((await r.json()).error);
+      m.className = "msg saved"; m.textContent = "saved"; el.dataset.reviewed = el.querySelector(".v").value ? "1" : "";
+    } catch (e) { m.className = "msg err"; m.textContent = "not saved: start the server with start_workbench.bat or python workbench/serve.py (" + e.message + ")"; }
+  };
+  return el;
+}
+
+function applyFilter() {
+  const f = $("#filter").value;
+  for (const el of cards) el.style.display = f === "all" || (f === "flagged" && el.dataset.flagged) || (f === "unreviewed" && !el.dataset.reviewed) || (f === "edited" && el.dataset.edited) ? "" : "none";
+}
+
+async function render() {
+  const list = $("#list"); list.innerHTML = ""; cards = [];
+  for (const [c, ch] of Object.entries(manifest.characters))
+    for (const [a, info] of Object.entries(ch.actions)) { const el = await card(c, a, info); cards.push(el); list.appendChild(el); }
+  applyFilter();
+  document.body.dataset.ready = "1";
+}
+
+async function watchPrep() {
+  try {
+    const s = await (await fetch("/api/status", { method: "POST" })).json();
+    const p = $("#prep");
+    if (s.running || s.pending.length) { p.textContent = `preparing reports: ${s.done.length} done, ${s.pending.length} to go (the page refreshes when finished)`; setTimeout(watchPrep, 3000); window._prepWasRunning = true; }
+    else { p.textContent = Object.keys(s.failed).length ? `reports ready; failed: ${Object.keys(s.failed).join(", ")}` : "reports ready"; if (window._prepWasRunning) { window._prepWasRunning = false; render(); } }
+  } catch { $("#prep").textContent = "server not running: Save won't work (start_workbench.bat)"; }
+}
+
+(async () => {
+  manifest = await json("../assets/manifest.json");
+  try { reviews = await json("../annotations/_reviews.json"); } catch {}
+  $("#filter").onchange = applyFilter;
+  await render();
+  watchPrep();
+})();
+</script>
+</body>
+</html>

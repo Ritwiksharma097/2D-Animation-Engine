@@ -7,6 +7,8 @@ Plain `python -m http.server` (run from the repo root) also works for viewing; t
 back to downloading the JSON. This server additionally:
   PUT  /annotations/<character>/<action>.json   writes the annotation file (never inside assets/)
   POST /api/analyze?character=..&action=..       re-runs analyze.py so report.json uses the annotations
+  POST /api/review {key, verdict, comment}       merges one verdict into annotations/_reviews.json
+  POST /api/status                               background report preparation progress
 """
 from __future__ import annotations
 
@@ -14,6 +16,8 @@ import argparse
 import json
 import re
 import sys
+import threading
+from datetime import datetime
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -71,6 +75,23 @@ class Handler(SimpleHTTPRequestHandler):
             except Exception as e:  # report the failure to the page
                 return self._json(500, {"error": repr(e)})
             return self._json(200, {"summary": rep["summary"]})
+        if u.path == "/api/review":
+            try:
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+                key, verdict, comment = body["key"], body.get("verdict", ""), body.get("comment", "")
+                if not re.fullmatch(rf"{NAME}/{NAME}", key) or verdict not in REVIEW_VERDICTS:
+                    raise ValueError("bad key or verdict")
+            except (ValueError, KeyError, json.JSONDecodeError) as e:
+                return self._json(400, {"error": str(e)})
+            with REVIEW_LOCK:
+                doc = load_reviews()
+                doc["reviews"][key] = {"verdict": verdict, "comment": comment[:4000],
+                                       "updated": datetime.now().isoformat(timespec="seconds")}
+                REVIEWS.parent.mkdir(parents=True, exist_ok=True)
+                REVIEWS.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+            return self._json(200, {"saved": key})
+        if u.path == "/api/status":
+            return self._json(200, STATUS)
         if u.path == "/api/scene":
             import props
             try:
@@ -98,12 +119,69 @@ class Handler(SimpleHTTPRequestHandler):
         return self._json(404, {"error": "unknown endpoint"})
 
 
+REVIEWS = ROOT / "annotations" / "_reviews.json"
+REVIEW_VERDICTS = {"", "approved", "needs work", "rejected", "unsure"}
+REVIEW_LOCK = threading.Lock()
+STATUS = {"pending": [], "done": [], "failed": {}, "running": False}
+
+
+def load_reviews():
+    if REVIEWS.exists():
+        return json.loads(REVIEWS.read_text(encoding="utf-8"))
+    return {"format": "workbench-reviews/1", "reviews": {}}
+
+
+def edited(character, action):
+    import edits
+    doc = edits.load_doc(character, action)
+    if not doc:
+        return False
+    fr = doc.get("frames", [])
+    return bool(doc.get("mirror") or doc.get("snap_to_ground") or any(e.get("hold", 1) > 1 or e.get("drop") or e.get("offset") for e in fr))
+
+
+def prepare_reports():
+    """Background: analyse every action whose report is missing or older than its annotations / the analysis
+    code (and before/after for edited ones),
+    so the review page works on a fresh checkout with nothing but the server started."""
+    import diagnostics
+    STATUS["running"] = True
+    code_t = max((HERE / f).stat().st_mtime for f in ("analyze.py", "edits.py", "regions.py", "diagnostics.py"))
+
+    def stale(c, a):
+        rep = analyze.OUT / c / a / "report.json"
+        if not rep.exists():
+            return True
+        ann = [analyze.ANNOTATIONS / c / f"{a}.json", analyze.ANNOTATIONS / c / "_identity.json"]
+        newest = max([code_t] + [f.stat().st_mtime for f in ann if f.exists()])
+        return rep.stat().st_mtime < newest or (edited(c, a) and not (analyze.OUT / c / a / "before_after.png").exists())
+    todo = [(c, a) for c, a in analyze.all_actions() if stale(c, a)]
+    STATUS["pending"] = [f"{c}/{a}" for c, a in todo]
+    for c, a in todo:
+        try:
+            if analyze.why_unusable(c, a) is None:
+                if edited(c, a):
+                    analyze.run(c, a, use_annotations=False, tag="original")
+                analyze.run(c, a)
+                if edited(c, a):
+                    diagnostics.before_after(c, a, ("timing.png", "contact_sheet.png", "charts.png"))
+            STATUS["done"].append(f"{c}/{a}")
+        except Exception as e:  # keep going; the page shows what failed
+            STATUS["failed"][f"{c}/{a}"] = repr(e)
+        STATUS["pending"].remove(f"{c}/{a}")
+    STATUS["running"] = False
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--no-prepare", action="store_true", help="don't analyse missing reports in the background")
     a = p.parse_args()
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), partial(Handler, directory=str(ROOT)))
-    print(f"Workbench: http://localhost:{a.port}/workbench/")
+    if not a.no_prepare:
+        threading.Thread(target=prepare_reports, daemon=True).start()
+    print(f"Owner review: http://localhost:{a.port}/workbench/review.html")
+    print(f"Workbench:    http://localhost:{a.port}/workbench/")
     srv.serve_forever()
 
 

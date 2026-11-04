@@ -1,5 +1,9 @@
 # 2D animation workbench
 
+**Owner: double-click `start_workbench.bat`** (Windows). It starts the server and opens the review
+page, where every action can be watched, compared and given a verdict. The first start analyses
+everything in the background (about a minute). Needs Python + `pip install -r requirements.txt` once.
+
 Diagnoses sprite animation problems (sliding feet, repeated or uneven frames, identity drift) so they
 can be found from still images and numbers instead of by watching playback. See `CLAUDE.md` for the
 brief, `FORMAT.md` for the data formats, `PROGRESS.md` for status and `REPORT.md` for results.

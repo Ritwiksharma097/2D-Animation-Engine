@@ -165,3 +165,14 @@ sheet, `offset` (rect's position in the cell), `duration_ms` (hold applied), `tr
 when leaving the frame), `contacts`, `source`, `entry`. Scene actions add `path` (per-frame anchor
 displacement from the start), `props` and `floor_y` relative to the start anchor, and
 `path_source`. `suspect_flags` lists the analysis flag codes so a game import can warn.
+
+## Owner reviews (`annotations/_reviews.json`)
+
+```json
+{"format": "workbench-reviews/1",
+ "reviews": {"guard/idle": {"verdict": "needs work", "comment": "...", "updated": "2026-11-04T11:11:19"}}}
+```
+
+`verdict` is one of `approved`, `needs work`, `rejected`, `unsure` or empty. Written only by the
+review page through `serve.py` (`POST /api/review`, merged per action). The manifest's `status` is
+never changed by it.
