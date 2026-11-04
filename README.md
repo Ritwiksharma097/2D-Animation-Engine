@@ -169,3 +169,16 @@ See `KRITA.md` (why there is no `.kra` writer).
 
 http://localhost:8000/sandbox/index.html; tuning in `sandbox/tuning.json`.
 Test: `python workbench/tests/sandbox_checks.py`.
+
+## Static build (`dist/`)
+
+```
+python workbench/build_dist.py
+```
+
+Copies `runtime/`, `out/export/` (sheets, JSON, the three demo pages), `levels/` and `sandbox/` into
+`dist/` with the same relative paths, plus `dist/index.html` linking the demos. It needs no server
+code: serve it with any static host, e.g. `python -m http.server -d dist 8080`. Re-run it after
+re-exporting. Check: `python workbench/tests/robustness_checks.py` (builds `dist/`, serves it with
+`http.server`, checks preload progress, DPR 2 rendering, touch taps, pause when hidden, then the full
+sandbox run). Frame-rate independence: `node --test runtime/test/framerate.test.mjs`.

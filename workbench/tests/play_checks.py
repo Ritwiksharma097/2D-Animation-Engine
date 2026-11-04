@@ -65,9 +65,11 @@ def main():
             s = ev("[playtest.ren.surface, playtest.ren.y, playtest.ren.x]")
             check("climb down ends on the floor and walks on", s[0] == "floor" and abs(s[1] - 470) < 1 and s[2] < 200, f"{s[0]}, y {s[1]:.1f}, x {s[2]:.0f}")
             # guard patrols: he moves, his idle holds play, and his (rejected) walk drifts
-            g0 = ev("playtest.guard.x"); page.wait_for_timeout(9000)
+            # sample over the window: a fixed two-point sample can land on the same patrol end twice (walk ~1.5 s, idle ~3 s per leg)
+            xs = []
+            for _ in range(18): xs.append(ev("playtest.guard.x")); page.wait_for_timeout(500)
             g = ev("[playtest.guard.x, playtest.guard.maxDrift, playtest.guard.clip.key]")
-            check("guard patrols on the same floor", abs(g[0] - g0) > 30 or g[2] == "guard/walk", f"x {g0:.0f} -> {g[0]:.0f}, now {g[2]}")
+            check("guard patrols on the same floor", max(xs) - min(xs) > 30, f"x range {min(xs):.0f}..{max(xs):.0f}, now {g[2]}")
             check("guard's walk shows drift (his drawings walk in place)", g[1] > 1, f"max drift {g[1]:.1f} game px")
             page.screenshot(path=str(SHOTS / "37_play_guard_pins.png"))
             page.uncheck("#pins"); page.wait_for_timeout(200)

@@ -16,10 +16,33 @@ export async function loadClip(base, key) {
   return makeClip(key, j, img);
 }
 
-export async function loadClips(base, keys) {
-  const out = {};
-  await Promise.all(keys.map(async k => { out[k] = await loadClip(base, k); }));
+/** Load several clips; `onProgress(loaded, total, key)` is called as each finishes (for a preload bar). */
+export async function loadClips(base, keys, onProgress = null) {
+  const out = {}; let done = 0;
+  onProgress?.(0, keys.length, null);
+  await Promise.all(keys.map(async k => { out[k] = await loadClip(base, k); onProgress?.(++done, keys.length, k); }));
   return out;
+}
+
+/**
+ * Crisp canvas at any devicePixelRatio: the backing store is CSS size x DPR, drawing stays in logical units (w x h).
+ * Returns a view with reset(ctx) (logical transform) and toLogical(clientX, clientY). Call again on resize.
+ */
+export function fitCanvas(canvas, w, h, dpr = globalThis.devicePixelRatio || 1) {
+  const cssW = canvas.getBoundingClientRect().width || w;
+  canvas.width = Math.round(cssW * dpr); canvas.height = Math.round(cssW * dpr * h / w);
+  const k = canvas.width / w;
+  return {
+    w, h, k, dpr,
+    reset(ctx) { ctx.setTransform(k, 0, 0, k, 0, 0); },
+    toLogical(cx, cy) { const r = canvas.getBoundingClientRect(); return { x: (cx - r.left) * w / r.width, y: (cy - r.top) * h / r.height }; },
+  };
+}
+
+/** Fixed-timestep stepper: positions depend only on elapsed time, not on the display's frame rate. */
+export function makeStepper(update, stepMs = 1000 / 240, maxFrameMs = 250) {
+  let acc = 0;
+  return dt => { acc += Math.min(maxFrameMs, dt); let n = 0; while (acc >= stepMs - 1e-9) { update(stepMs); acc -= stepMs; n++; } return n; };
 }
 
 /** Furthest pixel ahead of the anchor over all frames (game px), used to stop before solids. */
@@ -312,10 +335,23 @@ export class Character {
   }
 }
 
-/** Drive characters with requestAnimationFrame; `draw(dt)` is called after updates. Returns a stop function. */
-export function run(characters, draw) {
+/**
+ * Drive characters with requestAnimationFrame at a fixed timestep (default 1/240 s) so 30, 60 and 144 Hz displays give the
+ * same positions; pauses while the tab is hidden (no catch-up jump on return). `draw(frameDt)` runs once per display frame.
+ * Returns a stop function; `run.paused` tells whether it is paused.
+ */
+export function run(characters, draw, { stepMs = 1000 / 240 } = {}) {
+  const step = makeStepper(dt => { for (const c of characters) c.update(dt); }, stepMs);
   let last = performance.now(), on = true;
-  const loop = now => { if (!on) return; const dt = Math.min(100, now - last); last = now; for (const c of characters) c.update(dt); draw?.(dt); requestAnimationFrame(loop); };
+  const doc = globalThis.document;
+  const vis = () => { run.paused = !!doc?.hidden; last = performance.now(); };
+  doc?.addEventListener?.("visibilitychange", vis); vis();
+  const loop = now => {
+    if (!on) return;
+    const dt = now - last; last = now;
+    if (!run.paused) { step(dt); draw?.(Math.min(100, dt)); }
+    requestAnimationFrame(loop);
+  };
   requestAnimationFrame(loop);
-  return () => { on = false; };
+  return () => { on = false; doc?.removeEventListener?.("visibilitychange", vis); };
 }

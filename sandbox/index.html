@@ -10,7 +10,7 @@
   .note { color:#666; } .row { padding:6px 14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
   canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; width:calc(100% - 28px); height:auto; touch-action:manipulation; }
   #hud { font:12px ui-monospace, monospace; white-space:pre; color:#333; } .bad { color:#c81e28; } .good { color:#1baf7a; }
-  button { font:inherit; }
+  button { font:inherit; } [hidden] { display:none !important; }
 </style>
 </head>
 <body>
@@ -22,19 +22,25 @@
 </header>
 <div class="row"><button id="throw" disabled>throw apple</button> <button id="drop" disabled>drop apple</button> <button id="retry" hidden>retry</button>
   <label><input type="checkbox" id="dbg"> debug overlay</label> <span id="msg"></span></div>
+<div class="row" id="loading">loading animations <progress id="prog" max="1" value="0"></progress> <span id="progtxt"></span></div>
 <canvas id="cv" width="1200" height="520"></canvas>
 <div class="row"><div id="hud"></div></div>
 <script type="module">
-import { loadClips, Character, run } from "../runtime/anim.js";
+import { loadClips, Character, run, fitCanvas } from "../runtime/anim.js";
 import { compileLevel, worldFromLevel, navGraph, goTo, planRoute, queueRoute, surfaceAt } from "../runtime/level.js";
 import { GuardBrain, Interactions, decideIdleHint, eventReach, sightBlockers } from "../runtime/behaviour.js";
 
 const T = await (await fetch("tuning.json", { cache: "no-store" })).json();
-const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d"), W = 1200, H = 520;
+let view = fitCanvas(cv, W, H);   // backing store at devicePixelRatio, drawing in logical 1200x520 px
+addEventListener("resize", () => { view = fitCanvas(cv, W, H); });
 const REN = { idle: "ren/idle", walk: "ren/walk_keypose", climb_up: "ren/climb_up", climb_down: "ren/climb_down", jump: "ren/jump",
               interact: "ren/interact", caught: "ren/caught_game_over", look_around: "ren/look_around" };
 const GUARD = { idle: "guard/idle", walk: "guard/walk", eat: "guard/eating", angry: "guard/angry", love: "guard/love" };
-const clips = await loadClips(T.exports, [...new Set([...Object.values(REN), ...Object.values(GUARD)])]);
+const clips = await loadClips(T.exports, [...new Set([...Object.values(REN), ...Object.values(GUARD)])], (n, total, key) => {
+  const p = document.getElementById("prog"); p.max = total; p.value = n; document.getElementById("progtxt").textContent = `${n}/${total} ${key}`;
+});
+document.getElementById("loading").hidden = true;
 let C, world, edges, ren, guard, brain, I, game, hint;
 const msg = (t, cls = "") => { const m = document.getElementById("msg"); m.textContent = t; m.className = cls; };
 
@@ -60,9 +66,10 @@ function reset() {
 }
 function updateButtons() { const has = I.inventory.has("apple"); document.getElementById("throw").disabled = !has; document.getElementById("drop").disabled = !has; }
 
-cv.addEventListener("click", ev => {
-  if (game.state !== "play") return;
-  const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) * cv.width / r.width, y = (ev.clientY - r.top) * cv.height / r.height;
+// pointerup covers mouse, pen and touch taps (touch-action: manipulation removes the tap delay)
+cv.addEventListener("pointerup", ev => {
+  if (game.state !== "play" || (ev.pointerType === "mouse" && ev.button !== 0)) return;
+  const { x, y } = view.toLogical(ev.clientX, ev.clientY);
   if (game.armed === "throw") {
     const s = surfaceAt(C, x, y); game.armed = null;
     if (!s || Math.abs(x - ren.x) > T.throw.max_range) { msg(`too far (max ${T.throw.max_range} px)`, "bad"); return; }
@@ -113,11 +120,11 @@ run([{ update: dt => {
   }
   ren.update(dt); guard.update(dt);
 } }], () => {
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+  view.reset(ctx); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = "#d6ccba";
-  for (const f of T.level.floors) ctx.fillRect(f.x0, f.y, f.x1 - f.x0, cv.height - f.y);
-  for (const l of T.level.ledges) ctx.fillRect(l.x0, l.top, l.x1 - l.x0, cv.height - l.top);
-  ctx.fillStyle = "rgba(27,175,122,0.18)"; ctx.fillRect(T.exit.x_min, 0, cv.width - T.exit.x_min, T.level.floors[0].y);
+  for (const f of T.level.floors) ctx.fillRect(f.x0, f.y, f.x1 - f.x0, H - f.y);
+  for (const l of T.level.ledges) ctx.fillRect(l.x0, l.top, l.x1 - l.x0, H - l.top);
+  ctx.fillStyle = "rgba(27,175,122,0.18)"; ctx.fillRect(T.exit.x_min, 0, W - T.exit.x_min, T.level.floors[0].y);
   ctx.fillStyle = "#1baf7a"; ctx.font = "12px system-ui"; ctx.fillText("EXIT", T.exit.x_min + 10, 20);
   cone();
   guard.draw(ctx); ren.draw(ctx);
@@ -126,7 +133,7 @@ run([{ update: dt => {
   for (const t of I.thrown ?? []) { const u = Math.min(1, t.t / t.flightMs), x = t.from.x + (t.to.x - t.from.x) * u, y0 = world.surfaceY(t.to.surface) - 9;
     ctx.fillStyle = "#c81e28"; ctx.beginPath(); ctx.arc(x, t.from.y + (y0 - t.from.y) * u - 80 * Math.sin(Math.PI * u), 8, 0, 7); ctx.fill(); }
   if (document.getElementById("dbg").checked) { ren.drawDebug(ctx); guard.drawDebug(ctx); }
-  if (game.state !== "play") { ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(0, 0, cv.width, 40); ctx.fillStyle = "#fff"; ctx.font = "bold 18px system-ui"; ctx.fillText(game.state === "won" ? "GOT OUT WITH THE KEY" : "CAUGHT", 20, 27); }
+  if (game.state !== "play") { ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(0, 0, W, 40); ctx.fillStyle = "#fff"; ctx.font = "bold 18px system-ui"; ctx.fillText(game.state === "won" ? "GOT OUT WITH THE KEY" : "CAUGHT", 20, 27); }
   hud();
 });
 document.body.dataset.ready = "1";

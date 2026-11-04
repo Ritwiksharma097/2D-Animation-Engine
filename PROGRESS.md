@@ -507,7 +507,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | 24. Levels and navigation | done |
 | 25. Interactions and guard AI | done (logic tested in Node; seen in the sandbox, step 26) |
 | 26. Mechanics sandbox | done |
-| 27. Robustness and packaging | not started |
+| 27. Robustness and packaging | done |
 | 28. ENGINE.md | not started |
 
 ## Step 23 notes
@@ -576,6 +576,32 @@ Open owner decisions (not decided here; each lives in one place, listed in
   vision is a 2D cone from his eye to Ren's mid-body, so very close below his eye line reads
   "outside the cone"; the guard walk is the rejected one at the placeholder speed (its feet slide).
 
+## Step 27 notes
+
+- Runtime (`runtime/anim.js`): `loadClips(base, keys, onProgress)` reports `(done, total, key)`;
+  `fitCanvas(canvas, w, h)` sizes the backing store to CSS width x devicePixelRatio and returns
+  `reset(ctx)` (logical-px transform) and `toLogical(clientX, clientY)`; `run()` now steps the
+  simulation at a fixed 1/240 s (`makeStepper`, frame time capped at 250 ms) and pauses on
+  `visibilitychange` when the document is hidden (no catch-up jump on return).
+- Sandbox uses all of it: a progress bar while clips load, `pointerup` input (mouse, pen, touch;
+  `touch-action: manipulation`), drawing in logical 1200x520 at any DPR, refit on resize.
+- `runtime/test/framerate.test.mjs`: walk + jump + guard decisions simulated at 30, 60 and 144 Hz
+  give identical positions at every 1 s sample (Node 22, pass). All Node tests 24/24.
+- `workbench/build_dist.py` -> `dist/` (44 files, ~26 MB, gitignored); refuses to build into source
+  folders. `robustness_checks.py` 20/20 PASS against `dist/` served by plain `http.server`: progress
+  reached 13/13 and hid; canvas 1748 backing px for 874 CSS px at DPR 2; a touch tap walked Ren;
+  hidden -> positions frozen for 1.2 s, visible -> resumed; dist index + play / guard_demo /
+  level_play load with no errors or 404s; full sandbox run 10/10. Screenshot 94 looked at (sprites
+  sharp at DPR 2; my first version left the progress row visible because `.row{display:flex}`
+  overrode `hidden`; the check now tests real visibility).
+- `play_checks.py` "guard patrols" had started failing after step 23's faster placeholder speed: two
+  samples 9 s apart landed on the same patrol end. He does patrol (x 33..407); the check now samples
+  the range. Not a runtime change.
+- Limits: only the sandbox uses `fitCanvas` and pointer input; play.html, guard_demo.html and
+  level_play.html still draw at their fixed canvas size (scaled by CSS) and use click events. Touch
+  was tested with Playwright's emulated touchscreen, not a real phone. The pause test fakes
+  `document.hidden`; a real tab switch was not tried.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -621,7 +647,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 5: next is step 27 (robustness and packaging).
+Phase 5: next is step 28 (`ENGINE.md`).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,
