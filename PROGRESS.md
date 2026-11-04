@@ -535,6 +535,13 @@ Open owner decisions (not decided here; each lives in one place, listed in
 - Review page lists every action with flags and links. The console shows ~60 404 errors from probing optional files, and the before/after images only appear about a minute after the first start, with no notice (phase 4, step 18). Looked at `out/guard/idle/before_after.png`: 14 frames at 83 ms became 6 held poses (2.67 s) with the feet on the ground line.
 - Playtest loads with no console errors and the height slider shows 98-101% supported. Ren and the guard start overlapping, and the guard is at Ren's height (an assumption).
 
+## Phase 4 checked on the owner's Windows PC (local assistant, 2026-11-04)
+
+- Python 3.14.3: 27 tests pass. Node 24: `node --test runtime/test/runtime.test.mjs` gives 8 passed. `assets/` unchanged by phase 4.
+- Guard demo in the browser, no console errors. Dropped an apple: he walks to it, the floor apple disappears at pickup, and he eats it with "nom". His walk is very slow (about 20 s for a third of the screen), the honest result of contact-derived travel on his walk-in-place drawings (phase 5, step 23).
+- Krita 5.2.11 is installed. `krita_export.py ren walk_keypose --spec ...` builds the pack. A headless check via `kritarunner -s <module> -f main` did not run the script, either from the current folder or from `%APPDATA%/krita/pykrita` (no output, no error), so the Krita menu steps are still untested. The temporary script was removed.
+- Imported six first-pass Ren reactions (`happy`, `interact`, `hurt_stumble`, `caught_game_over`, `look_around`, `ladder_up`) from `sprite_rework/sheets`, status "unreviewed". `analyze.py --all` now analyses 25 actions, 0 skipped.
+
 ## Next step
 
 Phase 4 steps 18-22 are done. Suggested next steps, in order:

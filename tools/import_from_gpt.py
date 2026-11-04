@@ -39,6 +39,9 @@ def main():
     split_sheet(rework / "sheets" / "walk_fourteen_draft.png", OUT / "ren" / "rejected_walk_fourteen", 7, 2, 14)
     split_sheet(rework / "sheets" / "walk_flatboy_reference.png", OUT / "ren" / "rejected_walk_flatboy", 5, 3, 15)
     split_sheet(rework / "sheets" / "idle_walk_blink.png", OUT / "ren" / "unverified_idle_blink", 7, 2, 14)
+    # First-pass reworked reactions: never individually reviewed by the owner.
+    for name in ("happy", "interact", "hurt_stumble", "caught_game_over", "look_around", "ladder_up"):
+        split_sheet(rework / "sheets" / f"{name}.png", OUT / "ren" / name, 7, 2, 14)
     # The liked grounded ledge climb uses smaller 512 x 448 cells.
     terra = SRC / "terra_demo"
     split_sheet(terra / "climb_grounded_up.png", OUT / "ren" / "climb_up", 7, 2, 14, (512, 448))

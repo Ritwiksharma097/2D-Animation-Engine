@@ -112,3 +112,40 @@ Phases 1-3 are done and were checked on the owner's Windows PC (see `PROGRESS.md
 22. **Krita round trip.** Krita is installed on the owner's PC; there is none in the cloud. Export an action plus its spec as a PNG sequence with separate guide images (onion ghosts, foot targets, ground line) that Krita's animation import can load. Document the steps to draw in-betweens in Krita and bring them back through step 19's intake. If writing `.kra` files directly is reliable (Krita's format is a zip with XML), do that too, and say how far it was tested without Krita.
 
 Out of scope: generating or redrawing art yourself, rigs, the actual game's story and levels.
+
+# Phase 5
+
+Phases 1-4 are done and were checked on the owner's Windows PC (see `PROGRESS.md`). Same rules: commit and push after each step, keep `PROGRESS.md` current, verify visually, report honestly, stop cleanly when the budget runs out. The owner's open decisions are still open; keep each in `annotations/_settings.json`.
+
+23. **Fixes and new assets from the owner-PC check.**
+    - Guard demo: his contact-derived walk speed is so low (his drawings walk in place) that he takes about 20 s to cross a third of the screen. Add a per-action travel override in `_settings.json` (e.g. a constant "placeholder" speed for rejected walks), and have the runtime show drift in red when an override makes feet slide. Keep contact-derived travel as the default.
+    - Six Ren reactions were just imported (`happy`, `interact`, `hurt_stumble`, `caught_game_over`, `look_around`, `ladder_up`), all "unreviewed" first-pass art. Run the analysis and the per-region identity check on them, and add a REPORT.md section on which ones drift from Ren's reference and how. For `interact` (a pickup), annotate the hand contact and the frame where it reaches the ground, as a `pickup` event.
+24. **Levels and navigation.**
+    - **Level format** (`FORMAT.md`): floor segments, ledges, platforms, gaps, ladders and hotspots in game px.
+    - **Pathfinding.** A navigation graph plus a planner, so a click anywhere routes the character through walk → climb up/down → jump → ladder, using only transitions its drawings support. Use step 13's ledge-height range and the ladder cycles, and refuse or route around unsupported ones.
+    - **Camera** that follows the character through levels wider than the screen.
+    - **Level editor page.** Drag and resize props, set heights, save the level JSON through `serve.py`, and colour each transition green or red by whether the character can do it.
+25. **Interactions and guard behaviour**, data-driven (JSON), on the runtime.
+    - **Hotspots** with "use" actions mapped to animations and frame events: pick up an item at Ren's `interact` pickup event, put it in a simple inventory, drop or throw it.
+    - **Guard AI states:**
+      - patrol path
+      - vision cone with line of sight blocked by props
+      - suspicious: look around, angry
+      - distracted by food: walk to it, eat
+      - lovestruck: hook only
+      - catching Ren: Ren plays `caught_game_over`, guard plays `angry`
+    - **Ren's hint behaviour:** after standing idle a while he looks around, as a hook for "looks at the player".
+    - Unit-test the decision logic in Node.
+26. **Mechanics sandbox (not the game).** One screen of plain placeholder shapes with no story or setting: Ren must reach an item past the patrolling guard. Drop an apple to distract him, sneak past, climb, grab the item and get out; being seen triggers the caught sequence and a retry. Use only existing art. A debug HUD names any animation that isn't owner-approved, and every tuning number lives in one JSON file. The point is to test the engine in a game-like loop; the real levels, story and art come later from the owner.
+27. **Robustness and packaging.**
+    - Preloading with progress, touch input, and crisp rendering at any `devicePixelRatio`.
+    - Pause when the tab is hidden.
+    - A test that 30, 60 and 144 Hz frame rates give the same positions.
+    - A `dist/` build step that copies the runtime, exports and sandbox into one static folder that runs from any static host.
+28. **`ENGINE.md`**: one overview for the next assistant or collaborator. Cover:
+    - the architecture and data flow (assets → annotations/edits → analysis → export → runtime → levels)
+    - how to add a character, an action or a level
+    - where each owner decision lives
+    - what has been verified on the owner's PC and what hasn't
+
+Out of scope: generating or redrawing art yourself, rigs, the actual game's story, levels and setting.
