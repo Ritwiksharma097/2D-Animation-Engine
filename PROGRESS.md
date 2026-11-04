@@ -9,7 +9,7 @@ Handoff log for the animation workbench. Update in every commit.
 | 0. FORMAT.md / PROGRESS.md | done |
 | 1. analyze.py library + CLI | done (11 unit tests pass) |
 | 2. Diagnostic images | done |
-| 3. Browser workbench | not started |
+| 3. Browser workbench | done (screenshots checked) |
 | 4. Annotations feed back | not started |
 | 5. Real-data REPORT.md | not started |
 
@@ -69,6 +69,25 @@ pixel sits 5-13px above the y=535 ground line and bobs; Ren keypose at 41.9 px/f
 20-43px per step (stance foot moves 61-85px per drawing); fourteen slides worst at the passing
 frames (3->4, 10->11); flatboy's head is visibly larger than the idle reference.
 
+## Step 3 notes (browser workbench)
+
+`workbench/index.html` + `app.js` (vanilla JS). `workbench/serve.py` serves the repo and accepts
+`PUT /annotations/<c>/<a>.json` and `POST /api/analyze`; with plain `python -m http.server` the page
+still works and Save falls back to a download. URL hash parameters (`#a=guard/walk&b=...&mode=moving&
+travel=41.9&steps=5&onion=3,3&frame=7&zoom=0.5`) set up a state, which the screenshot script uses.
+
+Playwright (Python package `playwright`, Chromium pre-installed in the cloud box) works here.
+`python workbench/tests/screenshot_workbench.py` writes `out/screenshots/*.png`. I opened and looked
+at: guard walk in place with onion 3/3 (blue/orange halos visible, ground line, heuristic foot
+squares, red flag dots on timeline, flags list), Ren keypose moving at 41.9 px/frame (character
+moves along a ticked ground; red slide bar + readout "37.2 cell px" on step 1->2 matching the
+report), and compare guard vs Ren side by side at the same zoom. Playback checked by reading the
+frame index before/after 0.7 s (1 -> 9 at 83 ms/frame). Contact editing and Save are not yet
+exercised by a screenshot (done in step 4).
+
+Not visually verified: drag-to-move a contact, shift-click delete, ping-pong, per-frame duration
+inputs changing playback speed (code paths exist; only the duration display was seen).
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -78,5 +97,5 @@ frames (3->4, 10->11); flatboy's head is visibly larger than the idle reference.
 
 ## Next step
 
-Step 3: browser workbench `workbench/index.html` (vanilla JS), served with
-`python -m http.server` from the repo root, plus a tiny save server for annotations.
+Step 4: make analyze.py use annotations (named contacts, `from_contacts` / `per_frame` travel),
+annotate Ren walk_keypose through the UI and save it, verify the moving preview cannot slide.

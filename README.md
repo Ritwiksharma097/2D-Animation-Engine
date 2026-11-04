@@ -39,3 +39,27 @@ python -m pytest workbench/tests
 `onion.png`, `charts.png`, `identity.png` and, for walks, `world_strip.png` (at the given travel),
 `world_strip_best_constant.png` and `world_strip_per_frame.png`. Each image explains its own
 markings in its header.
+
+## Browser workbench
+
+```
+python workbench/serve.py
+```
+
+Open http://localhost:8000/workbench/ . (Plain `python -m http.server` from the repo root also works,
+at http://localhost:8000/workbench/, but then Save downloads the JSON instead of writing
+`annotations/<character>/<action>.json`, and "Re-run analysis" is unavailable.)
+
+- Pick an action; play / pause (Space), step (arrow keys), scrub; loop, ping-pong or once; edit each
+  frame's duration under its thumbnail or set all at once.
+- Onion skin: frames back (blue) / ahead (orange) and opacity.
+- Preview "in place" or "moving across ground" with a ticked ground line. Travel: constant, the
+  report's best constant, the report's per-frame values, or derived from planted contacts. In moving
+  mode, red pins mark where each planted foot landed and a bar shows how far it has slid.
+- Contacts: pause in place, pick a point name and state, click to place, drag to move, shift-click to
+  delete. Save writes the action document (see FORMAT.md).
+- Report flags and summary appear beside the timeline; click a flag to jump to its frame.
+- "Compare side by side" opens a second viewer (play/pause can be synced).
+
+Screenshots for visual checks: `python workbench/tests/screenshot_workbench.py` (needs
+`pip install playwright` and `python -m playwright install chromium` on a fresh machine).

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Animation Workbench</title>
+<style>
+  :root { --bg:#f6f6f4; --panel:#fff; --ink:#1e1e1e; --muted:#6b6b6b; --line:#ddd; --accent:#2a78d6; --warn:#c81e28; --ok:#1baf7a; --late:#eb6834; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:13px/1.4 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:8px 12px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:15px; margin:0 8px 0 0; }
+  main { display:flex; gap:10px; padding:10px; align-items:flex-start; flex-wrap:wrap; }
+  .viewer { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:8px; min-width:0; flex:1 1 640px; }
+  .viewer.hidden { display:none; }
+  .row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:4px 0; }
+  .row label { color:var(--muted); }
+  select, input, button { font:inherit; }
+  input[type=number] { width:64px; }
+  button { padding:3px 8px; border:1px solid #bbb; background:#fafafa; border-radius:4px; cursor:pointer; }
+  button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .stage { overflow-x:auto; border:1px solid var(--line); background:#fff; margin-top:4px; }
+  canvas.view { display:block; cursor:crosshair; }
+  .timeline { display:flex; gap:2px; overflow-x:auto; padding:4px 0; }
+  .tl { flex:0 0 auto; width:62px; border:2px solid transparent; border-radius:4px; text-align:center; cursor:pointer; position:relative; background:#fafafa; }
+  .tl.cur { border-color:var(--accent); }
+  .tl canvas { width:58px; height:52px; display:block; margin:0 auto; }
+  .tl .n { font-size:11px; }
+  .tl .flagdot { position:absolute; top:2px; right:3px; width:8px; height:8px; border-radius:50%; background:var(--warn); }
+  .tl input { width:52px; font-size:11px; }
+  .side { display:flex; gap:10px; flex-wrap:wrap; }
+  .box { flex:1 1 300px; border:1px solid var(--line); border-radius:4px; padding:6px; max-height:280px; overflow:auto; }
+  .box h3 { margin:0 0 4px; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .flag { padding:3px 4px; border-left:3px solid var(--warn); margin:3px 0; cursor:pointer; background:#fff7f7; }
+  .flag code { font-size:11px; color:var(--warn); }
+  .summary { color:var(--muted); margin-bottom:6px; }
+  .status { font-weight:600; }
+  .status.rejected { color:var(--warn); } .status.approved, .status.accepted { color:var(--ok); }
+  #msg { color:var(--muted); }
+  table.contacts { border-collapse:collapse; width:100%; }
+  table.contacts td { border-bottom:1px solid #eee; padding:2px 4px; }
+  .legend span { display:inline-block; margin-right:10px; }
+  .sw { display:inline-block; width:10px; height:10px; border-radius:2px; vertical-align:middle; margin-right:3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Animation workbench</h1>
+  <button id="compareBtn">Compare side by side</button>
+  <label><input type="checkbox" id="syncPlay" checked> sync play / pause</label>
+  <span id="msg"></span>
+</header>
+<main id="main"></main>
+
+<template id="viewerTpl">
+  <section class="viewer">
+    <div class="row">
+      <select class="sel-action"></select>
+      <span class="status"></span>
+      <span class="feedback" style="color:var(--muted)"></span>
+    </div>
+    <div class="row">
+      <button class="b-prev" title="previous frame (Left)">&#9664;</button>
+      <button class="b-play" title="play / pause (Space)">Play</button>
+      <button class="b-next" title="next frame (Right)">&#9654;</button>
+      <input class="scrub" type="range" min="0" value="0" style="flex:1 1 160px">
+      <span class="frame-label"></span>
+    </div>
+    <div class="row">
+      <label>loop</label>
+      <select class="loop-mode"><option value="loop">loop</option><option value="pingpong">ping-pong</option><option value="once">once</option></select>
+      <label>speed</label>
+      <select class="speed"><option>0.25</option><option>0.5</option><option selected>1</option><option>2</option></select>
+      <label>all frames ms</label><input class="all-ms" type="number" min="10" step="10">
+      <button class="b-all-ms">set</button>
+      <label>zoom</label>
+      <select class="zoom"><option>0.5</option><option selected>0.75</option><option>1</option></select>
+    </div>
+    <div class="row">
+      <label>onion</label>
+      <label>back</label><input class="onion-back" type="number" min="0" max="10" value="0">
+      <label>ahead</label><input class="onion-ahead" type="number" min="0" max="10" value="0">
+      <label>opacity</label><input class="onion-op" type="range" min="5" max="80" value="35">
+    </div>
+    <div class="row">
+      <label>preview</label>
+      <select class="mode"><option value="inplace">in place</option><option value="moving">moving across ground</option></select>
+      <label>travel</label>
+      <select class="travel-mode">
+        <option value="constant">constant px/frame</option>
+        <option value="best">report: best constant</option>
+        <option value="perframe">report: per-frame matched to foot</option>
+        <option value="contacts">from planted contacts (annotations)</option>
+      </select>
+      <input class="travel-px" type="number" step="0.5" value="12"> <span class="travel-note" style="color:var(--muted)"></span>
+    </div>
+    <div class="stage"><canvas class="view"></canvas></div>
+    <div class="row legend">
+      <span><span class="sw" style="background:#1baf7a"></span>planted contact</span>
+      <span><span class="sw" style="background:#eb6834"></span>free contact</span>
+      <span><span class="sw" style="background:#c81e28"></span>slide from pin (moving mode)</span>
+      <span><span class="sw" style="background:#2a78d6"></span>onion: earlier frames</span>
+      <span><span class="sw" style="background:#eb6834;opacity:.6"></span>onion: later frames</span>
+      <span class="slide-readout" style="font-weight:600"></span>
+    </div>
+    <div class="timeline"></div>
+    <div class="side">
+      <div class="box">
+        <h3>Report flags (suspect only)</h3>
+        <div class="summary"></div>
+        <div class="flags"></div>
+        <button class="b-analyze" title="needs workbench/serve.py">Re-run analysis</button>
+      </div>
+      <div class="box">
+        <h3>Contacts on this frame</h3>
+        <div class="row">
+          <label>point</label>
+          <select class="c-name"><option>foot_l</option><option>foot_r</option><option>hand_l</option><option>hand_r</option></select>
+          <input class="c-custom" placeholder="other name" style="width:90px">
+          <label>state</label>
+          <select class="c-state"><option>planted</option><option>free</option><option>unknown</option></select>
+        </div>
+        <div style="color:var(--muted)">In-place preview, paused: click to place the selected point; drag a point to move it; shift-click deletes the nearest.</div>
+        <table class="contacts"></table>
+        <div class="row">
+          <button class="b-copy-prev">copy contacts from previous frame</button>
+          <button class="b-save">Save</button>
+          <button class="b-download">Download JSON</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
