@@ -43,7 +43,8 @@ def counts(group: str, text: str) -> str:
         m = re.search(r"(\d+) passed(?:, (\d+) failed)?", text)
         return f"{m.group(1)} passed" + (f", {m.group(2)} failed" if m and m.group(2) else "") if m else ""
     if group == "node":
-        p, f = re.search(r"# pass (\d+)", text), re.search(r"# fail (\d+)", text)
+        # TAP ("# pass 9", older Node) or the spec reporter ("ℹ pass 9", Node 20+, possibly mis-decoded)
+        p, f = re.search(r"^\S*\s?pass (\d+)\s*$", text, re.M), re.search(r"^\S*\s?fail (\d+)\s*$", text, re.M)
         return f"{p.group(1) if p else '?'} passed, {f.group(1) if f else '?'} failed"
     p, f = len(re.findall(r"^PASS ", text, re.M)), len(re.findall(r"^FAIL ", text, re.M))
     return f"{p} passed, {f} failed" if p or f else ""

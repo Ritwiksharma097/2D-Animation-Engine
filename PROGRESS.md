@@ -859,6 +859,13 @@ Open owner decisions (not decided here; each lives in one place, listed in
   Issues: the guard walked through Ren, who was standing behind him, without noticing, and the characters overlap. Being spotted while escaping did not lead to a catch (phase 6, step 29).
 - `build_dist.py` on Windows writes 44 files (25.8 MB). Served `dist/` with `python -m http.server`: every file loads with 200. Once, while the browser window wasn't being drawn, the sandbox stayed at "loading animations 0/13" (`img.decode()` never resolved); after a reload it loaded and ran.
 
+## Phase 6 so far, checked on the owner's Windows PC (local assistant, 2026-11-04)
+
+The cloud credit ran out during step 37. Steps 29-35 are committed; 36-37 were pushed as work in progress; 38 was not started.
+- `python check_all.py --skip-browser`: pytest 28 passed; Node 45 passed (behaviour 10, framerate 1, level 6, objects 6, runtime 9, scene 4, sequence 6, validate 3). Fixed `check_all.py`'s Node count parser: Node 24's spec reporter prints `ℹ pass N`, not TAP's `# pass N`, so every Node job showed "? passed".
+- Playwright isn't installed on this PC yet (`pip install playwright` + `python -m playwright install chromium`), so the browser and `dist` jobs haven't run here.
+- Looked in the browser: `workbench/hub.html` lists every tool, demo, spec, art request and doc, with no console errors. `sandbox/run.html?level=two_a` loads with parallax layers, the intro sequence's emote bubble and the suspicion meter, with no console errors. The HUD shows "sees: no (undefined)" (small display bug). Not played through by hand.
+
 ## Next step
 
 Phase 6, paused by the owner during step 36's full run. Next:
