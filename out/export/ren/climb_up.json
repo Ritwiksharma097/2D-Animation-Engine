@@ -1,0 +1,530 @@
+{
+ "format": "workbench-export/1",
+ "character": "ren",
+ "action": "climb_up",
+ "image": "climb_up.png",
+ "cell_size": [
+  512,
+  448
+ ],
+ "anchor": [
+  256,
+  439.6
+ ],
+ "scale": 0.4777,
+ "loop_mode": "once",
+ "facing": "right",
+ "travel_mode": "none",
+ "frames": [
+  {
+   "rect": [
+    0,
+    0,
+    184,
+    424
+   ],
+   "offset": [
+    164,
+    18
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 230.0,
+     "y": 438.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "01.png",
+   "entry": 0
+  },
+  {
+   "rect": [
+    355,
+    0,
+    307,
+    359
+   ],
+   "offset": [
+    102,
+    83
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 163.0,
+     "y": 439.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 260.0,
+     "y": 437.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 455.0,
+     "y": 247.0,
+     "state": "free"
+    }
+   },
+   "source": "02.png",
+   "entry": 1
+  },
+  {
+   "rect": [
+    1201,
+    0,
+    308,
+    328
+   ],
+   "offset": [
+    102,
+    114
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 162.0,
+     "y": 439.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 270.0,
+     "y": 436.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 438.0,
+     "y": 253.0,
+     "state": "free"
+    }
+   },
+   "source": "03.png",
+   "entry": 2
+  },
+  {
+   "rect": [
+    0,
+    424,
+    308,
+    322
+   ],
+   "offset": [
+    102,
+    120
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 159.0,
+     "y": 438.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 251.0,
+     "y": 438.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 440.0,
+     "y": 258.0,
+     "state": "free"
+    }
+   },
+   "source": "04.png",
+   "entry": 3
+  },
+  {
+   "rect": [
+    1509,
+    0,
+    315,
+    328
+   ],
+   "offset": [
+    98,
+    114
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 157.0,
+     "y": 438.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 258.0,
+     "y": 433.0,
+     "state": "free"
+    },
+    "hand_r": {
+     "x": 442.0,
+     "y": 256.0,
+     "state": "free"
+    }
+   },
+   "source": "05.png",
+   "entry": 4
+  },
+  {
+   "rect": [
+    930,
+    0,
+    271,
+    344
+   ],
+   "offset": [
+    120,
+    98
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 178.0,
+     "y": 438.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 428.0,
+     "y": 246.0,
+     "state": "free"
+    }
+   },
+   "source": "06.png",
+   "entry": 5
+  },
+  {
+   "rect": [
+    662,
+    0,
+    268,
+    351
+   ],
+   "offset": [
+    122,
+    91
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 184.0,
+     "y": 439.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 430.0,
+     "y": 238.0,
+     "state": "free"
+    }
+   },
+   "source": "07.png",
+   "entry": 6
+  },
+  {
+   "rect": [
+    626,
+    424,
+    297,
+    299
+   ],
+   "offset": [
+    107,
+    143
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 166.0,
+     "y": 438.0,
+     "state": "free"
+    },
+    "hand_r": {
+     "x": 361.0,
+     "y": 367.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   },
+   "source": "08.png",
+   "entry": 7
+  },
+  {
+   "rect": [
+    308,
+    424,
+    318,
+    303
+   ],
+   "offset": [
+    97,
+    139
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 159.0,
+     "y": 438.0,
+     "state": "free"
+    },
+    "hand_r": {
+     "x": 369.0,
+     "y": 366.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   },
+   "source": "09.png",
+   "entry": 8
+  },
+  {
+   "rect": [
+    1415,
+    424,
+    311,
+    233
+   ],
+   "offset": [
+    100,
+    209
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 131.0,
+     "y": 438.0,
+     "state": "free"
+    },
+    "knee_l": {
+     "x": 220.0,
+     "y": 426.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    },
+    "hand_r": {
+     "x": 355.0,
+     "y": 421.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   },
+   "source": "10.png",
+   "entry": 9
+  },
+  {
+   "rect": [
+    1726,
+    424,
+    317,
+    233
+   ],
+   "offset": [
+    97,
+    209
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 130.0,
+     "y": 438.0,
+     "state": "free"
+    },
+    "knee_l": {
+     "x": 233.0,
+     "y": 425.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    },
+    "hand_r": {
+     "x": 348.0,
+     "y": 421.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   },
+   "source": "11.png",
+   "entry": 10
+  },
+  {
+   "rect": [
+    1169,
+    424,
+    246,
+    237
+   ],
+   "offset": [
+    133,
+    205
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 219.0,
+     "y": 439.0,
+     "state": "free"
+    },
+    "hand_r": {
+     "x": 324.0,
+     "y": 421.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   },
+   "source": "12.png",
+   "entry": 11
+  },
+  {
+   "rect": [
+    923,
+    424,
+    246,
+    295
+   ],
+   "offset": [
+    133,
+    147
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 211.0,
+     "y": 438.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   },
+   "source": "13.png",
+   "entry": 12
+  },
+  {
+   "rect": [
+    184,
+    0,
+    171,
+    408
+   ],
+   "offset": [
+    170,
+    34
+   ],
+   "duration_ms": 110.7,
+   "travel_px": 0.0,
+   "contacts": {
+    "foot_l": {
+     "x": 240.0,
+     "y": 438.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   },
+   "source": "14.png",
+   "entry": 13
+  }
+ ],
+ "status_in_manifest": "approved",
+ "suspect_flags": [
+  "height_drift",
+  "out_of_order",
+  "proportion_bulk",
+  "proportion_head",
+  "region_colour_drift",
+  "region_size_drift",
+  "uneven_overall",
+  "uneven_stall"
+ ],
+ "path": [
+  [
+   0.0,
+   0.0
+  ],
+  [
+   13.37,
+   -15.14
+  ],
+  [
+   26.73,
+   -30.27
+  ],
+  [
+   40.1,
+   -45.41
+  ],
+  [
+   53.46,
+   -60.55
+  ],
+  [
+   66.83,
+   -75.68
+  ],
+  [
+   80.19,
+   -90.82
+  ],
+  [
+   93.56,
+   -105.96
+  ],
+  [
+   106.92,
+   -121.1
+  ],
+  [
+   120.29,
+   -136.23
+  ],
+  [
+   133.65,
+   -151.37
+  ],
+  [
+   147.02,
+   -166.51
+  ],
+  [
+   160.38,
+   -181.64
+  ],
+  [
+   173.75,
+   -196.78
+  ]
+ ],
+ "props": [
+  {
+   "type": "ledge",
+   "id": "ledge",
+   "front_x": 77.45,
+   "back_x": 504.5,
+   "top_y": -196.78,
+   "cap": {
+    "overhang": 16.75,
+    "thickness": 16.75
+   }
+  }
+ ],
+ "floor_y": 0.0,
+ "path_source": "line: manifest old_scene; cap thickness 8 game px is an assumption (not recorded)"
+}

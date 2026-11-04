@@ -126,7 +126,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | 7. Non-destructive edit layer | done |
 | 8. Ledge / ladder props | done (findings below; guard fits are heuristic) |
 | 9. Per-region identity | done (seeded from the reference; no click UI) |
-| 10. Game export + playable page | not started |
+| 10. Game export + playable page | done |
 | 11. More annotations | not started |
 
 ## Step 6 notes
@@ -243,6 +243,25 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
   (0.13-0.55x); the concept art's blue differs from the sprites' or the sash band doesn't match the
   sprite pose. Weak evidence because the reference is concept art.
 
+## Step 10 notes (export + playtest)
+
+- `python workbench/export.py --demo` writes `out/export/ren/{walk_keypose,climb_up,jump}.{png,json}`
+  (committed: `.gitignore` now keeps `out/export/`). `out/export/play.html` uses only those files:
+  click floor = walk, ledge = walk to the climb start + climb (old approved straight path; ledge
+  placed from the export's props, 94 game px high), far platform = walk to the edge + jump (arc in
+  code over frames 4-9 plus the drawings' own lift) + walk. Open with `python workbench/serve.py`
+  -> http://localhost:8000/out/export/play.html (needs http, not file://).
+- Walk travel per drawing = 98/70/108/81 cell px from planted contacts; position changes only at
+  frame changes. To get a sane speed I set the walk's durations to 180 ms in
+  `annotations/ren/walk_keypose.json` (~240 game px/s); the owner should judge that.
+  **A 4-drawing walk looks choppy whatever the travel** (stated on the page too).
+- `workbench/tests/play_checks.py` (5/5 PASS): walk with contact travel has 0.00 game px planted
+  drift; ticking "old constant 41.9" gives 31.6 game px drift; climb ends exactly on the ledge top;
+  jump lands on the far platform; no page errors. Screenshots 30-33 looked at (in
+  `out/report_examples/phase2/`).
+- Not done: walking left uses the same frames mirrored in code (not an exported mirrored action);
+  no climb_down in the demo; the jump's horizontal timing is hand-set in the page, not exported.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -267,7 +286,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 2: next is step 10 (export + playable page).
+Phase 2: next is step 11 (annotate guard walk + Ren fourteen; compare in REPORT.md).
 
 Phase 1 follow-ups (older list):
 1. On the Windows PC: `pip install -r requirements.txt`, `python -m pytest workbench/tests`,

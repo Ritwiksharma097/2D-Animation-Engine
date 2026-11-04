@@ -1,0 +1,157 @@
+{
+ "format": "workbench-export/1",
+ "character": "ren",
+ "action": "walk_keypose",
+ "image": "walk_keypose.png",
+ "cell_size": [
+  640,
+  576
+ ],
+ "anchor": [
+  320.0,
+  535.0
+ ],
+ "scale": 0.4777,
+ "loop_mode": "loop",
+ "facing": "right",
+ "travel_mode": "from_contacts",
+ "frames": [
+  {
+   "rect": [
+    403,
+    0,
+    300,
+    428
+   ],
+   "offset": [
+    188,
+    112
+   ],
+   "duration_ms": 180.0,
+   "travel_px": 98.0,
+   "contacts": {
+    "heel_l": {
+     "x": 403.0,
+     "y": 533.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 272.0,
+     "y": 531.1,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "01.png",
+   "entry": 0
+  },
+  {
+   "rect": [
+    0,
+    0,
+    200,
+    430
+   ],
+   "offset": [
+    231,
+    110
+   ],
+   "duration_ms": 180.0,
+   "travel_px": 70.0,
+   "contacts": {
+    "heel_l": {
+     "x": 305.0,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_l": {
+     "x": 347.0,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 405.0,
+     "y": 495.1,
+     "state": "free",
+     "surface": "ground"
+    }
+   },
+   "source": "02.png",
+   "entry": 1
+  },
+  {
+   "rect": [
+    703,
+    0,
+    302,
+    424
+   ],
+   "offset": [
+    192,
+    116
+   ],
+   "duration_ms": 180.0,
+   "travel_px": 108.0,
+   "contacts": {
+    "toe_l": {
+     "x": 277.0,
+     "y": 531.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "heel_r": {
+     "x": 413.0,
+     "y": 533.1,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "03.png",
+   "entry": 2
+  },
+  {
+   "rect": [
+    200,
+    0,
+    203,
+    429
+   ],
+   "offset": [
+    230,
+    111
+   ],
+   "duration_ms": 180.0,
+   "travel_px": 81.0,
+   "contacts": {
+    "heel_r": {
+     "x": 305.0,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 353.0,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "heel_l": {
+     "x": 369.0,
+     "y": 493.1,
+     "state": "free",
+     "surface": "ground"
+    }
+   },
+   "source": "04.png",
+   "entry": 3
+  }
+ ],
+ "status_in_manifest": "approved",
+ "suspect_flags": [
+  "proportion_bulk",
+  "slide_unavoidable"
+ ]
+}

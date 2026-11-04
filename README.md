@@ -99,3 +99,11 @@ serve.py). New contacts get the surface chosen next to "on".
 python workbench/regions.py init ren      # default seeds on the identity reference
 python workbench/regions.py compare ren walk_keypose jump rejected_walk_flatboy
 ```
+
+## Export for the game + playtest
+
+```
+python workbench/export.py --demo          # out/export/ren/*.png + *.json
+python workbench/serve.py                  # then http://localhost:8000/out/export/play.html
+python workbench/tests/play_checks.py      # walk/climb/jump checks with screenshots
+```

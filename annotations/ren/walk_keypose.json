@@ -8,7 +8,7 @@
   576
  ],
  "loop_mode": "loop",
- "default_duration_ms": 83,
+ "default_duration_ms": 180,
  "ground_anchor": {
   "y": 535
  },
@@ -19,7 +19,7 @@
  "frames": [
   {
    "file": "01.png",
-   "duration_ms": 83,
+   "duration_ms": 180,
    "contacts": {
     "heel_l": {
      "x": 403,
@@ -37,7 +37,7 @@
   },
   {
    "file": "02.png",
-   "duration_ms": 83,
+   "duration_ms": 180,
    "contacts": {
     "heel_l": {
      "x": 305,
@@ -61,7 +61,7 @@
   },
   {
    "file": "03.png",
-   "duration_ms": 83,
+   "duration_ms": 180,
    "contacts": {
     "toe_l": {
      "x": 277,
@@ -79,7 +79,7 @@
   },
   {
    "file": "04.png",
-   "duration_ms": 83,
+   "duration_ms": 180,
    "contacts": {
     "heel_r": {
      "x": 305,
@@ -101,5 +101,6 @@
     }
    }
   }
- ]
+ ],
+ "timing_note": "180 ms per drawing chosen for the play.html export so contact-derived travel (~43 game px per drawing) gives ~240 game px/s; the owner should judge the speed."
 }

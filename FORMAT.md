@@ -155,3 +155,13 @@ patch in the reference, as a fraction of figure height, +-0.06). In any frame th
 opaque pixel within 14 Lab units of that colour inside the band. Per region and action: share of the
 figure relative to the reference's share (flag outside 0.6-1.6) and mean colour distance (flag
 > 6 Lab). These replace the whole-figure palette flags in reports.
+
+## Export (`out/export/<character>/<action>.json` + `.png`)
+
+Written by `workbench/export.py` after edits are applied. `format: workbench-export/1`;
+`image` (packed sheet), `cell_size`, `anchor` (cell point on the game position), `scale` (game px
+per cell px), `loop_mode`, `facing`, `travel_mode`, `frames[]` with `rect` [x, y, w, h] in the
+sheet, `offset` (rect's position in the cell), `duration_ms` (hold applied), `travel_px` (advance
+when leaving the frame), `contacts`, `source`, `entry`. Scene actions add `path` (per-frame anchor
+displacement from the start), `props` and `floor_y` relative to the start anchor, and
+`path_source`. `suspect_flags` lists the analysis flag codes so a game import can warn.

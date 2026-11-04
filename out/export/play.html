@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Export Playtest</title>
+<style>
+  :root { --bg:#f6f6f4; --ink:#1e1e1e; --muted:#666; --warn:#c81e28; --ok:#1baf7a; }
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; }
+  header h1 { font-size:16px; margin:0 0 4px; }
+  .note { color:var(--muted); max-width:1100px; }
+  .row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:6px 14px; }
+  canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; max-width:calc(100% - 28px); }
+  #drift { font-weight:600; }
+  .bad { color:var(--warn); } .good { color:var(--ok); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Playtest built only from workbench exports</h1>
+  <div class="note">Click the floor to walk, the ledge to climb it, the far platform to jump the gap. Walk travel per drawing comes from
+  the planted contacts in <code>ren/walk_keypose.json</code>, so the planted foot cannot slide; the red pins mark where each planted
+  contact landed. <b>This walk has only 4 drawings, so it looks choppy whatever the travel</b>: travel fixes sliding, not smoothness.</div>
+</header>
+<div class="row">
+  <label><input type="checkbox" id="oldTiming"> use the old demo's constant 41.9 px per drawing (to see the slide)</label>
+  <span id="drift"></span> <span id="state" class="note"></span>
+</div>
+<canvas id="cv" width="1200" height="520"></canvas>
+<script>
+"use strict";
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const A = {};
+const GROUND = 470;                       // game px
+let LEDGE, GAP, FAR;                      // set from the climb export
+const ren = { x: 120, y: GROUND, dir: 1, surface: "floor", act: "idle", k: 0, t: 0, plan: [], pins: {}, drift: 0, maxDrift: 0 };
+window.playtest = { ren, A };
+
+async function load(name) {
+  const j = await (await fetch(`ren/${name}.json`)).json();
+  const img = new Image(); img.src = `ren/${j.image}`; await img.decode();
+  A[name] = { ...j, img };
+}
+
+function drawFrame(name, k, x, y, dir) {
+  const a = A[name], f = a.frames[k], s = a.scale, [rx, ry, rw, rh] = f.rect;
+  ctx.save(); ctx.translate(x, y); ctx.scale(dir * s, s);
+  ctx.drawImage(a.img, rx, ry, rw, rh, f.offset[0] - a.anchor[0], f.offset[1] - a.anchor[1], rw, rh);
+  ctx.restore();
+}
+
+function contactWorld(name, k, c) {     // contact in game px for the current position
+  const a = A[name];
+  return { x: ren.x + ren.dir * (c.x - a.anchor[0]) * a.scale, y: ren.y + (c.y - a.anchor[1]) * a.scale };
+}
+
+function stepTravel(k) {
+  const a = A.walk_keypose;
+  return (document.getElementById("oldTiming").checked ? 41.9 : a.frames[k].travel_px) * a.scale;
+}
+
+function updatePins() {
+  const f = A.walk_keypose.frames[ren.k], now = {};
+  let worst = 0;
+  for (const [n, c] of Object.entries(f.contacts)) {
+    if (c.state !== "planted") continue;
+    const w = contactWorld("walk_keypose", ren.k, c);
+    now[n] = ren.pins[n] ?? w;                 // keep the landing position while it stays planted
+    worst = Math.max(worst, Math.abs(w.x - now[n].x));
+  }
+  ren.pins = now; ren.drift = worst; ren.maxDrift = Math.max(ren.maxDrift, worst);
+}
+
+function surfaceAt(x) {
+  if (x >= LEDGE.x0 && x <= LEDGE.x1) return { name: "ledge", y: LEDGE.top };
+  if (x >= FAR.x0 && x <= FAR.x1) return { name: "far", y: FAR.top };
+  if (x < LEDGE.x0) return { name: "floor", y: GROUND };
+  return null;
+}
+
+function onClick(ev) {
+  const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) * cv.width / r.width, y = (ev.clientY - r.top) * cv.height / r.height;
+  if (ren.act !== "idle") return;
+  const target = y < LEDGE.top + 10 && x >= LEDGE.x0 ? (x >= FAR.x0 ? "far" : "ledge") : "floor";
+  ren.plan = [];
+  if (ren.surface === "floor") {
+    if (target === "floor") ren.plan.push(["walk", Math.min(x, ren.climbStart)]);
+    else { ren.plan.push(["walk", ren.climbStart], ["climb"]); }
+  }
+  if (ren.surface === "floor" && target !== "floor" || ren.surface === "ledge") {
+    if (target === "ledge") ren.plan.push(["walk", Math.max(LEDGE.x0 + 20, Math.min(x, LEDGE.x1 - 40))]);
+    if (target === "far") ren.plan.push(["walk", LEDGE.x1 - 50], ["jump"], ["walk", Math.max(FAR.x0 + 40, Math.min(x, FAR.x1 - 20))]);
+  }
+  if (ren.surface === "far" && target === "far") ren.plan.push(["walk", Math.max(FAR.x0 + 20, Math.min(x, FAR.x1 - 20))]);
+  nextStep();
+}
+
+function nextStep() {
+  const s = ren.plan.shift();
+  if (!s) { ren.act = "idle"; return; }
+  ren.t = 0; ren.k = 0; ren.pins = {};
+  if (s[0] === "walk") {
+    ren.target = s[1]; ren.dir = s[1] >= ren.x ? 1 : -1;
+    if (Math.abs(s[1] - ren.x) < 25) return nextStep();
+    ren.act = "walk"; updatePins();
+  } else if (s[0] === "climb") { ren.dir = 1; ren.act = "climb"; ren.start = { x: ren.x, y: ren.y }; }
+  else if (s[0] === "jump") { ren.dir = 1; ren.act = "jump"; ren.start = { x: ren.x, y: ren.y }; }
+}
+
+const JUMP_AIR = [3, 8];                  // frames (0-based) that move across the gap
+function tick(dt) {
+  if (ren.act === "idle") return;
+  const name = ren.act === "walk" ? "walk_keypose" : ren.act === "climb" ? "climb_up" : "jump", a = A[name];
+  ren.t += dt;
+  while (ren.act !== "idle" && ren.t >= a.frames[ren.k].duration_ms) {
+    ren.t -= a.frames[ren.k].duration_ms;
+    if (ren.act === "walk") {
+      const adv = stepTravel(ren.k);
+      if (Math.abs(ren.target - ren.x) < adv * 0.5) { nextStep(); return; }   // stop on a contact frame boundary
+      ren.x += ren.dir * adv; ren.k = (ren.k + 1) % a.frames.length; updatePins();
+    } else if (ren.act === "climb") {
+      ren.k++;
+      if (ren.k >= a.frames.length) { const p = a.path[a.path.length - 1]; ren.x = ren.start.x + p[0] * a.scale; ren.y = ren.start.y + p[1] * a.scale; ren.surface = "ledge"; nextStep(); return; }
+      const p = a.path[ren.k]; ren.x = ren.start.x + p[0] * a.scale; ren.y = ren.start.y + p[1] * a.scale;
+    } else {
+      ren.k++;
+      const dist = FAR.x0 + 50 - ren.start.x, span = JUMP_AIR[1] - JUMP_AIR[0] + 1;
+      const air = Math.min(span, Math.max(0, ren.k - JUMP_AIR[0]));
+      ren.x = ren.start.x + dist * air / span;
+      ren.y = ren.start.y - 50 * Math.sin(Math.PI * air / span);
+      if (ren.k >= a.frames.length) { ren.k = a.frames.length - 1; ren.y = FAR.top; ren.surface = "far"; nextStep(); return; }
+    }
+  }
+}
+
+function draw() {
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = "#d6ccba"; ctx.strokeStyle = "#968a6e";
+  ctx.fillRect(0, GROUND, LEDGE.x0, cv.height - GROUND);
+  ctx.fillRect(LEDGE.x0, LEDGE.top, LEDGE.x1 - LEDGE.x0, cv.height - LEDGE.top);
+  ctx.fillRect(FAR.x0, FAR.top, FAR.x1 - FAR.x0, cv.height - FAR.top);
+  ctx.fillStyle = "#333"; ctx.font = "12px system-ui";
+  ctx.fillText("floor", 10, GROUND + 18); ctx.fillText("ledge (from the climb export)", LEDGE.x0 + 6, LEDGE.top + 18); ctx.fillText("far platform", FAR.x0 + 6, FAR.top + 18);
+  for (let x = 0; x < LEDGE.x0; x += 20) { ctx.fillRect(x, GROUND, 1, x % 100 ? 5 : 10); }
+  const name = ren.act === "climb" ? "climb_up" : ren.act === "jump" ? "jump" : "walk_keypose";
+  const k = ren.act === "idle" ? (ren.lastIdle ?? 0) : ren.k;
+  drawFrame(ren.act === "idle" ? (ren.idleAct || "walk_keypose") : name, k, ren.x, ren.y, ren.dir);
+  if (ren.act === "walk") for (const p of Object.values(ren.pins)) { ctx.fillStyle = "#c81e28"; ctx.fillRect(p.x - 2, p.y - 10, 4, 14); }
+  const d = document.getElementById("drift");
+  d.textContent = `planted-foot drift since landing: ${ren.drift.toFixed(1)} game px (max this session ${ren.maxDrift.toFixed(1)})`;
+  d.className = ren.maxDrift > 0.5 ? "bad" : "good";
+  document.getElementById("state").textContent = `${ren.act} on ${ren.surface}`;
+}
+
+let last = performance.now();
+function loop(now) { const dt = now - last; last = now; tick(dt); if (ren.act === "idle") { ren.idleAct = ren.surface === "floor" && ren.lastAct === "climb" ? "climb_up" : ren.idleAct; } draw(); requestAnimationFrame(loop); }
+
+(async () => {
+  await Promise.all(["walk_keypose", "climb_up", "jump"].map(load));
+  const c = A.climb_up, s = c.scale, led = c.props.find(p => p.type === "ledge");
+  ren.climbStart = 420;
+  LEDGE = { x0: ren.climbStart + led.front_x * s, x1: ren.climbStart + led.back_x * s, top: GROUND + led.top_y * s };
+  GAP = 90;
+  FAR = { x0: LEDGE.x1 + GAP, x1: cv.width - 10, top: LEDGE.top };
+  cv.addEventListener("click", onClick);
+  document.getElementById("oldTiming").addEventListener("change", () => { ren.maxDrift = 0; });
+  document.body.dataset.ready = "1";
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

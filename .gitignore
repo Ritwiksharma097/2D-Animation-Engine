@@ -1,6 +1,7 @@
 .claude/
 out/*
 !out/report_examples/
+!out/export/
 __pycache__/
 *.pyc
 node_modules/
