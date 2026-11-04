@@ -282,7 +282,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | Step | State |
 | --- | --- |
 | 12. Correct climb calibration | done |
-| 13. One climb, different ledge heights | not started |
+| 13. One climb, different ledge heights | done |
 | 14. Redraw specs | not started |
 | 15. Owner review page | not started |
 | 16. Playtest completeness | not started |
@@ -311,6 +311,22 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
   (+ the same 40 cell px front band). `play_checks.py` 6/6 PASS. Known: the walk stops ~39 game px
   short of the climb start (walk steps are ~40 px), so the climb begins with a jump forward.
 - REPORT.md climb section rewritten: "perfect climb floats" withdrawn and the cause explained.
+
+## Step 13 notes
+
+- `workbench/ledge_sweep.py <c> <a>`: per height, `from_contacts` path + scene check, rows in
+  `out/<c>/<a>/ledge_sweep.json`, images `ledge_<pct>.png`. Ren climb_up: strict 98-101%, looser
+  (2x tolerance) 92-107%. Looked at 70% and 130%: frames 2-7 split the difference between feet
+  on the floor and fingertips on the top (sink / float), frames 8-14 fine.
+- `export.py` adds `paths_by_height` (60-140%, path, front_x, verdicts) and `height_rule` to
+  `climb_up.json`. play.html: ledge-height slider (only while idle on the floor), ledge amber when
+  marginal, red when unsupported, message says it needs new drawings or a step-up / pull-up.
+- Fixed two playtest bugs found while testing: the climb started wherever the walk stopped (39 game
+  px short of the climb start, so the hand pins missed the ledge); it now starts at the climb start
+  (a visible 39 px step forward, recorded as `ren.popIn`). Walks could overshoot their target and
+  never stop; the stop test is now directional.
+- `play_checks.py` 9/9 PASS incl. 70% marked unsupported and climbing onto it, 100% marked
+  supported. Screenshot 34 looked at.
 
 ## Known problems
 
@@ -343,7 +359,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 3: next is step 13 (one climb at different ledge heights).
+Phase 3: next is step 14 (redraw specs).
 
 Phase 2 follow-ups (older list):
 1. On Windows: `python -m pytest workbench/tests`, `python workbench/tests/ui_checks.py`,

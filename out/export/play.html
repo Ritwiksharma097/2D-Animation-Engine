@@ -25,6 +25,8 @@
 </header>
 <div class="row">
   <label><input type="checkbox" id="oldTiming"> use the old demo's constant 41.9 px per drawing (to see the slide)</label>
+  <label>ledge height <input type="range" id="ledgeH" min="60" max="140" step="1" value="100"> <b id="ledgeHv">100%</b></label>
+  <span id="ledgeMsg"></span>
   <span id="drift"></span> <span id="state" class="note"></span>
 </div>
 <canvas id="cv" width="1200" height="520"></canvas>
@@ -34,6 +36,25 @@ const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
 const A = {};
 const GROUND = 470;                       // game px
 let LEDGE, GAP, FAR;                      // set from the climb export
+let ledgePct = 100;
+// ledge height: the climb export carries a contact-pinned path per height (60-140%) with the tool's verdict.
+// At 100% the owner's approved per-pose path is used unchanged.
+function heightInfo() { return A.climb_up.paths_by_height[String(ledgePct)]; }
+function climbPath() { return ledgePct === 100 ? A.climb_up.path : heightInfo().path; }
+function setLedge(pct) {
+  ledgePct = pct;
+  const c = A.climb_up, h = heightInfo(), s = c.scale, w = LEDGE.x1 - LEDGE.x0;
+  LEDGE.x0 = ren.climbStart + h.front_x * s; LEDGE.x1 = LEDGE.x0 + w; LEDGE.top = GROUND - h.height * s;
+  if (FAR) FAR = { x0: LEDGE.x1 + GAP, x1: cv.width - 10, top: LEDGE.top };
+  const r = c.height_rule;
+  document.getElementById("ledgeHv").textContent = `${pct}% (${(h.height * s).toFixed(0)} game px)`;
+  const m = document.getElementById("ledgeMsg");
+  m.className = h.supported ? "good" : h.supported_2x ? "" : "bad";
+  m.textContent = h.supported ? `supported (${r.strict_range_pct.join("-")}%)`
+    : h.supported_2x ? `marginal: contacts up to 2x tolerance (looser range ${r.loose_range_pct.join("-")}%)`
+    : `NOT supported: these climb drawings won't work at this height; it needs new drawings or another climb category (step-up, pull-up). Supported ${r.strict_range_pct.join("-")}%, marginal ${r.loose_range_pct.join("-")}%.`;
+  if (ren) { const w2 = A.walk_keypose, front = Math.max(...w2.frames.map(f => f.offset[0] + f.rect[2] - w2.anchor[0])) * w2.scale; ren.floorLimit = LEDGE.x0 + 40 * w2.scale - front; }
+}
 const ren = { x: 120, y: GROUND, dir: 1, surface: "floor", act: "idle", k: 0, t: 0, plan: [], pins: {}, drift: 0, maxDrift: 0 };
 window.playtest = { ren, A };
 
@@ -104,7 +125,11 @@ function nextStep() {
     ren.target = s[1]; ren.dir = s[1] >= ren.x ? 1 : -1;
     if (Math.abs(s[1] - ren.x) < 25) return nextStep();
     ren.act = "walk"; updatePins();
-  } else if (s[0] === "climb") { ren.dir = 1; ren.act = "climb"; ren.start = { x: ren.x, y: ren.y }; }
+  } else if (s[0] === "climb") {
+    // the climb drawings are placed relative to the ledge: start exactly at the climb start (a visible step forward
+    // when the walk had to stop short of it, because the walk drawings are too wide to get closer)
+    ren.dir = 1; ren.act = "climb"; ren.popIn = ren.climbStart - ren.x; ren.x = ren.climbStart; ren.start = { x: ren.x, y: ren.y };
+  }
   else if (s[0] === "jump") { ren.dir = 1; ren.act = "jump"; ren.start = { x: ren.x, y: ren.y }; }
 }
 
@@ -117,13 +142,13 @@ function tick(dt) {
     ren.t -= a.frames[ren.k].duration_ms;
     if (ren.act === "walk") {
       const adv = stepTravel(ren.k);
-      if (Math.abs(ren.target - ren.x) < adv * 0.5) { nextStep(); return; }   // stop on a contact frame boundary
+      if (ren.dir * (ren.target - ren.x) < adv * 0.5) { nextStep(); return; }   // stop on a contact frame boundary, never overshoot
       if (ren.dir > 0 && ren.surface === "floor" && ren.x + adv > ren.floorLimit) { nextStep(); return; }  // never step into the ledge face
       ren.x += ren.dir * adv; ren.k = (ren.k + 1) % a.frames.length; updatePins();
     } else if (ren.act === "climb") {
       ren.k++;
-      if (ren.k >= a.frames.length) { const p = a.path[a.path.length - 1]; ren.x = ren.start.x + p[0] * a.scale; ren.y = ren.start.y + p[1] * a.scale; ren.surface = "ledge"; nextStep(); return; }
-      const p = a.path[ren.k]; ren.x = ren.start.x + p[0] * a.scale; ren.y = ren.start.y + p[1] * a.scale;
+      if (ren.k >= a.frames.length) { const cp = climbPath(), p = cp[cp.length - 1]; ren.x = ren.start.x + p[0] * a.scale; ren.y = ren.start.y + p[1] * a.scale; ren.surface = "ledge"; nextStep(); return; }
+      const p = climbPath()[ren.k]; ren.x = ren.start.x + p[0] * a.scale; ren.y = ren.start.y + p[1] * a.scale;
     } else {
       ren.k++;
       const dist = FAR.x0 + 50 - ren.start.x, span = JUMP_AIR[1] - JUMP_AIR[0] + 1;
@@ -139,10 +164,13 @@ function draw() {
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.fillStyle = "#d6ccba"; ctx.strokeStyle = "#968a6e";
   ctx.fillRect(0, GROUND, LEDGE.x0, cv.height - GROUND);
+  const hinfo = heightInfo();
+  if (!hinfo.supported_2x) ctx.fillStyle = "#e9b3b3"; else if (!hinfo.supported) ctx.fillStyle = "#ead9b0";
   ctx.fillRect(LEDGE.x0, LEDGE.top, LEDGE.x1 - LEDGE.x0, cv.height - LEDGE.top);
+  ctx.fillStyle = "#d6ccba";
   ctx.fillRect(FAR.x0, FAR.top, FAR.x1 - FAR.x0, cv.height - FAR.top);
   ctx.fillStyle = "#333"; ctx.font = "12px system-ui";
-  ctx.fillText("floor", 10, GROUND + 18); ctx.fillText("ledge (from the climb export)", LEDGE.x0 + 6, LEDGE.top + 18); ctx.fillText("far platform", FAR.x0 + 6, FAR.top + 18);
+  ctx.fillText("floor", 10, GROUND + 18); ctx.fillText(`ledge ${ledgePct}% (${hinfo.supported ? "supported" : hinfo.supported_2x ? "marginal" : "NOT SUPPORTED"})`, LEDGE.x0 + 6, LEDGE.top + 18); ctx.fillText("far platform", FAR.x0 + 6, FAR.top + 18);
   for (let x = 0; x < LEDGE.x0; x += 20) { ctx.fillRect(x, GROUND, 1, x % 100 ? 5 : 10); }
   const name = ren.act === "climb" ? "climb_up" : ren.act === "jump" ? "jump" : "walk_keypose";
   const k = ren.act === "idle" ? (ren.lastIdle ?? 0) : ren.k;
@@ -162,6 +190,9 @@ function loop(now) { const dt = now - last; last = now; tick(dt); if (ren.act ==
   const c = A.climb_up, s = c.scale, led = c.props.find(p => p.type === "ledge");
   ren.climbStart = 420;
   LEDGE = { x0: ren.climbStart + led.front_x * s, x1: ren.climbStart + led.back_x * s, top: GROUND + led.top_y * s };
+  const slider = document.getElementById("ledgeH");
+  slider.addEventListener("input", () => { if (ren.act !== "idle" || ren.surface !== "floor") { slider.value = ledgePct; return; } setLedge(+slider.value); });
+  setLedge(100);
   // walking on the floor stops where the walk drawings' front-most pixel reaches the ledge face, allowing the same
   // 40 cell px "near limb in front of the face" band as props.py
   const w = A.walk_keypose, front = Math.max(...w.frames.map(f => f.offset[0] + f.rect[2] - w.anchor[0])) * w.scale;

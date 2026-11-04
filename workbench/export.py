@@ -103,6 +103,20 @@ def export(character, action, out_dir=EXPORT):
         out["props"] = rel
         out["floor_y"] = round(scene["floor_y"] - start[1], 2)
         out["path_source"] = scene["path"]["type"] + (": " + scene.get("source", "") if scene.get("source") else "")
+        if any(q["type"] == "ledge" for q in scene.get("props", [])):
+            import ledge_sweep as LS
+            _, summ, res = LS.run(character, action, list(range(60, 141)))
+            led0 = next(q for q in scene["props"] if q["type"] == "ledge")
+            by = {}
+            for row in summ["rows"]:
+                offs_h = [f["offset"] for f in res[row["pct"]]["frames"]]
+                st = (offs_h[0][0] + ax, offs_h[0][1] + ay)
+                by[str(int(row["pct"]))] = {"height": row["height_px"], "supported": row["supported"], "supported_2x": row["supported_2x"],
+                                            "front_x": round(led0["front_x"] - st[0], 2),
+                                            "path": [[round(o[0] + ax - st[0], 2), round(o[1] + ay - st[1], 2)] for o in offs_h]}
+            out["paths_by_height"] = by
+            out["height_rule"] = {"strict": summ["rule"], "strict_range_pct": summ["supported_pct"],
+                                  "loose": summ["rule_2x"], "loose_range_pct": summ["supported_pct_2x"], "note": summ["note"]}
     d = out_dir / character
     d.mkdir(parents=True, exist_ok=True)
     sheet.save(d / f"{action}.png", optimize=True)

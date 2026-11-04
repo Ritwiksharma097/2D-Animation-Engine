@@ -295,3 +295,35 @@ What the tool still flags on Ren's climb, with the allowances made explicit:
 - The playtest (`out/export/play.html`) uses only the exports. Its walk measured 0.00 game px of
   planted-foot drift, against 31.6 with the old constant speed. **The 4-drawing walk looks choppy
   whatever the travel.**
+
+# Phase 3 results
+
+## One climb, different ledge heights (step 13)
+
+For each height (60–140% of the original 197 cell px / 94 game px; the front edge stays fixed),
+`workbench/ledge_sweep.py` pins the climb path to the planted contacts:
+- feet on the floor in frames 1–7;
+- the fingertips on the ledge top in frames 2–7;
+- hands and knees on the top in frames 8–12, then feet on the top.
+
+Each height is then checked.
+
+| criterion | range that works |
+|---|---|
+| contacts within the tool's tolerances (6 cell px feet ≈ 3 game px, 14 px hands), clip no deeper than at 100% + 2 px | **98–101%** (193–199 cell px) |
+| looser: contacts within 2x those tolerances (≈ 6 / 14 game px), clip up to 27 px | **92–107%** (181–211 cell px, ≈ 86–101 game px) |
+
+**Outside roughly 92–107% these drawings do not work, and no path can fix them.** In frames 2–7,
+Ren is drawn standing on the floor with his fingertips resting on the ledge top, so each drawing
+pins one ledge height. On a lower ledge the path has to split the difference: his feet sink into
+the floor and his hand floats above the top. On a higher ledge his feet float and his hand sits
+below the top. Frames 8–14 adapt to any height. Other ledge heights need new reach drawings, or
+another climb category: a step-up for low ledges, a pull-up for high ones.
+
+In the playtest, the ledge-height slider uses these contact-pinned paths (the owner's own path at
+100%). It colours the ledge amber outside the strict range and red outside the looser one, with a
+message saying the drawings won't work there.
+
+![70%](out/report_examples/phase3/ledge_70.png)
+![100%](out/report_examples/phase3/ledge_100.png)
+![130%](out/report_examples/phase3/ledge_130.png)

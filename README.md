@@ -107,3 +107,10 @@ python workbench/export.py --demo          # out/export/ren/*.png + *.json
 python workbench/serve.py                  # then http://localhost:8000/out/export/play.html
 python workbench/tests/play_checks.py      # walk/climb/jump checks with screenshots
 ```
+
+## Ledge heights
+
+```
+python workbench/ledge_sweep.py ren climb_up     # supported range + ledge_<pct>.png scene images
+python workbench/export.py --demo                # exports paths_by_height for the playtest slider
+```
