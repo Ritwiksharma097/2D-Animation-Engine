@@ -196,6 +196,10 @@ export class GuardBrain {
   eye() { return { x: this.g.x, y: this.g.y - this.cfg.vision.eye_height }; }
   look(ren) {
     if (!ren || ren.hidden) return { seen: false, reason: "no target" };
+    if (ren.hidingIn) {   // in a hiding spot (runtime/scene.js): seen only within its reveal_radius
+      const d = Math.abs(ren.x - this.g.x);
+      if (d > ren.hidingIn.reveal_radius) return { seen: false, reason: `hidden (${ren.hidingIn.id})`, distance: d };
+    }
     const target = { x: ren.x, y: ren.y - this.cfg.vision.target_height };
     const r = canSee(this.eye(), this.g.dir, target, this.cfg.vision, this.solids);
     // close in front (within notice.radius, same height) is seen even below the cone, unless a prop is in the way

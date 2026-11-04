@@ -172,8 +172,12 @@ export class Character {
   jumpTo(x, surface) { this.queue.push({ type: "jump", x, surface }); return this; }
   play(role, { loops = 1 } = {}) { this.queue.push({ type: "play", role, loops }); return this; }
   wait(ms) { this.queue.push({ type: "wait", ms }); return this; }
+  /** Play `frames` (0-based, default all) of a role's clip, then hold the last one until the next command (e.g. a crouch). */
+  pose(role, { frames = null, tag = null } = {}) { this.queue.push({ type: "pose", role, frames, tag }); return this; }
+  /** Holding a pose (finished its frames, waiting for the next command). */
+  get holding() { return this.state === "pose" && !!this.cmd?.held; }
   clear() { this.queue = []; return this; }
-  get busy() { return this.state !== "idle" || this.queue.length > 0; }
+  get busy() { return (this.state !== "idle" && !this.holding) || this.queue.length > 0; }
 
   setState(s, clip) {
     const from = this.state; this.state = s; if (clip) { this.clip = clip; this.k = 0; this.t = 0; this.enterFrame(); }
@@ -232,6 +236,10 @@ export class Character {
       cmd.left = cmd.loops; this.setState("play", this.c(cmd.role));
     } else if (cmd.type === "wait") {
       cmd.left = cmd.ms; this.setState("wait", this.c("idle"));
+    } else if (cmd.type === "pose") {
+      const clip = this.c(cmd.role);
+      cmd.frames ??= clip.frames.map((_, i) => i); cmd.i = 0; cmd.held = cmd.frames.length <= 1;
+      this.setState("pose", clip); if (cmd.frames[0] !== 0) { this.k = cmd.frames[0]; this.enterFrame(); }
     }
   }
 
@@ -291,7 +299,8 @@ export class Character {
 
   /** Advance by dt milliseconds. */
   update(dt) {
-    if (this.state === "idle" && !this.cmd && this.queue.length) return this.next();
+    if ((this.state === "idle" && !this.cmd || this.holding) && this.queue.length) return this.next();
+    if (this.holding) return;
     if (this.state === "turn") {
       this.turnLeft -= dt;
       if (this.turnLeft <= 0) { this.dir = -this.dir; this.emit("turn", { dir: this.dir }); this.next(); }
@@ -342,6 +351,10 @@ export class Character {
       this.y = cmd.start.y + (cmd.landY - cmd.start.y) * u - J.arc_height_px * clip.scale * Math.sin(Math.PI * u);
       if (this.k >= n) { this.k = n - 1; this.surface = cmd.surface; this.y = cmd.landY; this.next(); return "stop"; }
       this.enterFrame(); return;
+    }
+    if (this.state === "pose") {
+      if (cmd.i + 1 >= cmd.frames.length) { cmd.held = true; return "stop"; }
+      this.k = cmd.frames[++cmd.i]; this.enterFrame(); if (cmd.i + 1 >= cmd.frames.length) cmd.held = true; return;
     }
     if (this.state === "play") {
       if (this.k + 1 >= n) { if (--cmd.left <= 0) { this.next(); return "stop"; } this.k = 0; this.enterFrame(); return; }

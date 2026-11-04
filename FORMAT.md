@@ -222,6 +222,26 @@ saved through `serve.py` (`POST /api/level?name=`).
 - **hotspots:** items or use points on a surface (`on`).
 - **rules:** jump limits and transition costs; they override `runtime/level.js` `DEF_RULES`.
 
+### Scene keys (optional; read by `runtime/scene.js`, step 30)
+
+```json
+"layers":    [{"id": "far_hills", "parallax": 0.2, "depth": -200, "alpha": 1, "rects": [{"x": 0, "y": 300, "w": 420, "h": 170, "color": "#d9e2e6"}]}],
+"occluders": [{"id": "pillar", "x0": 560, "x1": 610, "y0": 120, "y1": 470, "color": "#8c8c8c", "alpha": 0.95, "blocks_sight": false}],
+"hiding_spots": [{"id": "crate", "on": "A", "x0": 980, "x1": 1070, "height": 110, "kind": "behind", "reveal_radius": 45}],
+"doors":     [{"id": "D1", "on": "A", "x": 1730, "to": {"level": "scene_b", "door": "D0"}}, {"id": "out", "on": "B", "x": 1140, "kind": "exit"}]
+```
+
+- **layers:** flat-colour rectangles in screen space shifted by `camera x * parallax` (0 = fixed sky,
+  1 = moves with the world, > 1 = foreground). `depth` < 0 draws behind the world, > 0 in front.
+- **occluders:** world-space shapes drawn in front of characters (depth 50); `blocks_sight` adds them
+  to the guard's line-of-sight solids.
+- **hiding_spots:** a character holding a pose tagged `hide` inside `x0..x1` on `on` is hidden: silent,
+  passable, and seen only within `reveal_radius` game px. `kind: "behind"` draws the spot in front of
+  him (depth 5), `"in"` behind (depth -5).
+- **doors:** `to: {level, door}` moves to that door of another level file (with a fade); `kind: "exit"`
+  ends the run. `width` (60) and `height` (150) are for clicking and drawing.
+- Depth sorting: drawables sort by `depth`, then feet `y`, then insertion order (`depthSort`).
+
 `compileLevel` turns floors into **walk regions** split by the ledges standing on them, e.g.
 `A#0` is left of L1 and `A#1` right of it. A region's sides are `face` (stop before the ledge,
 allowing the 40 cell px front band) or `edge` (stop 10 px from a drop). `navGraph` lists the

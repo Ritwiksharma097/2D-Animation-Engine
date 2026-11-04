@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scene demo</title>
+<style>
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; color:#1e1e1e; background:#f6f6f4; }
+  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; } h1 { font-size:16px; margin:0 0 4px; }
+  .note { color:#666; } .row { padding:6px 14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; width:calc(100% - 28px); height:auto; }
+  #hud { font:12px ui-monospace, monospace; white-space:pre; color:#333; } .bad { color:#c81e28; } .good { color:#1baf7a; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Scene demo (not the game): layers, hiding spot, doors</h1>
+  <div class="note">Placeholder shapes. Parallax hills behind, a pillar and grass in front of the characters. Click the crate to hide behind it
+  (Ren holds a placeholder crouch; the guard sees him only when he is very close). Click the door to change screens with a fade.
+  Tuning: <code>sandbox/scenes.json</code>; levels: <code>levels/scene_a.json</code>, <code>levels/scene_b.json</code>.</div>
+</header>
+<div class="row"><label><input type="checkbox" id="dbg"> debug overlay</label> <button id="retry" hidden>retry</button> <span id="msg"></span></div>
+<canvas id="cv" width="1200" height="520"></canvas>
+<div class="row"><div id="hud"></div></div>
+<script type="module">
+import { Character, run } from "../runtime/anim.js";
+import { setupStage, preloadClips } from "../runtime/page.js";
+import { compileLevel, worldFromLevel, navGraph, goTo, planRoute, queueRoute, Camera } from "../runtime/level.js";
+import { GuardBrain, sightBlockers } from "../runtime/behaviour.js";
+import { sceneFromLevel, drawLayers, sceneDrawables, drawFade, updateHiding, hidingSpotAt, doorAt, Fader } from "../runtime/scene.js";
+
+const T = await (await fetch("scenes.json", { cache: "no-store" })).json();
+const W = T.view.width, H = T.view.height, cv = document.getElementById("cv"), stage = setupStage(cv, W, H), ctx = stage.ctx;
+const REN = { idle: "ren/idle", walk: "ren/walk_keypose", interact: "ren/interact", caught: "ren/caught_game_over" };
+const GUARD = { idle: "guard/idle", walk: "guard/walk", angry: "guard/angry", eat: "guard/eating" };
+const clips = await preloadClips(T.exports, [...new Set([...Object.values(REN), ...Object.values(GUARD)])], cv);
+const levels = {};
+for (const name of ["scene_a", "scene_b"]) levels[name] = await (await fetch(`${T.levels_dir}/${name}.json`, { cache: "no-store" })).json();
+const fader = new Fader({ outMs: T.fade.out_ms, inMs: T.fade.in_ms }), crouch = T.placeholder_poses.crouch;
+const msg = (t, cls = "") => { const m = document.getElementById("msg"); m.textContent = t; m.className = cls; };
+let S;   // current screen: {name, level, C, world, scene, edges, ren, guard, brain, cam}
+
+function enter(name, x, dir = 1) {
+  const level = levels[name], C = compileLevel(level), world = worldFromLevel(C), scene = sceneFromLevel(level);
+  const surface = C.regions.find(r => r.x0 <= x && x <= r.x1)?.id ?? C.regions[0].id;
+  const ren = new Character({ id: "ren", clips, world, x, surface, dir, names: REN, radius: T.bodies.ren_radius });
+  let guard = null, brain = null;
+  if (T.guard.level === name) {
+    guard = new Character({ id: "guard", clips, world, x: T.guard.start_x, surface: C.regions[0].id, names: GUARD, radius: T.bodies.guard_radius });
+    const solids = [...sightBlockers(C), ...scene.occluders.filter(o => o.blocks_sight)];
+    brain = new GuardBrain({ guard, config: T.guard, world, solids });
+    brain.on("caught", () => { S.over = true; ren.clear(); if (ren.state !== "idle") ren.next(); ren.play("caught"); msg("caught! retry", "bad"); document.getElementById("retry").hidden = false; });
+  }
+  const cam = new Camera({ viewW: W, levelW: level.size[0], deadZone: T.camera.dead_zone, ease: T.camera.ease }); cam.snap(x);
+  S = { name, level, C, world, scene, edges: navGraph(C, ren), ren, guard, brain, cam, pending: null, over: false };
+  window.sd = { get S() { return S; }, fader, T, enter, useDoor };
+}
+
+function useDoor(d) {
+  if (d.kind === "exit") { S.over = true; msg("left through the exit", "good"); document.getElementById("retry").hidden = false; return; }
+  fader.start(() => {
+    const to = levels[d.to.level].doors.find(x => x.id === d.to.door);
+    const into = to.x < levels[d.to.level].size[0] / 2 ? 1 : -1;
+    enter(d.to.level, to.x + into * T.door_spawn_offset, into);
+    msg(`entered ${d.to.level}`);
+  });
+}
+
+stage.on("tap", (x, y) => {
+  if (S.over || fader.busy) return;
+  x += S.cam.x;
+  const ren = S.ren;
+  if (ren.busy) return;
+  const route = (tx, then) => {
+    const surf = S.C.regions.find(r => r.floor === String(ren.surface).split("#")[0] && r.x0 <= tx && tx <= r.x1)?.id ?? ren.surface;
+    const rt = planRoute(S.C, S.edges, { surface: ren.surface, x: ren.x }, { surface: surf, x: tx });
+    if (!rt.ok) return msg(`can't get there: ${rt.reason}`, "bad");
+    queueRoute(ren, rt.steps); S.pending = then;
+  };
+  const d = S.scene.doors.find(d => Math.abs(x - d.x) <= d.width / 2 + 20 && y >= d.y1 - d.height - 10 && y <= d.y1 + 10);
+  if (d) return route(d.x, { door: d });
+  const h = S.scene.hiding.find(h => x >= h.x0 - 10 && x <= h.x1 + 10 && y >= h.y0 - 20 && y <= h.y1 + 10);
+  if (h) return route((h.x0 + h.x1) / 2, { hide: h });
+  const res = goTo(S.C, S.edges, ren, x, y);
+  if (!res.ok) msg(`can't get there: ${res.reason}`, "bad");
+});
+document.getElementById("retry").onclick = () => { document.getElementById("retry").hidden = true; msg(""); enter(T.start.level, T.start.x); };
+
+function hud() {
+  const r = S.ren, lines = [`screen ${S.name}   camera x ${S.cam.x.toFixed(0)}   fade ${fader.alpha.toFixed(2)}`];
+  const pose = r.state === "pose" ? `  ${crouch.label}` : "";
+  lines.push(`Ren   ${r.state.padEnd(6)} ${r.clip.key.padEnd(20)} ${r.hidingIn ? "HIDDEN behind " + r.hidingIn.id : ""}${pose}`);
+  if (S.brain) {
+    const Sc = S.brain.cfg.suspicion, v = S.brain.state.suspicion ?? 0, n = Math.round(20 * v / Sc.caught_at);
+    lines.push(`guard ${S.brain.state.mode ?? "-"}  sees Ren: ${S.brain.last.seen ? "YES" : "no (" + S.brain.last.reason + ")"}`);
+    lines.push(`suspicion [${"#".repeat(n)}${".".repeat(20 - n)}] ${v.toFixed(2)} / ${Sc.caught_at.toFixed(2)}: caught when full`);
+  }
+  const el = document.getElementById("hud"); el.innerHTML = "";
+  for (const l of lines) { const d = document.createElement("div"); d.textContent = l; if (/PLACEHOLDER|YES/.test(l)) d.className = "bad"; el.appendChild(d); }
+}
+
+function cone() {
+  const b = S.brain, g = S.guard, e = b.eye(), v = b.cfg.vision, a = v.halfAngleDeg * Math.PI / 180, d = g.dir;
+  ctx.fillStyle = b.last.seen ? "rgba(200,30,40,0.18)" : "rgba(237,161,0,0.14)";
+  ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(e.x + d * v.range * Math.cos(a), e.y - v.range * Math.sin(a)); ctx.lineTo(e.x + d * v.range * Math.cos(a), e.y + v.range * Math.sin(a)); ctx.closePath(); ctx.fill();
+  const Sc = b.cfg.suspicion, f = (b.state.suspicion ?? 0) / Sc.caught_at, x = g.x - 40, y = g.y - 200;
+  ctx.fillStyle = "rgba(0,0,0,0.12)"; ctx.fillRect(x, y, 80, 9); ctx.fillStyle = f >= 1 ? "#c81e28" : "#eb6834"; ctx.fillRect(x, y, 80 * f, 9); ctx.strokeStyle = "#555"; ctx.strokeRect(x, y, 80, 9);
+}
+
+enter(T.start.level, T.start.x);
+run([{ update: dt => {
+  fader.update(dt);
+  const { ren, guard, brain } = S;
+  if (!S.over && !fader.busy) {
+    if (S.pending && !ren.busy) {
+      const p = S.pending; S.pending = null;
+      if (p.door) useDoor(p.door);
+      else if (p.hide) ren.pose(crouch.role, { frames: crouch.frames, tag: "hide" });
+    }
+    updateHiding(ren, S.scene.hiding);
+    brain?.update(dt, ren);
+  }
+  ren.update(dt); guard?.update(dt);
+  S.cam.update(ren.x, dt);
+} }], () => {
+  const camX = S.cam.x;
+  stage.begin(); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  drawLayers(ctx, S.scene.layers, camX, false);
+  stage.begin(camX);
+  ctx.fillStyle = "#d6ccba"; for (const f of S.level.floors) ctx.fillRect(f.x0, f.y, f.x1 - f.x0, H - f.y);
+  if (S.brain) cone();
+  for (const it of sceneDrawables(S.scene, [S.ren, ...(S.guard ? [S.guard] : [])])) it.draw(ctx);
+  if (document.getElementById("dbg").checked) { S.ren.drawDebug(ctx); S.guard?.drawDebug(ctx); }
+  stage.begin();
+  drawLayers(ctx, S.scene.layers, camX, true);
+  drawFade(ctx, fader, W, H);
+  hud();
+});
+document.body.dataset.ready = "1";
+</script>
+</body>
+</html>

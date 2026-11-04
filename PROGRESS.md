@@ -615,7 +615,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | Step | State |
 | --- | --- |
 | 29. Fixes from the phase 5 owner-PC check | done |
-| 30. Scenes and layering | not started |
+| 30. Scenes and layering | done |
 | 31. Sequences, emotes, sound hooks | not started |
 | 32. Objects with state, puzzles | not started |
 | 33. Level editor v2 | not started |
@@ -661,6 +661,31 @@ Open owner decisions (not decided here; each lives in one place, listed in
   glimpse never does, hearing/bump, bodies). `phase6_fixes_checks.py` 23/23; `sandbox_checks.py`
   10/10 (still winnable); robustness 20/20, play 16/16, guard_demo 7/7, level 8/8. Screenshots 96-99
   looked at.
+
+## Step 30 notes
+
+- `runtime/scene.js`: `sceneFromLevel` (layers, occluders, hiding spots, doors from level JSON; FORMAT.md
+  "Scene keys"), `parallaxX`, `depthSort` (depth, then feet y, then insertion), `sceneDrawables`
+  (characters, spots, occluders, doors as depth-sorted draw items), `drawLayers` (background /
+  foreground parallax), `hidingSpotAt` / `updateHiding`, `doorAt`, `Fader` (out, switch at black, in),
+  `drawFade`.
+- Runtime: `Character.pose(role, {frames, tag})` plays listed frames and holds the last (`holding`; not
+  `busy` while held, so a click can move him on). `GuardBrain.look` sees a hiding Ren only within the
+  spot's `reveal_radius`.
+- **Placeholder crouch:** there are no hide drawings; the pose is `ren/interact` drawings 1-5 (the
+  pickup crouch) held, and the HUD says so in red ("PLACEHOLDER crouch (no hide drawing exists)").
+  The crate was raised to 110 px so it covers that crouch (127 game px tall); his hood still shows.
+- `sandbox/scenes.html` + `sandbox/scenes.json` + `levels/scene_a.json` / `scene_b.json`: two screens,
+  three parallax layers and a foreground grass layer, a pillar occluder, a crate hiding spot on the
+  guard's patrol, a door each way, an exit on B.
+- `scene_layer_checks.py` 13/13 (run three times): pillar pixel is grey over Ren; camera scrolls;
+  parallax factors far < near < world < foreground; Ren hidden behind the crate, crate pixel over him;
+  the guard patrols past without a catch (max meter 0.22: he does see him inside the 45 px reveal
+  radius for a moment); door A->B and B->A with a fade, landing beside the target door; exit ends the
+  run. Node scene tests 4 (parallax, depth sort, hiding + reveal radius, doors + fader). Screenshots
+  a0-a6 looked at.
+- Limits: layers are flat rectangles (no images yet); the fade is a black overlay; doors only connect
+  level files the page has loaded (two here); only the guard on screen A has a brain.
 
 ## Known problems
 
@@ -714,7 +739,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 6: next is step 30 (scenes and layering).
+Phase 6: next is step 31 (sequences, emotes, sound hooks).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

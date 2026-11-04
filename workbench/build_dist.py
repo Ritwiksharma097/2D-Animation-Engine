@@ -25,6 +25,7 @@ INDEX = """<!doctype html>
 <p>Static build made by <code>workbench/build_dist.py</code>. Placeholder shapes and existing art only; not the game.</p>
 <ul>
 <li><a href="sandbox/index.html">Mechanics sandbox</a>: reach the key past the guard</li>
+<li><a href="sandbox/scenes.html">Scene demo</a>: layers, hiding spot, doors</li>
 <li><a href="out/export/play.html">Ren playtest</a>: walk, climb, jump, ledge-height control</li>
 <li><a href="out/export/guard_demo.html">Guard demo</a>: patrol, food, ladder</li>
 <li><a href="out/export/level_play.html">Level demo</a>: pathfinding and camera</li>
