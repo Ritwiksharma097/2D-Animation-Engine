@@ -1,0 +1,40 @@
+{
+ "format": "workbench-spec/1",
+ "kind": "idle",
+ "character": "ren",
+ "action": "idle_v2",
+ "replaces": "ren/idle",
+ "cell_size": [
+  640,
+  576
+ ],
+ "ground_y": 535,
+ "criteria": {
+  "frame_count_range": [
+   6,
+   10
+  ],
+  "min_distinct": 6,
+  "max_near_duplicates": 1,
+  "grounded": true,
+  "baseline_tolerance_px": 3,
+  "feet_still_px": 4,
+  "breathing_pct": [
+   0.4,
+   3.0
+  ],
+  "height_vs_reference": [
+   0.97,
+   1.03
+  ],
+  "no_flags": [
+   "region_colour_drift",
+   "region_size_drift",
+   "out_of_order"
+  ],
+  "manual": [
+   "frame 1 is the approved idle drawing (identity reference) or indistinguishable from it",
+   "the glance can be the 'looks at the player' hint the game wants"
+  ]
+ }
+}

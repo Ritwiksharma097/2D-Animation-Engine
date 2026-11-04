@@ -233,10 +233,10 @@ def analyse(dest: Path, reg: dict, images=True) -> dict:
     if reg.get("spec"):
         import spec_check as SC
         spec = json.loads(Path(reg["spec"]).read_text(encoding="utf-8"))
-        travel = spec.get("old_travel_px_per_frame") or spec["travel_px_per_frame"]
+        travel = SC.spec_travel(spec)
         sact = SC.load_folder(dest, spec, travel)
         res = SC.evaluate(spec, sact, A.analyze(sact))
-        rep["spec_check"] = {"spec": reg["spec"], "criteria": res, "meets_all_measurable": all(r["meets"] for r in res)}
+        rep["spec_check"] = {"spec": reg["spec"], "criteria": res, "meets_all_measurable": all(r["meets"] is not False for r in res)}
     if images:
         import diagnostics
         rep["images"] = diagnostics.write_all(act, rep, od)

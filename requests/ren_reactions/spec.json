@@ -1,0 +1,30 @@
+{
+ "format": "workbench-spec/1",
+ "kind": "reaction",
+ "character": "ren",
+ "action": "caught_game_over_v2",
+ "replaces": "ren/caught_game_over",
+ "cell_size": [
+  640,
+  576
+ ],
+ "ground_y": 535,
+ "criteria": {
+  "frame_count_range": [
+   8,
+   14
+  ],
+  "min_distinct": 8,
+  "max_near_duplicates": 2,
+  "grounded": false,
+  "baseline_tolerance_px": 3,
+  "no_flags": [
+   "region_colour_drift",
+   "region_size_drift"
+  ],
+  "manual": [
+   "same face, hood shape and proportions as ren/idle (the region check sees colour and size, not shape)",
+   "pose changes read clearly at game size (about 200 px tall)"
+  ]
+ }
+}

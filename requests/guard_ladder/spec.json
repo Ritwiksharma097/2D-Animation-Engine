@@ -1,0 +1,278 @@
+{
+ "format": "workbench-spec/1",
+ "kind": "ladder",
+ "character": "guard",
+ "action": "ladder_up",
+ "replaces": "guard/ladder_up (rejected)",
+ "cell_size": [
+  640,
+  576
+ ],
+ "ground_y": 535.0,
+ "head_x": 319.0,
+ "figure_height_px": 404.0,
+ "rung_spacing_px": 67.3,
+ "rise_px_per_frame": 16.82,
+ "rise_px_per_cycle": 134.6,
+ "frames": [
+  {
+   "frame": 1,
+   "pose": "right hand + left foot move up (1/4)",
+   "contacts": {
+    "hand_l": {
+     "x": 250.3,
+     "y": 151.2,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 387.7,
+     "y": 218.5,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_l": {
+     "x": 282.6,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_r": {
+     "x": 355.4,
+     "y": 467.7,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   },
+   "hip_y": 333.0
+  },
+  {
+   "frame": 2,
+   "pose": "right hand + left foot move up (2/4)",
+   "contacts": {
+    "hand_l": {
+     "x": 250.3,
+     "y": 168.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 387.7,
+     "y": 201.7,
+     "state": "free",
+     "surface": "ladder_rung"
+    },
+    "foot_l": {
+     "x": 282.6,
+     "y": 518.2,
+     "state": "free",
+     "surface": "ladder_rung"
+    },
+    "foot_r": {
+     "x": 355.4,
+     "y": 484.5,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   },
+   "hip_y": 333.0
+  },
+  {
+   "frame": 3,
+   "pose": "right hand + left foot move up (3/4)",
+   "contacts": {
+    "hand_l": {
+     "x": 250.3,
+     "y": 184.9,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 387.7,
+     "y": 184.9,
+     "state": "free",
+     "surface": "ladder_rung"
+    },
+    "foot_l": {
+     "x": 282.6,
+     "y": 501.4,
+     "state": "free",
+     "surface": "ladder_rung"
+    },
+    "foot_r": {
+     "x": 355.4,
+     "y": 501.3,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   },
+   "hip_y": 333.0
+  },
+  {
+   "frame": 4,
+   "pose": "right hand + left foot move up (4/4)",
+   "contacts": {
+    "hand_l": {
+     "x": 250.3,
+     "y": 201.7,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 387.7,
+     "y": 168.0,
+     "state": "free",
+     "surface": "ladder_rung"
+    },
+    "foot_l": {
+     "x": 282.6,
+     "y": 484.5,
+     "state": "free",
+     "surface": "ladder_rung"
+    },
+    "foot_r": {
+     "x": 355.4,
+     "y": 518.2,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   },
+   "hip_y": 333.0
+  },
+  {
+   "frame": 5,
+   "pose": "left hand + right foot move up (1/4)",
+   "contacts": {
+    "hand_l": {
+     "x": 250.3,
+     "y": 218.5,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 387.7,
+     "y": 151.2,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_l": {
+     "x": 282.6,
+     "y": 467.7,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_r": {
+     "x": 355.4,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   },
+   "hip_y": 333.0
+  },
+  {
+   "frame": 6,
+   "pose": "left hand + right foot move up (2/4)",
+   "contacts": {
+    "hand_l": {
+     "x": 250.3,
+     "y": 201.7,
+     "state": "free",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 387.7,
+     "y": 168.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_l": {
+     "x": 282.6,
+     "y": 484.5,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_r": {
+     "x": 355.4,
+     "y": 518.2,
+     "state": "free",
+     "surface": "ladder_rung"
+    }
+   },
+   "hip_y": 333.0
+  },
+  {
+   "frame": 7,
+   "pose": "left hand + right foot move up (3/4)",
+   "contacts": {
+    "hand_l": {
+     "x": 250.3,
+     "y": 184.9,
+     "state": "free",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 387.7,
+     "y": 184.9,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_l": {
+     "x": 282.6,
+     "y": 501.3,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_r": {
+     "x": 355.4,
+     "y": 501.4,
+     "state": "free",
+     "surface": "ladder_rung"
+    }
+   },
+   "hip_y": 333.0
+  },
+  {
+   "frame": 8,
+   "pose": "left hand + right foot move up (4/4)",
+   "contacts": {
+    "hand_l": {
+     "x": 250.3,
+     "y": 168.0,
+     "state": "free",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 387.7,
+     "y": 201.7,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_l": {
+     "x": 282.6,
+     "y": 518.2,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "foot_r": {
+     "x": 355.4,
+     "y": 484.5,
+     "state": "free",
+     "surface": "ladder_rung"
+    }
+   },
+   "hip_y": 333.0
+  }
+ ],
+ "criteria": {
+  "frame_count": 8,
+  "rise_per_cycle_from_contacts": 134.6,
+  "rise_tolerance_px": 10.1,
+  "foot_height_range_min_px": 50.5,
+  "manual": [
+   "back view: diagonal limbs move together (right hand with left foot, then left hand with right foot)",
+   "grippers stay on their rung while the body rises; the cycle loops (frame 8 leads into frame 1 one rung higher)"
+  ]
+ },
+ "how": "Draw 8 frames, back view, on 640x576 cells. Rungs every 67 px. In the first half the right hand and left foot each move up one rung while the left hand and right foot grip (filled dots move DOWN 16.8 px per frame in the cell as he rises); then swap. Planted dots = gripping, rings = moving. The loop rises 135 px per cycle (two rungs)."
+}

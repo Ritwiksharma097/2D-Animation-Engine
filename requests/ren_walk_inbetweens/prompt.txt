@@ -1,0 +1,31 @@
+NOTE: the brief points to the old sprite_rework README's prompt section, 'summarised in the handoff'. That text is not in this repository: assets/reference/GPT_HANDOFF.md summarises what went wrong, not the prompt wording. This template is built from the handoff's lessons and the owner's feedback in assets/manifest.json. If you have the original prompt, paste its wording into the [ORIGINAL PROMPT] slot and keep the IDENTITY and LAYOUT blocks.
+
+[ORIGINAL PROMPT] (paste here if you have it)
+
+IDENTITY (attach identity/reference.png and identity/approved_poses.png):
+  The same character as the attached references: Young hooded thief: green hood, brown hair, cream sleeves, dark trousers, boots, brown satchel.
+  Match the references exactly: face, hair, hood / helmet, outfit, colours, proportions, line weight and shading.
+  Do not restyle, simplify, chibify, recolour or add accessories. Every frame is the same character at the same scale.
+
+LAYOUT:
+  One sprite sheet, 8 frames in a single row (or a regular grid), each in its own equal cell, transparent or flat plain background.
+  Full body in every frame, nothing cropped, side view facing right.
+  The same ground line (feet level) and the same figure height in every frame; no text, no frame numbers, no shadows that touch the next cell.
+
+MOTION:
+  The 4 in-betweens the owner asked for, between the 4 approved key poses (8 frames: key, in-between, key, ...). Keep the keys' look exactly.
+  Frames:
+    1 key 1 (existing drawing)
+    2 in-between 1->2 (NEW)
+    3 key 2 (existing drawing)
+    4 in-between 2->3 (NEW)
+    5 key 3 (existing drawing)
+    6 in-between 3->4 (NEW)
+    7 key 4 (existing drawing)
+    8 in-between 4->1 (NEW)
+  Each frame must be a different drawing: no repeated frames, no near-copies (timing and holds are set later in the engine).
+  Motion should change about the same amount between neighbouring frames.
+
+AVOID (what went wrong before, from the handoff and the owner's feedback):
+  frames that repeat the same pose; feet that slide or float; a passing pose that is missing; the look changing between
+  frames or from the other actions (hood shape, hair, colours, thinness); reaching into the air or pushing off nothing.

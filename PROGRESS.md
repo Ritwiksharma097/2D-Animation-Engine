@@ -620,7 +620,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | 32. Objects with state, puzzles | done |
 | 33. Level editor v2 | done |
 | 34. Two-screen sandbox | done |
-| 35. Art request packs | not started |
+| 35. Art request packs | done |
 | 36. `check_all.py` | not started |
 | 37. Performance | not started |
 | 38. Docs | not started |
@@ -721,7 +721,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
   resolves at its `pickup` event (a placeholder reach for levers and doors too). Progress is saved after
   every action and restored on reload; "reset" clears it.
 - Checks: Node objects tests 6 (conditions, effects, the whole puzzle, else / order, lint, blocking
-  door); `puzzle_checks.py` 15/15 (run twice), including "the chest is out of reach behind the closed
+  door); `puzzle_checks.py` 14/14 (run twice; an earlier version of this note said 15, the script has 14 checks), including "the chest is out of reach behind the closed
   gate" and reload restoring states, inventory and Ren's x. Screenshots c0-c2 looked at.
 - Test races fixed on the way (not page bugs): a walk stops up to half a stride (~24 px) from its goal,
   so "reached" allows 35 px; the test waits for the pending action as well as `busy`.
@@ -779,6 +779,36 @@ Open owner decisions (not decided here; each lives in one place, listed in
 - Limits: the difficulty is one hand-tuned layout, checked by one scripted route, not by people;
   the reach animation is used for every action; the hide pose is the placeholder crouch.
 
+## Step 35 notes
+
+- `workbench/art_requests.py` -> `requests/` (6.4 MB, committed): one folder per request with
+  `identity/reference.png`, `identity/regions.png` (each identity region on the reference with its
+  colour), `identity/approved_poses.png` (the owner-approved drawings at one scale), `spec_sheet.png`
+  (if there is one), `spec.json`, `prompt.txt`, `current.png` (the drawings being replaced, with the
+  tool's flags) and a README with the checklist and the exact `intake.py` command.
+- Ranking by how much each blocks the two-screen sandbox: 1 guard walk (rejected, on screen all the
+  time, feet slide at the placeholder speed), 2 guard idle (rejected, plays at every patrol end),
+  3 Ren walk in-betweens (approved but choppy, the most-seen animation), 4 Ren's drifting reactions
+  (caught_game_over plays on every catch; happy, hurt_stumble), 5 Ren idle that does something
+  (approved still), 6 guard ladder (rejected, but the guard AI never climbs).
+- **The prompts that worked before are not in the repository.** The brief says the old rework
+  README's prompt section is summarised in the handoff; it isn't (the handoff gives lessons, not prompt
+  text). The templates are built from those lessons and the owner's feedback, with an `[ORIGINAL
+  PROMPT]` slot to paste the old wording into. This is said in every `prompt.txt` and in
+  `requests/README.md`.
+- `spec_check.py` gained `kind: idle / reaction / ladder` checks (frame count range, distinct poses,
+  near-duplicates, grounded, feet still, breathing range, height vs reference, forbidden flags;
+  ladders: count, distinct, foot-height range, rise reported as manual). Intake uses `spec_travel()`, so
+  non-walk specs work there too. pytest: a synthetic breathing idle meets the idle spec; a sliding
+  one and a repeating one miss (28 tests pass).
+- Checked on real data: the current guard idle against `requests/guard_idle/spec.json` misses 14 vs 6-8
+  drawings, 45 near-duplicate pairs, feet 529-530 vs 535 (his floating baseline), feet move 5 px, and
+  out_of_order. Breathing (0.72%) meets. The exact intake command from the pack ran end to end on a
+  copy (removed afterwards).
+- Looked at: guard and Ren `approved_poses.png`, Ren `regions.png`, the guard idle README and prompt.
+  The approved-poses strip, not the concept art, is the guard's real identity target (his concept's
+  tabard differs from every sprite); his prompt says so.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -831,7 +861,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 6: next is step 35 (art request packs).
+Phase 6: next is step 36 (`check_all.py`).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

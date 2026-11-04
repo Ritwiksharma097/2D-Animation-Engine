@@ -1,0 +1,33 @@
+NOTE: the brief points to the old sprite_rework README's prompt section, 'summarised in the handoff'. That text is not in this repository: assets/reference/GPT_HANDOFF.md summarises what went wrong, not the prompt wording. This template is built from the handoff's lessons and the owner's feedback in assets/manifest.json. If you have the original prompt, paste its wording into the [ORIGINAL PROMPT] slot and keep the IDENTITY and LAYOUT blocks.
+
+[ORIGINAL PROMPT] (paste here if you have it)
+
+IDENTITY (attach identity/reference.png and identity/approved_poses.png):
+  The same character as the attached references: Grumpy mustached guard: silver armour and helmet, blue sash/tabard, brown belt and gloves, sheathed sword.
+  Match the references exactly: face, hair, hood / helmet, outfit, colours, proportions, line weight and shading.
+  Do not restyle, simplify, chibify, recolour or add accessories. Every frame is the same character at the same scale.
+  His identity reference is concept art whose tabard differs from every sprite: match the approved poses first.
+
+LAYOUT:
+  One sprite sheet, 8 frames in a single row (or a regular grid), each in its own equal cell, transparent or flat plain background.
+  Full body in every frame, nothing cropped, side view facing right.
+  The same ground line (feet level) and the same figure height in every frame; no text, no frame numbers, no shadows that touch the next cell.
+
+MOTION:
+  A new 8-drawing patrol walk: contact, down, passing, up, then the same with the legs swapped.
+  Draw 8 frames on 640x576 transparent cells, feet on y=535, facing right. Planted feet (filled dots) must touch the ground at the marked x; free feet (rings) are lifted about that much. The leading leg swaps at frame 5. Step length = 0.36 x figure height, travel 37.2 px per frame, bob: down lowest, up highest.
+  Frames:
+    1 contact, leading leg l
+    2 down, leading leg l
+    3 passing, leading leg l
+    4 up, leading leg l
+    5 contact, leading leg r
+    6 down, leading leg r
+    7 passing, leading leg r
+    8 up, leading leg r
+  Each frame must be a different drawing: no repeated frames, no near-copies (timing and holds are set later in the engine).
+  Motion should change about the same amount between neighbouring frames.
+
+AVOID (what went wrong before, from the handoff and the owner's feedback):
+  frames that repeat the same pose; feet that slide or float; a passing pose that is missing; the look changing between
+  frames or from the other actions (hood shape, hair, colours, thinness); reaching into the air or pushing off nothing.

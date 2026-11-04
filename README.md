@@ -195,6 +195,18 @@ eats, take the key, unlock and open the gate, go through the door, watch the arr
 Progress is saved in the browser ("reset progress" starts over). Check:
 `python workbench/tests/two_screen_checks.py` (plays it through, waiting on the guard like a player).
 
+## Art request packs
+
+```
+python workbench/art_requests.py
+```
+
+Writes `requests/<id>/` for each action that needs new or redrawn art, ranked in `requests/README.md` by
+how much it blocks the sandbox: identity crops (`identity/reference.png`, `regions.png`,
+`approved_poses.png`), the spec sheet if any, `spec.json`, a checklist (README), `prompt.txt` and the
+exact `intake.py` command. `spec_check.py` now also checks `"kind": "idle"`, `"reaction"` and `"ladder"`
+specs (`python workbench/spec_check.py requests/guard_idle/spec.json <frames folder>`).
+
 ## Static build (`dist/`)
 
 ```

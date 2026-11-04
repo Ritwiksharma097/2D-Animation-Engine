@@ -318,3 +318,13 @@ sounds exist; the AudioContext starts on the first click; mute is stored in `loc
 - Validation (`validateLevel`): unreachable hotspots / objects / hiding spots / doors / exits for Ren's
   drawings, patrols through a ledge face, a floor end or a closed blocking door, doors to missing screens
   or doors, sequence triggers naming missing hotspots, and puzzle lint.
+
+## Still specs (`"kind": "idle"` / `"reaction"`, `requests/*/spec.json`)
+
+`{"format": "workbench-spec/1", "kind": "idle", "character", "action", "replaces", "cell_size", "ground_y", "criteria": {...}}`.
+Criteria `spec_check.py` measures: `frame_count_range` [min, max], `min_distinct`, `max_near_duplicates`,
+`max_pose_change_cv` (optional), `grounded` + `baseline_tolerance_px`, `feet_still_px` (planted feet's
+outer edges move at most this), `breathing_pct` [min, max] (height range as % of the median height),
+`height_vs_reference` [lo, hi], `no_flags` (report flag codes that must not appear), `manual` (by eye).
+Ladder specs (`"kind": "ladder"`) are checked for frame count, distinct poses and foot-height range;
+the rise per cycle needs rung contacts, so it is reported as manual.
