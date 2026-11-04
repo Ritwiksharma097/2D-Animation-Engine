@@ -1,13 +1,132 @@
 {
- "format": "workbench-level/1", "name": "scene_b", "size": [1200, 520],
- "floors": [{"id": "B", "x0": 0, "x1": 1200, "y": 470}],
- "ledges": [], "platforms": [], "ladders": [], "hotspots": [],
+ "format": "workbench-level/1",
+ "name": "scene_b",
+ "size": [
+  1200,
+  520
+ ],
+ "floors": [
+  {
+   "id": "B",
+   "x0": 0,
+   "x1": 1200,
+   "y": 470
+  }
+ ],
+ "ledges": [],
+ "platforms": [],
+ "ladders": [],
+ "hotspots": [],
  "layers": [
-  {"id": "sky", "parallax": 0, "depth": -300, "rects": [{"x": 0, "y": 0, "w": 1200, "h": 470, "color": "#f5efe6"}]},
-  {"id": "far", "parallax": 0.3, "depth": -200, "rects": [{"x": 100, "y": 280, "w": 600, "h": 190, "color": "#e6dccd"}, {"x": 800, "y": 320, "w": 400, "h": 150, "color": "#e1d6c4"}]}
+  {
+   "id": "sky",
+   "parallax": 0,
+   "depth": -300,
+   "rects": [
+    {
+     "x": 0,
+     "y": 0,
+     "w": 1200,
+     "h": 470,
+     "color": "#f5efe6"
+    }
+   ]
+  },
+  {
+   "id": "far",
+   "parallax": 0.3,
+   "depth": -200,
+   "rects": [
+    {
+     "x": 100,
+     "y": 280,
+     "w": 600,
+     "h": 190,
+     "color": "#e6dccd"
+    },
+    {
+     "x": 800,
+     "y": 320,
+     "w": 400,
+     "h": 150,
+     "color": "#e1d6c4"
+    }
+   ]
+  }
  ],
  "occluders": [],
  "hiding_spots": [],
- "doors": [{"id": "D0", "on": "B", "x": 70, "to": {"level": "scene_a", "door": "D1"}}, {"id": "out", "on": "B", "x": 1140, "kind": "exit"}],
- "rules": {"jump_max_gap": 140, "jump_max_rise": 12}
+ "doors": [
+  {
+   "id": "D0",
+   "on": "B",
+   "x": 70,
+   "to": {
+    "level": "scene_a",
+    "door": "D1"
+   }
+  },
+  {
+   "id": "out",
+   "on": "B",
+   "x": 1140,
+   "kind": "exit"
+  }
+ ],
+ "rules": {
+  "jump_max_gap": 140,
+  "jump_max_rise": 12
+ },
+ "sequences": [
+  {
+   "id": "arrive_b",
+   "trigger": {
+    "on": "level_start"
+   },
+   "skippable": true,
+   "steps": [
+    {
+     "do": "walk",
+     "who": "ren",
+     "x": 260
+    },
+    {
+     "do": "emote",
+     "who": "ren",
+     "kind": "?",
+     "ms": 900,
+     "wait": true
+    },
+    {
+     "do": "camera",
+     "x": 1000,
+     "ms": 900
+    },
+    {
+     "do": "wait",
+     "ms": 600
+    },
+    {
+     "do": "camera",
+     "who": "ren",
+     "ms": 700
+    },
+    {
+     "do": "emote",
+     "who": "ren",
+     "kind": "!",
+     "ms": 800,
+     "wait": true
+    },
+    {
+     "do": "sound",
+     "id": "chime"
+    },
+    {
+     "do": "flag",
+     "name": "saw_exit"
+    }
+   ]
+  }
+ ]
 }

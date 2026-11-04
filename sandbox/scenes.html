@@ -15,12 +15,14 @@
 </head>
 <body>
 <header>
-  <h1>Scene demo (not the game): layers, hiding spot, doors</h1>
+  <h1>Scene demo (not the game): layers, hiding spot, doors, sequences, emotes, sounds</h1>
   <div class="note">Placeholder shapes. Parallax hills behind, a pillar and grass in front of the characters. Click the crate to hide behind it
-  (Ren holds a placeholder crouch; the guard sees him only when he is very close). Click the door to change screens with a fade.
+  (Ren holds a placeholder crouch; the guard sees him only when he is very close). Click the door to change screens with a fade. Click the sign post for a short sequence; each screen has a skippable intro.
+  Sounds are placeholder beeps.
   Tuning: <code>sandbox/scenes.json</code>; levels: <code>levels/scene_a.json</code>, <code>levels/scene_b.json</code>.</div>
 </header>
-<div class="row"><label><input type="checkbox" id="dbg"> debug overlay</label> <button id="retry" hidden>retry</button> <span id="msg"></span></div>
+<div class="row"><label><input type="checkbox" id="dbg"> debug overlay</label> <label><input type="checkbox" id="mute"> mute</label>
+  <button id="skip" hidden>skip scene (Esc)</button> <button id="retry" hidden>retry</button> <span id="msg"></span></div>
 <canvas id="cv" width="1200" height="520"></canvas>
 <div class="row"><div id="hud"></div></div>
 <script type="module">
@@ -29,6 +31,9 @@ import { setupStage, preloadClips } from "../runtime/page.js";
 import { compileLevel, worldFromLevel, navGraph, goTo, planRoute, queueRoute, Camera } from "../runtime/level.js";
 import { GuardBrain, sightBlockers } from "../runtime/behaviour.js";
 import { sceneFromLevel, drawLayers, sceneDrawables, drawFade, updateHiding, hidingSpotAt, doorAt, Fader } from "../runtime/scene.js";
+import { Sequences } from "../runtime/sequence.js";
+import { Emotes } from "../runtime/emote.js";
+import { Sounds } from "../runtime/sound.js";
 
 const T = await (await fetch("scenes.json", { cache: "no-store" })).json();
 const W = T.view.width, H = T.view.height, cv = document.getElementById("cv"), stage = setupStage(cv, W, H), ctx = stage.ctx;
@@ -38,6 +43,8 @@ const clips = await preloadClips(T.exports, [...new Set([...Object.values(REN), 
 const levels = {};
 for (const name of ["scene_a", "scene_b"]) levels[name] = await (await fetch(`${T.levels_dir}/${name}.json`, { cache: "no-store" })).json();
 const fader = new Fader({ outMs: T.fade.out_ms, inMs: T.fade.in_ms }), crouch = T.placeholder_poses.crouch;
+const FLAGS = {}, SEEN = new Set(), sounds = new Sounds({ defs: T.sounds.defs });
+const muteBox = document.getElementById("mute"); muteBox.checked = sounds.muted; muteBox.onchange = () => sounds.setMuted(muteBox.checked);
 const msg = (t, cls = "") => { const m = document.getElementById("msg"); m.textContent = t; m.className = cls; };
 let S;   // current screen: {name, level, C, world, scene, edges, ren, guard, brain, cam}
 
@@ -50,25 +57,34 @@ function enter(name, x, dir = 1) {
     guard = new Character({ id: "guard", clips, world, x: T.guard.start_x, surface: C.regions[0].id, names: GUARD, radius: T.bodies.guard_radius });
     const solids = [...sightBlockers(C), ...scene.occluders.filter(o => o.blocks_sight)];
     brain = new GuardBrain({ guard, config: T.guard, world, solids });
+    brain.on("mode", e => { const k = T.guard_mode_emotes[e.to]; if (k && e.from) S.emotes.show("guard", k, 1200); if (e.to === "caught") sounds.play("alarm"); });
     brain.on("caught", () => { S.over = true; ren.clear(); if (ren.state !== "idle") ren.next(); ren.play("caught"); msg("caught! retry", "bad"); document.getElementById("retry").hidden = false; });
   }
   const cam = new Camera({ viewW: W, levelW: level.size[0], deadZone: T.camera.dead_zone, ease: T.camera.ease }); cam.snap(x);
-  S = { name, level, C, world, scene, edges: navGraph(C, ren), ren, guard, brain, cam, pending: null, over: false };
-  window.sd = { get S() { return S; }, fader, T, enter, useDoor };
+  const actors = guard ? { ren, guard } : { ren };
+  const emotes = new Emotes(actors, { headroom: T.emote_headroom });
+  sounds.bind(ren, T.sounds.ren); if (guard) sounds.bind(guard, T.sounds.guard);
+  const seqs = new Sequences(level.sequences || [], { actors, emotes, sounds, flags: FLAGS, seen: SEEN, view: { w: W } });
+  S = { name, level, C, world, scene, edges: navGraph(C, ren), ren, guard, brain, cam, pending: null, over: false, emotes, seqs };
+  window.sd = { get S() { return S; }, fader, T, enter, useDoor, sounds, FLAGS, get seqs() { return S.seqs; } };
+  if (!fader.busy) seqs.fire({ on: "level_start" });
 }
 
 function useDoor(d) {
   if (d.kind === "exit") { S.over = true; msg("left through the exit", "good"); document.getElementById("retry").hidden = false; return; }
+  sounds.play("door");
   fader.start(() => {
     const to = levels[d.to.level].doors.find(x => x.id === d.to.door);
     const into = to.x < levels[d.to.level].size[0] / 2 ? 1 : -1;
     enter(d.to.level, to.x + into * T.door_spawn_offset, into);
+    S.startSeq = true;   // fire the new screen's level_start sequence once the fade is over
     msg(`entered ${d.to.level}`);
   });
 }
 
 stage.on("tap", (x, y) => {
-  if (S.over || fader.busy) return;
+  sounds.unlock();   // browsers allow audio only after a gesture
+  if (S.over || fader.busy || S.seqs.running) return;
   x += S.cam.x;
   const ren = S.ren;
   if (ren.busy) return;
@@ -80,15 +96,22 @@ stage.on("tap", (x, y) => {
   };
   const d = S.scene.doors.find(d => Math.abs(x - d.x) <= d.width / 2 + 20 && y >= d.y1 - d.height - 10 && y <= d.y1 + 10);
   if (d) return route(d.x, { door: d });
+  const hs = S.level.hotspots.find(h => Math.abs(x - h.x) <= 30 && y >= S.world.surfaceY(S.C.regions[0].id) - 120);
+  if (hs) return route(hs.x + (ren.x < hs.x ? -60 : 60), { hotspot: hs });
   const h = S.scene.hiding.find(h => x >= h.x0 - 10 && x <= h.x1 + 10 && y >= h.y0 - 20 && y <= h.y1 + 10);
   if (h) return route((h.x0 + h.x1) / 2, { hide: h });
   const res = goTo(S.C, S.edges, ren, x, y);
   if (!res.ok) msg(`can't get there: ${res.reason}`, "bad");
 });
+const skip = () => { if (S.seqs.skip()) msg("scene skipped"); };
+document.getElementById("skip").onclick = skip;
+addEventListener("keydown", e => { if (e.key === "Escape") skip(); });
 document.getElementById("retry").onclick = () => { document.getElementById("retry").hidden = true; msg(""); enter(T.start.level, T.start.x); };
 
 function hud() {
-  const r = S.ren, lines = [`screen ${S.name}   camera x ${S.cam.x.toFixed(0)}   fade ${fader.alpha.toFixed(2)}`];
+  const r = S.ren, lines = [`screen ${S.name}   camera x ${S.cam.x.toFixed(0)}   fade ${fader.alpha.toFixed(2)}   flags ${Object.keys(FLAGS).filter(k => FLAGS[k]).join(", ") || "-"}`];
+  lines.push(S.seqs.running ? `SEQUENCE ${S.seqs.current.def.id} step ${S.seqs.current.i + 1}/${S.seqs.current.def.steps.length} (${S.seqs.current.cur?.do}); input off` : "sequence: -");
+  lines.push(`sound: ${sounds.muted ? "MUTED" : sounds.ac ? "on" : "off until first click"}   last: ${sounds.log.slice(-4).join(" ") || "-"}`);
   const pose = r.state === "pose" ? `  ${crouch.label}` : "";
   lines.push(`Ren   ${r.state.padEnd(6)} ${r.clip.key.padEnd(20)} ${r.hidingIn ? "HIDDEN behind " + r.hidingIn.id : ""}${pose}`);
   if (S.brain) {
@@ -97,7 +120,7 @@ function hud() {
     lines.push(`suspicion [${"#".repeat(n)}${".".repeat(20 - n)}] ${v.toFixed(2)} / ${Sc.caught_at.toFixed(2)}: caught when full`);
   }
   const el = document.getElementById("hud"); el.innerHTML = "";
-  for (const l of lines) { const d = document.createElement("div"); d.textContent = l; if (/PLACEHOLDER|YES/.test(l)) d.className = "bad"; el.appendChild(d); }
+  for (const l of lines) { const d = document.createElement("div"); d.textContent = l; if (/PLACEHOLDER|YES|SEQUENCE/.test(l)) d.className = "bad"; el.appendChild(d); }
 }
 
 function cone() {
@@ -112,17 +135,22 @@ enter(T.start.level, T.start.x);
 run([{ update: dt => {
   fader.update(dt);
   const { ren, guard, brain } = S;
-  if (!S.over && !fader.busy) {
+  if (S.startSeq && !fader.busy) { S.startSeq = false; S.seqs.fire({ on: "level_start" }); }
+  S.seqs.update(dt); S.emotes.update(dt);
+  document.getElementById("skip").hidden = !S.seqs.running;
+  if (!S.over && !fader.busy && !S.seqs.running) {
     if (S.pending && !ren.busy) {
       const p = S.pending; S.pending = null;
       if (p.door) useDoor(p.door);
-      else if (p.hide) ren.pose(crouch.role, { frames: crouch.frames, tag: "hide" });
+      else if (p.hotspot) S.seqs.fire({ on: "hotspot", id: p.hotspot.id });
+      else if (p.hide) { ren.pose(crouch.role, { frames: crouch.frames, tag: "hide" }); sounds.play("hide"); }
     }
     updateHiding(ren, S.scene.hiding);
     brain?.update(dt, ren);
   }
   ren.update(dt); guard?.update(dt);
-  S.cam.update(ren.x, dt);
+  if (S.seqs.cameraX !== null) S.cam.x = Math.max(0, Math.min(S.level.size[0] - W, S.seqs.cameraX));   // a sequence owns the camera
+  else S.cam.update(ren.x, dt);
 } }], () => {
   const camX = S.cam.x;
   stage.begin(); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
@@ -130,11 +158,14 @@ run([{ update: dt => {
   stage.begin(camX);
   ctx.fillStyle = "#d6ccba"; for (const f of S.level.floors) ctx.fillRect(f.x0, f.y, f.x1 - f.x0, H - f.y);
   if (S.brain) cone();
+  for (const h of S.level.hotspots) { const y = S.world.surfaceY(S.C.regions[0].id); ctx.fillStyle = "#8b6a4a"; ctx.fillRect(h.x - 3, y - 90, 6, 90); ctx.fillRect(h.x - 28, y - 110, 56, 30); ctx.fillStyle = "#fff"; ctx.font = "11px system-ui"; ctx.fillText(h.id, h.x - 12, y - 91); }
   for (const it of sceneDrawables(S.scene, [S.ren, ...(S.guard ? [S.guard] : [])])) it.draw(ctx);
+  S.emotes.draw(ctx);
   if (document.getElementById("dbg").checked) { S.ren.drawDebug(ctx); S.guard?.drawDebug(ctx); }
   stage.begin();
   drawLayers(ctx, S.scene.layers, camX, true);
   drawFade(ctx, fader, W, H);
+  if (S.seqs.overlay) { ctx.fillStyle = `rgba(0,0,0,${S.seqs.overlay})`; ctx.fillRect(0, 0, W, H); }
   hud();
 });
 document.body.dataset.ready = "1";

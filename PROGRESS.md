@@ -616,7 +616,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | --- | --- |
 | 29. Fixes from the phase 5 owner-PC check | done |
 | 30. Scenes and layering | done |
-| 31. Sequences, emotes, sound hooks | not started |
+| 31. Sequences, emotes, sound hooks | done |
 | 32. Objects with state, puzzles | not started |
 | 33. Level editor v2 | not started |
 | 34. Two-screen sandbox | not started |
@@ -687,6 +687,25 @@ Open owner decisions (not decided here; each lives in one place, listed in
 - Limits: layers are flat rectangles (no images yet); the fade is a black overlay; doors only connect
   level files the page has loaded (two here); only the guard on screen A has a brain.
 
+## Step 31 notes
+
+- `runtime/sequence.js`: `Sequence` (walk, play, face, wait, emote, camera pan, fade, flag, sound) and
+  `Sequences` (triggers level_start / hotspot / event, `once`, `requires` flags, one at a time,
+  `skip()` applies all remaining end states). `runtime/emote.js`: bubbles `!`, `?`, heart, `...`, zZz.
+  `runtime/sound.js`: event/state/frame keys -> sound ids, placeholder WebAudio beeps, audio unlocked on
+  the first click, mute in localStorage, `log` of what played (for tests; headless can't listen).
+- Scene demo (`sandbox/scenes.html`): screen A intro (Ren `...`, camera pans to the guard `zZz`, back),
+  a sign post hotspot sequence (face, `?`, chime, heart, flag), screen B arrival after the door fade
+  (walk in, `?`, pan to the exit, back, `!`, flag), guard AI modes show bubbles (`?` suspicious, `!`
+  caught, `...` back to patrol, heart eating), footstep beeps from walk frames, door / hide / alarm
+  beeps, skip button + Escape, mute checkbox, HUD shows the running sequence and the last sounds.
+- Checks: Node sequence tests 6 (all steps in order, pan + fade ramps, skip end states, triggers /
+  requires / non-skippable / once, sound keys + mute, emotes); `sequence_checks.py` 15/15; scene checks
+  13/13 still. Screenshots b0-b3 looked at (bubbles readable; I moved the guard's bubble above his
+  meter after seeing them overlap).
+- Limits: the sounds were not heard (cloud, headless); only that they were triggered and that an
+  AudioContext started. Sequences have no branching or dialogue text, by design (minimal text).
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -739,7 +758,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 6: next is step 31 (sequences, emotes, sound hooks).
+Phase 6: next is step 32 (objects with state, simple puzzles).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

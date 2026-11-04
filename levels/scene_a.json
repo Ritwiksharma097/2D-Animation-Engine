@@ -1,15 +1,239 @@
 {
- "format": "workbench-level/1", "name": "scene_a", "size": [1800, 520],
- "floors": [{"id": "A", "x0": 0, "x1": 1800, "y": 470}],
- "ledges": [], "platforms": [], "ladders": [], "hotspots": [],
- "layers": [
-  {"id": "sky", "parallax": 0, "depth": -300, "rects": [{"x": 0, "y": 0, "w": 1200, "h": 470, "color": "#eef2f5"}]},
-  {"id": "far_hills", "parallax": 0.2, "depth": -200, "rects": [{"x": 0, "y": 300, "w": 420, "h": 170, "color": "#d9e2e6"}, {"x": 520, "y": 260, "w": 500, "h": 210, "color": "#d3dde2"}, {"x": 1100, "y": 320, "w": 380, "h": 150, "color": "#d9e2e6"}]},
-  {"id": "near_hills", "parallax": 0.5, "depth": -100, "rects": [{"x": 150, "y": 360, "w": 300, "h": 110, "color": "#c7d3c2"}, {"x": 700, "y": 340, "w": 380, "h": 130, "color": "#c1cfbc"}, {"x": 1300, "y": 370, "w": 400, "h": 100, "color": "#c7d3c2"}]},
-  {"id": "front_grass", "parallax": 1.25, "depth": 100, "alpha": 0.9, "rects": [{"x": 200, "y": 488, "w": 160, "h": 32, "color": "#7f9a6a"}, {"x": 900, "y": 492, "w": 220, "h": 28, "color": "#7f9a6a"}, {"x": 1700, "y": 490, "w": 200, "h": 30, "color": "#7f9a6a"}]}
+ "format": "workbench-level/1",
+ "name": "scene_a",
+ "size": [
+  1800,
+  520
  ],
- "occluders": [{"id": "pillar", "x0": 560, "x1": 610, "y0": 120, "y1": 470, "color": "#8c8c8c", "alpha": 0.95, "blocks_sight": false}],
- "hiding_spots": [{"id": "crate", "on": "A", "x0": 980, "x1": 1070, "height": 110, "kind": "behind", "reveal_radius": 45, "color": "#7a5a3a"}],
- "doors": [{"id": "D1", "on": "A", "x": 1730, "to": {"level": "scene_b", "door": "D0"}}],
- "rules": {"jump_max_gap": 140, "jump_max_rise": 12}
+ "floors": [
+  {
+   "id": "A",
+   "x0": 0,
+   "x1": 1800,
+   "y": 470
+  }
+ ],
+ "ledges": [],
+ "platforms": [],
+ "ladders": [],
+ "hotspots": [
+  {
+   "id": "sign",
+   "x": 330,
+   "on": "A",
+   "kind": "look",
+   "use": "look"
+  }
+ ],
+ "layers": [
+  {
+   "id": "sky",
+   "parallax": 0,
+   "depth": -300,
+   "rects": [
+    {
+     "x": 0,
+     "y": 0,
+     "w": 1200,
+     "h": 470,
+     "color": "#eef2f5"
+    }
+   ]
+  },
+  {
+   "id": "far_hills",
+   "parallax": 0.2,
+   "depth": -200,
+   "rects": [
+    {
+     "x": 0,
+     "y": 300,
+     "w": 420,
+     "h": 170,
+     "color": "#d9e2e6"
+    },
+    {
+     "x": 520,
+     "y": 260,
+     "w": 500,
+     "h": 210,
+     "color": "#d3dde2"
+    },
+    {
+     "x": 1100,
+     "y": 320,
+     "w": 380,
+     "h": 150,
+     "color": "#d9e2e6"
+    }
+   ]
+  },
+  {
+   "id": "near_hills",
+   "parallax": 0.5,
+   "depth": -100,
+   "rects": [
+    {
+     "x": 150,
+     "y": 360,
+     "w": 300,
+     "h": 110,
+     "color": "#c7d3c2"
+    },
+    {
+     "x": 700,
+     "y": 340,
+     "w": 380,
+     "h": 130,
+     "color": "#c1cfbc"
+    },
+    {
+     "x": 1300,
+     "y": 370,
+     "w": 400,
+     "h": 100,
+     "color": "#c7d3c2"
+    }
+   ]
+  },
+  {
+   "id": "front_grass",
+   "parallax": 1.25,
+   "depth": 100,
+   "alpha": 0.9,
+   "rects": [
+    {
+     "x": 200,
+     "y": 488,
+     "w": 160,
+     "h": 32,
+     "color": "#7f9a6a"
+    },
+    {
+     "x": 900,
+     "y": 492,
+     "w": 220,
+     "h": 28,
+     "color": "#7f9a6a"
+    },
+    {
+     "x": 1700,
+     "y": 490,
+     "w": 200,
+     "h": 30,
+     "color": "#7f9a6a"
+    }
+   ]
+  }
+ ],
+ "occluders": [
+  {
+   "id": "pillar",
+   "x0": 560,
+   "x1": 610,
+   "y0": 120,
+   "y1": 470,
+   "color": "#8c8c8c",
+   "alpha": 0.95,
+   "blocks_sight": false
+  }
+ ],
+ "hiding_spots": [
+  {
+   "id": "crate",
+   "on": "A",
+   "x0": 980,
+   "x1": 1070,
+   "height": 110,
+   "kind": "behind",
+   "reveal_radius": 45,
+   "color": "#7a5a3a"
+  }
+ ],
+ "doors": [
+  {
+   "id": "D1",
+   "on": "A",
+   "x": 1730,
+   "to": {
+    "level": "scene_b",
+    "door": "D0"
+   }
+  }
+ ],
+ "rules": {
+  "jump_max_gap": 140,
+  "jump_max_rise": 12
+ },
+ "sequences": [
+  {
+   "id": "intro_a",
+   "trigger": {
+    "on": "level_start"
+   },
+   "steps": [
+    {
+     "do": "emote",
+     "who": "ren",
+     "kind": "...",
+     "ms": 1000,
+     "wait": true
+    },
+    {
+     "do": "camera",
+     "who": "guard",
+     "ms": 900
+    },
+    {
+     "do": "emote",
+     "who": "guard",
+     "kind": "zZz",
+     "ms": 1100,
+     "wait": true
+    },
+    {
+     "do": "camera",
+     "who": "ren",
+     "ms": 700
+    }
+   ]
+  },
+  {
+   "id": "read_sign",
+   "trigger": {
+    "on": "hotspot",
+    "id": "sign"
+   },
+   "once": false,
+   "steps": [
+    {
+     "do": "face",
+     "who": "ren",
+     "toward": 330
+    },
+    {
+     "do": "emote",
+     "who": "ren",
+     "kind": "?",
+     "ms": 700,
+     "wait": true
+    },
+    {
+     "do": "sound",
+     "id": "chime"
+    },
+    {
+     "do": "emote",
+     "who": "ren",
+     "kind": "heart",
+     "ms": 900,
+     "wait": true
+    },
+    {
+     "do": "flag",
+     "name": "read_sign"
+    }
+   ]
+  }
+ ]
 }

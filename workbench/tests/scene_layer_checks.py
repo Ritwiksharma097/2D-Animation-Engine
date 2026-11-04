@@ -27,6 +27,7 @@ def main(base_url=None):
             def pixel(wx, wy):  # canvas pixel at a world point (backing store coordinates)
                 return ev(f"""(() => {{ const c = document.getElementById('cv'), s = c.width / 1200, x = Math.round(({wx} - sd.S.cam.x) * s), y = Math.round({wy} * s);
                                       return Array.from(c.getContext('2d').getImageData(x, y, 1, 1).data); }})()""")
+            ev("sd.seqs.skip()")   # the level_start intro (tested in sequence_checks.py)
             # keep the guard out of the way while testing layers
             ev("(() => { const g = sd.S.guard; g.clear(); g.next(); g.x = 1450; g.dir = 1; sd.S.brain.cfg.patrol = [1450, 1450]; })()")
             page.screenshot(path=str(SHOTS / "a0_scene_start.png"))
@@ -67,6 +68,7 @@ def main(base_url=None):
             page.screenshot(path=str(SHOTS / "a5_scene_fade.png"))
             page.wait_for_function("sd.S.name === 'scene_b' && !sd.fader.busy", timeout=5000)
             check("the door leads to screen B through a fade", True, f"Ren at x {ev('sd.S.ren.x'):.0f} on {ev('sd.S.ren.surface')}")
+            ev("sd.seqs.skip()")   # screen B's arrival sequence
             page.screenshot(path=str(SHOTS / "a6_scene_b.png"))
             tap(70, 420); page.wait_for_function("sd.S.name === 'scene_a' && !sd.fader.busy", timeout=20000)
             check("and back to screen A at the other door", abs(ev("sd.S.ren.x") - 1650) < 2, f"x {ev('sd.S.ren.x'):.0f}")

@@ -246,3 +246,31 @@ saved through `serve.py` (`POST /api/level?name=`).
 `A#0` is left of L1 and `A#1` right of it. A region's sides are `face` (stop before the ledge,
 allowing the 40 cell px front band) or `edge` (stop 10 px from a drop). `navGraph` lists the
 transitions (climb up / down per face, jump, ladder), judging each against the character's drawings.
+
+## Sequences (level key `sequences`, `runtime/sequence.js`)
+
+```json
+"sequences": [{"id": "read_sign", "trigger": {"on": "hotspot", "id": "sign"}, "once": false, "skippable": true,
+               "requires": {"has_key": true},
+               "steps": [{"do": "face", "who": "ren", "toward": 330}, {"do": "emote", "who": "ren", "kind": "?", "ms": 700, "wait": true},
+                         {"do": "walk", "who": "ren", "x": 260}, {"do": "play", "who": "guard", "role": "angry"}, {"do": "wait", "ms": 500},
+                         {"do": "camera", "x": 1000, "ms": 900}, {"do": "camera", "who": "ren", "ms": 700},
+                         {"do": "fade", "to": 1, "ms": 300}, {"do": "fade", "to": 0, "ms": 300},
+                         {"do": "flag", "name": "read_sign"}, {"do": "sound", "id": "chime"}]}]
+```
+
+- **trigger:** `{"on": "level_start"}`, `{"on": "hotspot", "id": ...}`, or `{"on": "event", "name": ...}` (the
+  page fires events it cares about). `once` defaults to true; `requires` lists flags that must match.
+- **steps** run in order; each waits until done (`walk` / `play` / `face`: the actor is idle; `wait`,
+  `camera`, `fade`: `ms`; `emote`: only with `"wait": true`). `camera` centres `x` or an actor with an
+  ease; while a sequence runs it owns the camera and player input is ignored.
+- **skip** (default allowed) applies every remaining end state at once: walks teleport to `x`, plays
+  stop, faces turn, fades jump to `to`, flags are set, emotes clear.
+- **emote kinds:** `!`, `?`, `heart`, `...`, `zZz` (drawn by `runtime/emote.js`).
+
+## Sounds (`runtime/sound.js`)
+
+`{"defs": {"step": {"freq": 180, "ms": 40, "type": "triangle", "gain": 0.04, "slide": 0}}, "ren": {"frame:ren/walk_keypose:0": "step",
+"bump": "bump", "state:jump": "jump"}}`. Keys per actor: a clip or runtime event name, `state:<to>`, or
+`frame:<clip key>:<0-based frame>`. Each id is a placeholder WebAudio beep from `defs` until real
+sounds exist; the AudioContext starts on the first click; mute is stored in `localStorage`.

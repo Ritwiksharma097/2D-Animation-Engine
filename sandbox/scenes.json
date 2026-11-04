@@ -1,19 +1,135 @@
 {
- "note": "Scene demo tuning (step 30): parallax, occluders, depth sorting, a hiding spot, doors with a fade. Placeholder shapes. Game px, ms.",
+ "note": "Scene demo tuning (steps 30-31): parallax, occluders, depth sorting, a hiding spot, doors with a fade, sequences, emotes, sound hooks. Placeholder shapes. Game px, ms.",
  "exports": "../out/export",
  "levels_dir": "../levels",
- "start": {"level": "scene_a", "x": 120},
- "view": {"width": 1200, "height": 520},
+ "start": {
+  "level": "scene_a",
+  "x": 120
+ },
+ "view": {
+  "width": 1200,
+  "height": 520
+ },
  "door_spawn_offset": 80,
- "fade": {"out_ms": 350, "in_ms": 350},
- "camera": {"dead_zone": 0.3, "ease": 0.12},
- "placeholder_poses": {"crouch": {"role": "interact", "frames": [0, 1, 2, 3, 4], "label": "ren/interact drawings 1-5 held: PLACEHOLDER crouch (no hide drawing exists)"}},
- "bodies": {"ren_radius": 30, "guard_radius": 34},
+ "fade": {
+  "out_ms": 350,
+  "in_ms": 350
+ },
+ "camera": {
+  "dead_zone": 0.3,
+  "ease": 0.12
+ },
+ "placeholder_poses": {
+  "crouch": {
+   "role": "interact",
+   "frames": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "label": "ren/interact drawings 1-5 held: PLACEHOLDER crouch (no hide drawing exists)"
+  }
+ },
+ "bodies": {
+  "ren_radius": 30,
+  "guard_radius": 34
+ },
  "guard": {
-  "level": "scene_a", "start_x": 1350, "patrol": [820, 1450], "wait_at_ends_ms": 1500,
-  "vision": {"range": 330, "halfAngleDeg": 28, "eye_height": 150, "target_height": 90},
-  "suspicion": {"rise_per_s": 0.9, "decay_per_s": 0.4, "suspicious_at": 0.3, "caught_at": 1.0, "look_ms": 2500},
-  "notice": {"radius": 90, "still_radius": 50, "rise_per_s": 0.6, "bump_to": 0.5},
-  "food": {"notice_range": 650, "eat_loops": 6}
+  "level": "scene_a",
+  "start_x": 1350,
+  "patrol": [
+   820,
+   1450
+  ],
+  "wait_at_ends_ms": 1500,
+  "vision": {
+   "range": 330,
+   "halfAngleDeg": 28,
+   "eye_height": 150,
+   "target_height": 90
+  },
+  "suspicion": {
+   "rise_per_s": 0.9,
+   "decay_per_s": 0.4,
+   "suspicious_at": 0.3,
+   "caught_at": 1.0,
+   "look_ms": 2500
+  },
+  "notice": {
+   "radius": 90,
+   "still_radius": 50,
+   "rise_per_s": 0.6,
+   "bump_to": 0.5
+  },
+  "food": {
+   "notice_range": 650,
+   "eat_loops": 6
+  }
+ },
+ "emote_headroom": {
+  "ren": 175,
+  "guard": 215
+ },
+ "guard_mode_emotes": {
+  "suspicious": "?",
+  "caught": "!",
+  "patrol": "...",
+  "eating": "heart"
+ },
+ "sounds": {
+  "defs": {
+   "step": {
+    "freq": 180,
+    "ms": 40,
+    "type": "triangle",
+    "gain": 0.04
+   },
+   "door": {
+    "freq": 220,
+    "ms": 220,
+    "slide": -120,
+    "type": "sawtooth",
+    "gain": 0.04
+   },
+   "chime": {
+    "freq": 660,
+    "ms": 260,
+    "slide": 220,
+    "type": "sine",
+    "gain": 0.06
+   },
+   "alarm": {
+    "freq": 880,
+    "ms": 400,
+    "slide": -300,
+    "type": "square",
+    "gain": 0.05
+   },
+   "bump": {
+    "freq": 120,
+    "ms": 90,
+    "type": "square",
+    "gain": 0.05
+   },
+   "hide": {
+    "freq": 300,
+    "ms": 120,
+    "slide": -150,
+    "type": "triangle",
+    "gain": 0.04
+   }
+  },
+  "ren": {
+   "frame:ren/walk_keypose:0": "step",
+   "frame:ren/walk_keypose:2": "step",
+   "bump": "bump"
+  },
+  "guard": {
+   "frame:guard/walk:0": "step",
+   "frame:guard/walk:7": "step"
+  },
+  "note": "placeholder WebAudio beeps until real sounds exist; keys: <event>, state:<to>, frame:<clip>:<0-based frame>"
  }
 }
