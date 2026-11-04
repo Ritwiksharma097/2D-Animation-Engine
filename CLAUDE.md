@@ -10,8 +10,9 @@ It does not fix bad drawings. It diagnoses them and makes good ones easier to us
 
 ## Build, in this priority order
 
-The cloud budget is limited. Commit and push after each step so finished work survives if the session stops.
+The cloud budget is limited and will run out, after which another assistant takes over on the owner's Windows PC. Commit and push after each step so finished work survives if the session stops.
 
+0. **`FORMAT.md` and `PROGRESS.md` first.** `FORMAT.md` defines the JSON for an action (frame list, per-frame durations, loop mode, ground anchor, travel per frame) and for per-frame annotations (named contact points such as `foot_l`, `foot_r`, `hand_l`, with planted/free state), so ladders and ledges can be added later. `PROGRESS.md` is the handoff log: update it in every commit with what is done, what was visually verified and how, known problems, and the exact next step.
 1. **Frame analysis library + CLI** (`workbench/analyze.py`, Python with Pillow, numpy, opencv-python-headless). For an action folder, report:
    - frame-to-frame change and its evenness; near-duplicate and out-of-order frames (a frame closer to a non-neighbour than to its neighbours), including the loop seam from last frame back to first
    - per-frame figure height, width, bounding box and baseline, plus the colour palette, with drift flagged against the character's `identity_reference`
@@ -28,10 +29,10 @@ The cloud budget is limited. Commit and push after each step so finished work su
    - play, pause, step, scrub; per-frame duration editing; loop and ping-pong
    - onion skin with adjustable range
    - in-place vs moving-across-ground preview with a visible baseline
-   - click to set and edit foot-contact points per frame, saved as JSON next to the frames and downloadable
+   - click to set and edit foot-contact points per frame, saved as JSON in `annotations/<character>/<action>.json` (never inside `assets/`) and downloadable
    - show `report.json` flags beside the timeline, and compare two actions or characters side by side
 4. **Annotations feed back in.** When a contact JSON exists, `analyze.py` uses it instead of the heuristic, and the moving preview derives travel from the planted foot so it cannot slide.
-5. **Run it all on real data** and write `REPORT.md`: guard walk and guard idle (rejected), Ren 4-pose walk (approved), and the two rejected Ren walks. Embed the diagnostic images. The tool earns trust only if it flags the rejected walks and the guard walk for the problems the owner described in the manifest, and doesn't heavily flag the approved Ren walk. Say plainly where it agreed with the owner, where it didn't, and why.
+5. **Run it all on real data** and write `REPORT.md`: guard walk and guard idle (rejected), Ren 4-pose walk (approved), and the two rejected Ren walks. Embed the diagnostic images. The tool earns trust only if it flags the rejected walks and the guard walk for the problems the owner described in the manifest. Expect the approved Ren walk to score better, but don't tune thresholds to make it pass: if it measurably slides too, report that. Say plainly where it agreed with the owner, where it didn't, and why.
 
 Out of scope for now: generating or redrawing art, rigs/Blender/Krita, game logic, ladders/ledges (design the data format so contact props can be added later).
 
@@ -40,5 +41,6 @@ Out of scope for now: generating or redrawing art, rigs/Blender/Krita, game logi
 - `assets/` is source material. Never modify or overwrite files there; write outputs to `out/` (gitignored except `out/report_examples/` you choose to keep for REPORT.md).
 - **Verify visually.** Install Playwright (Chromium), screenshot the workbench in the states you claim work, and actually look at the screenshots and diagnostic PNGs before reporting. Don't present code checks as visual verification.
 - Be honest about limits. A heuristic that can't tell a good walk from a bad one is a finding to report, not something to hide.
+- Everything must also run on Windows with Python 3.14: use `pathlib`, no shell-specific scripts, and pin nothing that lacks 3.14 wheels. If Playwright or another dependency can't be installed in the cloud, say so in `PROGRESS.md` rather than claiming verification.
 - Keep code small and readable; add unit tests for the metric functions using synthetic frames (e.g. a drawn rectangle "foot" moving a known distance).
 - Document how to run everything in `README.md`.
