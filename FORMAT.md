@@ -69,7 +69,9 @@ Tools treat any name starting with `foot_`, `toe_` or `heel_` as a foot.
 For the step from frame *i* to frame *i+1*: if a contact with the same name is `planted` in both
 frames on the same surface, the character must advance by `x_i - x_{i+1}` (times `+1` facing
 right, `-1` facing left) for that point to stay fixed in world space. With more than one shared
-planted contact the mean is used and the spread is reported. Steps with no shared planted
+planted contact the mean is used, and the reported slide is the worst of them (all should stay put).
+A foot that rolls heel-to-toe is best annotated as `heel_x` and `toe_x` points: the heel is shared
+from heel-strike to flat, the toe from flat to push-off. Steps with no shared planted
 contact fall back to the mean of the derived steps (and are flagged).
 
 ## Report (`out/<character>/<action>/report.json`)

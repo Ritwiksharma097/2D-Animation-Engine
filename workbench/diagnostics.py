@@ -177,7 +177,7 @@ def matched_steps(contacts, steps, sign, travel_list):
                 if contacts_named(contacts) and a["name"] != b["name"]:
                     continue
                 s = abs(sign * (a["x"] - b["x"]) - v)
-                if best is None or s < best[0]:
+                if best is None or (s > best[0] if contacts_named(contacts) else s < best[0]):
                     best = (s, a, b)
         out.append(best)
     return out
@@ -194,7 +194,7 @@ def world_strip(act, report, travel=None, label="", loops=2):
     loops = loops if loop else 1
     sign = 1.0 if act.facing == "right" else -1.0
     if travel is None:
-        travel = walk["travel_used_px"]
+        travel = walk["travel_used_per_step_px"] or walk["travel_used_px"]
     per_frame = travel if isinstance(travel, list) else [travel] * len(walk["steps"])
     seq = [k % n for k in range(n * loops)] + ([0] if loop else [])
     step_index = {tuple(s): k for k, s in enumerate(walk["steps"])}
@@ -256,7 +256,7 @@ def world_strip(act, report, travel=None, label="", loops=2):
     v_desc = f"{np.mean(per_frame):.1f} px/frame" + (" (per-frame list)" if isinstance(travel, list) else "")
     hd = header(W, [title_line(report) + f"  -  world-space strip {label}",
                     f"Travel {v_desc}; {loops} loop(s) left to right" + (f"; full figure drawn every {every} frames (numbers on top), feet zoom shows all" if every > 1 else "") + ". Each step: the planted foot pair that slides least. "
-                    f"Total slide >= {total:.0f} cell px{scale_note} over {len(seq) - 1} steps.",
+                    f"Total slide {'>= ' if not contacts_named(contacts) else ''}{total:.0f} cell px{scale_note} over {len(seq) - 1} steps.",
                     f"Bars below = how far the planted foot moves on the ground in that step (red > {lim:.1f}px). Zero-length = foot stays put."], 13)
     # feet zoom panel at 2x
     band_top = max(0, int(gy - 90))
@@ -523,7 +523,7 @@ def write_all(act, report, out_dir: Path) -> dict:
     save("identity.png", identity_sheet(act, report))
     walk = report["metrics"]["walk"]
     if walk:
-        save("world_strip.png", world_strip(act, report, label=f"at {walk['travel_used_px']:.1f} px/frame ({walk['travel_used_source']})"))
+        save("world_strip.png", world_strip(act, report, label=f"at {walk['travel_used_px']:.1f} px/frame{' mean' if walk['travel_used_per_step_px'] else ''} ({walk['travel_used_source']})"))
         save("world_strip_best_constant.png", world_strip(act, report, walk["recommended_travel_px"], "at slide-minimising constant travel"))
         per = [v if v is not None else walk["recommended_travel_px"] for v in walk["recommended_per_frame_travel_px"]]
         save("world_strip_per_frame.png", world_strip(act, report, per, "with per-frame travel matched to the planted foot"))

@@ -48,6 +48,8 @@ def main(states=None):
             "03_ren_keypose_moving_old_timing": "#a=ren/walk_keypose&mode=moving&travel=41.9&steps=5&zoom=0.5",
             "04_compare_guard_vs_ren": "#a=guard/walk&b=ren/walk_keypose&zoom=0.5&frame=3",
             "05_fourteen_moving_best": "#a=ren/rejected_walk_fourteen&mode=moving&travelmode=best&steps=10&zoom=0.5",
+            "07_keypose_moving_from_contacts": "#a=ren/walk_keypose&mode=moving&travelmode=contacts&steps=6&zoom=0.5",
+            "08_keypose_moving_old_timing_annotated": "#a=ren/walk_keypose&mode=moving&travel=41.9&steps=6&zoom=0.5",
         }
         errors = []
         with sync_playwright() as p:

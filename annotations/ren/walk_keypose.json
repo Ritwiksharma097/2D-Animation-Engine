@@ -1,0 +1,105 @@
+{
+ "format": "workbench-action/1",
+ "character": "ren",
+ "action": "walk_keypose",
+ "source_dir": "ren/walk_keypose",
+ "cell_size": [
+  640,
+  576
+ ],
+ "loop_mode": "loop",
+ "default_duration_ms": 83,
+ "ground_anchor": {
+  "y": 535
+ },
+ "facing": "right",
+ "travel": {
+  "mode": "from_contacts"
+ },
+ "frames": [
+  {
+   "file": "01.png",
+   "duration_ms": 83,
+   "contacts": {
+    "heel_l": {
+     "x": 403,
+     "y": 533.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 272,
+     "y": 531.1,
+     "state": "planted",
+     "surface": "ground"
+    }
+   }
+  },
+  {
+   "file": "02.png",
+   "duration_ms": 83,
+   "contacts": {
+    "heel_l": {
+     "x": 305,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_l": {
+     "x": 347,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 405,
+     "y": 495.1,
+     "state": "free",
+     "surface": "ground"
+    }
+   }
+  },
+  {
+   "file": "03.png",
+   "duration_ms": 83,
+   "contacts": {
+    "toe_l": {
+     "x": 277,
+     "y": 531.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "heel_r": {
+     "x": 413,
+     "y": 533.1,
+     "state": "planted",
+     "surface": "ground"
+    }
+   }
+  },
+  {
+   "file": "04.png",
+   "duration_ms": 83,
+   "contacts": {
+    "heel_r": {
+     "x": 305,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 353,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "heel_l": {
+     "x": 369,
+     "y": 493.1,
+     "state": "free",
+     "surface": "ground"
+    }
+   }
+  }
+ ]
+}

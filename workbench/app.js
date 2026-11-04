@@ -418,7 +418,7 @@ class Viewer {
     on(".b-all-ms", "click", () => { const v = Math.max(10, +$(el, ".all-ms").value); this.frames.forEach(f => f.duration_ms = v); this.dirty = true; this.renderTimeline(); });
     for (const s of [".zoom", ".mode"]) on(s, "change", () => { this.resize(); this.resetWorld(); this.updatePins(null); this.draw(); });
     for (const s of [".onion-back", ".onion-ahead", ".onion-op"]) on(s, "input", () => this.draw());
-    for (const s of [".travel-mode", ".travel-px"]) on(s, "change", () => { this.resetWorld(); this.travelFor(this.idx, this.idx); this.draw(); });
+    for (const s of [".travel-mode", ".travel-px"]) on(s, "change", () => { $(el, ".travel-px").disabled = $(el, ".travel-mode").value !== "constant"; this.resetWorld(); this.travelFor(this.idx, this.idx); this.draw(); });
     this.cv.addEventListener("mousedown", e => this.onDown(e));
     window.addEventListener("mousemove", e => this.onMove(e));
     window.addEventListener("mouseup", () => { if (this.drag) { this.drag = null; this.renderContacts(); } });

@@ -130,3 +130,42 @@ def test_palette_identical_frame_has_zero_distance():
     s1, s2 = A.palette_stats(f, centres), A.palette_stats(f, centres)
     assert 0.5 * np.abs(s1["hist"] - s2["hist"]).sum() == pytest.approx(0)
     assert s1["mean_de"] < 1.0
+
+
+def _ann_walk():
+    """3 frames; heel_l planted 0->1 (moves back 9px), toe_l planted 1->2 (moves back 5px), nothing shared 2->0."""
+    return {"frames": [
+        {"file": "00.png", "contacts": {"heel_l": {"x": 300, "y": GROUND, "state": "planted"}}},
+        {"file": "01.png", "contacts": {"heel_l": {"x": 291, "y": GROUND, "state": "planted"},
+                                        "toe_l": {"x": 330, "y": GROUND, "state": "planted"}}},
+        {"file": "02.png", "contacts": {"toe_l": {"x": 325, "y": GROUND, "state": "planted"},
+                                        "heel_r": {"x": 420, "y": GROUND - 30, "state": "free"}}},
+    ]}
+
+
+def test_from_contacts_travel_cannot_slide_where_contacts_are_shared():
+    frames = synthetic_walk(10, 3)
+    act = make_action(frames, loop="loop")
+    act.annotations, act.travel_mode = _ann_walk(), "from_contacts"
+    w = A.walk_analysis(act, [A.foot_clusters(f) for f in frames])
+    assert w["travel_used_per_step_px"][:2] == [pytest.approx(9), pytest.approx(5)]
+    assert w["slide_per_step_px"][:2] == [pytest.approx(0), pytest.approx(0)]
+    assert w["steps_without_shared_contact"] == [[2, 0]]
+    assert w["travel_used_per_step_px"][2] == pytest.approx(7)  # mean fills the step with no shared contact
+
+
+def test_named_contacts_use_worst_shared_contact():
+    # two contacts planted in both frames, moving back 10 and 4: at travel 10 the second slides 6
+    ca = [{"name": "heel_l", "x": 300, "planted": True}, {"name": "toe_l", "x": 340, "planted": True}]
+    cb = [{"name": "heel_l", "x": 290, "planted": True}, {"name": "toe_l", "x": 336, "planted": True}]
+    ds = A.step_pairs(ca, cb, 1.0, named=True)
+    assert sorted(ds) == [4, 10]
+    assert A.slide_for_travel([ds], 10, named=True) == [pytest.approx(6)]
+    assert A.slide_for_travel([ds], 10, named=False) == [pytest.approx(0)]
+
+
+def test_per_frame_travel_list():
+    act = make_action(synthetic_walk(10), travel=[10, 10, 4, 10, 10])
+    act.travel_mode = "per_frame"
+    w = A.walk_analysis(act, [A.foot_clusters(f) for f in act.frames])
+    assert w["slide_per_step_px"] == [pytest.approx(0), pytest.approx(0), pytest.approx(6), pytest.approx(0), pytest.approx(0)]

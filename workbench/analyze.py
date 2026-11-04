@@ -55,7 +55,7 @@ LIMITS = {
     "geometry": "Height, width and baseline come from the opaque-pixel bounding box; raised arms, a swinging bag or a cropped frame change them without the character changing.",
     "identity": "Identity drift is judged only by size, two crude proportions and colour palette. It cannot see a changed face, hood shape or costume detail if colours and size stay similar. A reference in a different pose or scale (guard concept art) makes size comparisons meaningless, so they are skipped there.",
     "feet": "Feet are estimated as opaque clusters in the bottom 12% of the figure. Overlapping feet merge into one cluster, long robes or shadows are mistaken for feet, and the contact point is the middle of the sole, so a normal heel-to-toe roll reads as a few pixels of slide.",
-    "slide": "Without annotations, the planted foot in each step is assumed to be whichever pairing of ground contacts would slide least. The reported slide is therefore a lower bound: the real slide may be larger if the wrong foot was matched.",
+    "slide": "Without annotations, the planted foot in each step is assumed to be whichever pairing of ground contacts would slide least. The reported slide is therefore a lower bound: the real slide may be larger if the wrong foot was matched. With annotations, contacts are matched by name and every shared planted contact must stay put; the result is only as good as the clicked points.",
     "stride": "Stride is the horizontal spread of foot clusters; a lifted foot above the foot band does not count, so passing poses read as stride 0 by construction.",
 }
 
@@ -72,8 +72,9 @@ class Action:
     loop_mode: str = "loop"
     ground_y: float = 535
     facing: str = "right"
-    travel: float | None = None        # cell px per frame (constant)
+    travel: float | list | None = None  # cell px per frame: constant, or a per-step list
     travel_source: str = "none"
+    travel_mode: str | None = None      # constant | per_frame | from_contacts (FORMAT.md)
     game_scale: float | None = None
     is_walk: bool = False
     status: str = ""
@@ -122,20 +123,25 @@ def load_action(character: str, action: str, travel: float | None = None,
     ref_rel = ch.get("identity_reference")
     ref = load_rgba(ASSETS / ref_rel) if ref_rel and (ASSETS / ref_rel).exists() else None
     loop_mode = (ann or {}).get("loop_mode") or ("loop" if info.get("loop") else "once")
-    t_src = "none"
+    t_src, t_mode = "none", None
+    at = (ann or {}).get("travel") or {}
     if travel is not None:
-        t_src = "command line"
-    elif ann and ann.get("travel", {}).get("mode") == "constant":
-        travel, t_src = float(ann["travel"]["px_per_frame"]), "annotation file"
+        t_src, t_mode = "command line", "constant"
+    elif at.get("mode") == "constant":
+        travel, t_src, t_mode = float(at["px_per_frame"]), "annotation file", "constant"
+    elif at.get("mode") == "per_frame":
+        travel, t_src, t_mode = [float(v) for v in at["px_per_frame"]], "annotation file (per frame)", "per_frame"
+    elif at.get("mode") == "from_contacts":
+        travel, t_src, t_mode = None, "derived from planted contacts (annotation file)", "from_contacts"
     elif parse_travel(info.get("old_timing")) is not None:
-        travel, t_src = parse_travel(info.get("old_timing")), "manifest old_timing"
+        travel, t_src, t_mode = parse_travel(info.get("old_timing")), "manifest old_timing", "constant"
     return Action(
         character=character, action=action, files=files,
         frames=[load_rgba(f) for f in files], durations_ms=durations,
         loop_mode=loop_mode,
         ground_y=float((ann or {}).get("ground_anchor", {}).get("y", man["conventions"].get("ground_y", 535))),
         facing=(ann or {}).get("facing", "right"),
-        travel=travel, travel_source=t_src,
+        travel=travel, travel_source=t_src, travel_mode=t_mode,
         game_scale=ch.get("game_scale_in_old_demos"),
         is_walk="walk" in action, status=info.get("status", ""), feedback=info.get("feedback", ""),
         reference=ref, reference_path=ref_rel, annotations=ann,
@@ -364,9 +370,12 @@ def step_pairs(ca: list[dict], cb: list[dict], sign: float, named: bool) -> list
     return ds
 
 
-def slide_for_travel(step_ds: list[list[float]], travel: list[float] | float) -> list[float | None]:
+def slide_for_travel(step_ds: list[list[float]], travel: list[float] | float, named: bool = False) -> list[float | None]:
+    """Slide per step. Heuristic (unnamed) contacts: the least-sliding pairing (a lower bound).
+    Named (annotated) contacts: every shared planted contact must stay put, so the worst one counts."""
     tr = travel if isinstance(travel, list) else [travel] * len(step_ds)
-    return [min(abs(d - t) for d in ds) if ds else None for ds, t in zip(step_ds, tr)]
+    agg = max if named else min
+    return [agg(abs(d - t) for d in ds) if ds else None for ds, t in zip(step_ds, tr)]
 
 
 def best_constant_travel(step_ds: list[list[float]], vmax: float, vmin: float = 0.0) -> float:
@@ -431,12 +440,30 @@ def walk_analysis(act: Action, foot: list[dict]) -> dict:
     # A cycle has two steps; each step the stance foot travels back about one contact stride.
     contact_strides = [strides[i] for i, k in enumerate(kinds) if k == "contact"] or [smax]
     v_stride = 2 * float(np.median(contact_strides)) / max(len(st), 1)
+    named = source == "annotations"
     unconstrained = best_constant_travel(step_ds, vmax)
     best = best_constant_travel(step_ds, 1.6 * v_stride, 0.4 * v_stride)
-    per_frame = chosen_ds(step_ds, best)
-    used_travel = act.travel if act.travel is not None else best
-    slides = slide_for_travel(step_ds, used_travel)
-    best_slides = slide_for_travel(step_ds, best)
+    if named:
+        # exact: the advance that keeps each step's shared planted contacts fixed (mean if several)
+        derived = [float(np.mean(ds)) if ds else None for ds in step_ds]
+        known = [v for v in derived if v is not None]
+        fill = float(np.mean(known)) if known else best
+        per_frame = derived
+        if known:
+            best = best_constant_travel(step_ds, max(vmax, 1.2 * max(known)), 0.0)
+    else:
+        per_frame = chosen_ds(step_ds, best)
+    if act.travel_mode == "from_contacts" and named:
+        used_travel = [v if v is not None else fill for v in per_frame]
+    elif act.travel_mode == "per_frame" and isinstance(act.travel, list):
+        used_travel = (act.travel + [act.travel[-1]] * len(st))[:len(st)]
+    elif act.travel is not None:
+        used_travel = act.travel
+    else:
+        used_travel = best
+    slides = slide_for_travel(step_ds, used_travel, named)
+    best_slides = slide_for_travel(step_ds, best, named)
+    used_mean = float(np.mean(used_travel)) if isinstance(used_travel, list) else float(used_travel)
     valid = [s for s in slides if s is not None]
     scale = act.game_scale
     return {
@@ -451,22 +478,24 @@ def walk_analysis(act: Action, foot: list[dict]) -> dict:
         "contacts": [[{k: c[k] for k in ("name", "x", "y", "planted")} for c in cs] for cs in contacts],
         "steps": [[i, j] for i, j in st],
         "step_candidate_travel": step_ds,
-        "travel_used_px": used_travel,
-        "travel_used_source": act.travel_source if act.travel is not None else "recommended (no travel given)",
+        "travel_used_px": used_mean,
+        "travel_used_per_step_px": used_travel if isinstance(used_travel, list) else None,
+        "travel_used_source": act.travel_source if act.travel_mode else "recommended (no travel given)",
+        "steps_without_shared_contact": [list(s) for s, ds in zip(st, step_ds) if not ds],
         "slide_per_step_px": slides,
         "slide_total_px": float(sum(valid)),
         "slide_max_px": float(max(valid)) if valid else None,
         "slide_total_game_px": float(sum(valid) * scale) if scale else None,
         "stride_based_travel_px": v_stride,
         "unconstrained_best_travel_px": unconstrained,
-        "slide_curve": [[float(v), float(sum(x for x in slide_for_travel(step_ds, float(v)) if x is not None))]
+        "slide_curve": [[float(v), float(sum(x for x in slide_for_travel(step_ds, float(v), named) if x is not None))]
                         for v in np.arange(0, max(vmax, 1.7 * v_stride), 1.0)],
         "recommended_travel_px": best,
         "recommended_travel_game_px": best * scale if scale else None,
         "slide_at_recommended_px": best_slides,
         "slide_total_at_recommended_px": float(sum(s for s in best_slides if s is not None)),
         "recommended_per_frame_travel_px": per_frame,
-        "travel_per_loop_px": float(used_travel * len(st)),
+        "travel_per_loop_px": float(used_mean * len(st)),
     }
 
 
@@ -583,11 +612,15 @@ def analyze(act: Action) -> dict:
         bad = [(i, j, s) for (i, j), s in zip(walk["steps"], walk["slide_per_step_px"]) if s is not None and s > lim]
         if bad:
             flag("foot_slide", [k for i, j, _ in bad for k in (i, j)],
-                 f"At travel {tr:.1f} px/frame the planted foot slides at least {lim:.1f}px in {len(bad)}/{len(walk['steps'])} steps: "
+                 f"At travel {tr:.1f} px/frame{' (mean of per-step values)' if walk['travel_used_per_step_px'] else ''} the planted foot slides {'at least ' if walk['contact_source'] == 'heuristic' else ''}more than {lim:.1f}px in {len(bad)}/{len(walk['steps'])} steps: "
                  + ", ".join(f"{i+1}->{j+1}:{s:.0f}" for i, j, s in bad) + ".")
         rec = walk["recommended_travel_px"]
-        if act.travel is not None and rec and abs(tr - rec) > TH["slide_step_rel"] * rec:
+        if act.travel_mode == "constant" and rec and abs(tr - rec) > TH["slide_step_rel"] * rec:
             flag("travel_mismatch", [], f"Travel {tr:.1f} px/frame differs from the slide-minimising {rec:.1f} px/frame.")
+        if walk["steps_without_shared_contact"]:
+            flag("no_shared_contact", [k for s in walk["steps_without_shared_contact"] for k in s],
+                 "Steps with no contact planted in both frames (nothing can stay put; travel there is a guess): "
+                 + ", ".join(f"{i+1}->{j+1}" for i, j in walk["steps_without_shared_contact"]) + ".")
         if walk["unconstrained_best_travel_px"] < 0.25 * walk["stride_based_travel_px"]:
             flag("stance_not_moving", [], f"Planted feet barely move backward across the cycle (least slide at {walk['unconstrained_best_travel_px']:.1f} px/frame, "
                  f"while the stride implies ~{walk['stride_based_travel_px']:.0f}): the drawings shuffle in place, so any travel slides.")
@@ -595,7 +628,7 @@ def analyze(act: Action) -> dict:
         lim_r = max(TH["slide_step_px"], TH["slide_step_rel"] * rec)
         bad = [k for k, s in enumerate(rec_s) if s is not None and s > lim_r]
         if bad:
-            flag("slide_unavoidable", [walk["steps"][k][0] for k in bad],
+            flag("slide_unavoidable", [k2 for k in bad for k2 in walk["steps"][k]],
                  f"Even at the best constant travel ({rec:.1f} px/frame) {len(bad)} step(s) slide more than {lim_r:.1f}px: stance-foot motion is uneven, so constant speed cannot hide it.")
 
     report = {
@@ -627,7 +660,7 @@ def summarize(r: dict) -> str:
         tr = walk["travel_used_px"]
         lines.append(f"Walk (contacts from {walk['contact_source']}): {len(walk['contact_frames'])} contact and "
                      f"{len(walk['passing_frames'])} passing pose(s), {walk['steps_per_loop']} step(s) per loop, narrowest/widest stride {walk['min_max_stride_ratio'] or 0:.0%}. "
-                     f"At {tr:.1f} px/frame ({walk['travel_used_source']}) the planted foot slides at least "
+                     f"At {tr:.1f} px/frame ({walk['travel_used_source']}) the planted foot slides {'at least ' if walk['contact_source'] == 'heuristic' else ''}"
                      f"{walk['slide_total_px']:.0f} px per loop (worst step {walk['slide_max_px'] or 0:.1f} px). "
                      f"Slide-minimising constant travel is {walk['recommended_travel_px']:.1f} px/frame, leaving "
                      f"{walk['slide_total_at_recommended_px']:.0f} px of slide per loop.")

@@ -10,7 +10,7 @@ Handoff log for the animation workbench. Update in every commit.
 | 1. analyze.py library + CLI | done (11 unit tests pass) |
 | 2. Diagnostic images | done |
 | 3. Browser workbench | done (screenshots checked) |
-| 4. Annotations feed back | not started |
+| 4. Annotations feed back | done (Ren keypose annotated via the UI) |
 | 5. Real-data REPORT.md | not started |
 
 ## Environment notes (cloud session)
@@ -88,6 +88,26 @@ exercised by a screenshot (done in step 4).
 Not visually verified: drag-to-move a contact, shift-click delete, ping-pong, per-frame duration
 inputs changing playback speed (code paths exist; only the duration display was seen).
 
+## Step 4 notes (annotations feed back)
+
+- `analyze.py` reads `annotations/<c>/<a>.json`: frame order, durations, loop mode, ground y and
+  travel (`constant`, `per_frame`, `from_contacts`). With annotated contacts, feet are matched by
+  name, every shared planted contact must stay put (worst one counts, so it is no longer a lower
+  bound), and `from_contacts` travel is the advance that keeps them fixed. Steps with no shared
+  planted contact get the mean and a `no_shared_contact` flag. 3 new unit tests (14 total).
+- `annotations/ren/walk_keypose.json` was made **through the UI** (Playwright clicking the canvas
+  at points I read off a 2x zoom of the boots, then Save via serve.py, then "Re-run analysis").
+  Points: the front boot's heel at heel-strike, the back boot's toe at push-off, heel and toe of the
+  flat stance boot, so each step tracks the part of the boot that stays on the ground. They are my
+  reading of the drawings, not the owner's.
+- Result: stance travel per drawing is 98 / 70 / 108 / 81 cell px (mean 89). At the old demo's
+  41.9 px/frame the annotated feet slide 189 cell px per loop (~90 game px at scale 0.4777); best
+  constant travel 81 px/frame still leaves 55 px. With `from_contacts` travel, slide is 0.
+- Visually verified in the browser (screenshots 06-08 in out/screenshots/, opened and looked at):
+  editing frame 2 shows the three points and the table; moving preview with contact-derived travel
+  shows planted-foot slide 0.0 px; with 41.9 px/frame it shows a red slide bar of 28.1 px on the
+  toe_l step 2->3 (70 - 41.9), matching the report.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -97,5 +117,5 @@ inputs changing playback speed (code paths exist; only the duration display was 
 
 ## Next step
 
-Step 4: make analyze.py use annotations (named contacts, `from_contacts` / `per_frame` travel),
-annotate Ren walk_keypose through the UI and save it, verify the moving preview cannot slide.
+Step 5: run `python workbench/analyze.py --all`, copy chosen PNGs to `out/report_examples/`, and
+write REPORT.md comparing tool findings with the owner's verdicts.
