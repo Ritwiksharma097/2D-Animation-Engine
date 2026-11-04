@@ -12,7 +12,8 @@
   535.0
  ],
  "scale": 0.4777,
- "scale_source": "assumed: same as Ren (both drawn on 640x576 cells at a similar figure height)",
+ "scale_confirmed": false,
+ "scale_source": "ASSUMED: same as Ren (both drawn on 640x576 cells at a similar figure height). Owner to set.",
  "loop_mode": "loop",
  "facing": "right",
  "travel_mode": "none",

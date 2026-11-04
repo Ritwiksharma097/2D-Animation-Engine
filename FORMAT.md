@@ -176,3 +176,11 @@ displacement from the start), `props` and `floor_y` relative to the start anchor
 `verdict` is one of `approved`, `needs work`, `rejected`, `unsure` or empty. Written only by the
 review page through `serve.py` (`POST /api/review`, merged per action). The manifest's `status` is
 never changed by it.
+
+## Settings (`annotations/_settings.json`)
+
+Values the owner decides, in one place. `characters.<name>.game_scale` (game px per cell px),
+`confirmed` (has the owner set it?) and `source`. `export.py` uses it for every export, and the
+review page shows and edits it. `open_decisions` records where each open decision lives
+(guard ledge reading, Ren's climb step-in, walk timing, new frames), so each stays changeable in
+one place.

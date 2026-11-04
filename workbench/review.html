@@ -28,6 +28,10 @@
   .verdict select, .verdict button { font:inherit; }
   .saved { color:var(--ok); } .err { color:var(--warn); }
   .muted { color:var(--muted); }
+  .banner { margin:10px 16px 0; padding:10px 14px; background:#fff6dc; border:1px solid #edc96a; border-radius:6px; font-weight:600; }
+  .chars { margin:10px 16px 0; padding:8px 12px; background:var(--panel); border:1px solid var(--line); border-radius:6px; display:grid; gap:6px; }
+  .chars input[type=number] { width:80px; } .warnb { color:var(--warn); font-weight:600; }
+  .pend { color:#9a6b00; font-weight:600; }
 </style>
 </head>
 <body>
@@ -37,6 +41,8 @@
   <span id="prep"></span> <a href="regions.html" target="_blank">identity regions</a>
   <span class="muted">Your verdicts save to annotations/_reviews.json. Nothing here changes the drawings.</span>
 </header>
+<div id="banner" class="banner" style="display:none"></div>
+<div id="chars" class="chars"></div>
 <main id="list"></main>
 <script>
 "use strict";
@@ -73,20 +79,23 @@ const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;",
 let manifest, reviews = { reviews: {} }, cards = [];
 
 async function json(url) { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) throw new Error(r.status); return r.json(); }
-async function exists(url) { try { return (await fetch(url, { method: "HEAD", cache: "no-store" })).ok; } catch { return false; } }
+let inv = null;   // serve.py inventory: which optional files exist, so nothing is probed (no 404s)
+async function loadInventory() { try { inv = await (await fetch("/api/inventory", { method: "POST" })).json(); } catch { inv = null; } }
+const has = (key, f) => !!inv?.actions?.[key]?.out?.includes(f);
 
 async function card(c, a, info) {
   const key = `${c}/${a}`, out = `../out/${c}/${a}/`;
   let rep = null, ann = null;
-  try { rep = await json(out + "report.json"); } catch {}
-  try { ann = await json(`../annotations/${c}/${a}.json`); } catch {}
-  const isEdited = !!ann && (ann.mirror || ann.snap_to_ground || (ann.frames || []).some(e => (e.hold || 1) > 1 || e.drop || e.offset));
+  const pending = inv?.pending?.includes(key);
+  if (!inv || has(key, "report.json")) try { rep = await json(out + "report.json"); } catch {}
+  if (!inv || inv.actions[key]?.annotation) try { ann = await json(`../annotations/${c}/${a}.json`); } catch {}
+  const isEdited = inv ? !!inv.actions[key]?.edited : !!ann && (ann.mirror || ann.snap_to_ground || (ann.frames || []).some(e => (e.hold || 1) > 1 || e.drop || e.offset));
   const first = (ann?.frames?.find(e => !e.drop)?.file) || "01.png";
   const flags = rep?.flags || [];
   const byCode = {};
   for (const f of flags) (byCode[f.code] ??= []).push(f);
   const imgs = Object.values(rep?.images || {}).map(f => `<a href="${out}${f}" target="_blank">${esc(f.replace(".png", "").replace(/_/g, " "))}</a>`);
-  for (const extra of ["scene.png", "before_after.png", "ledge_100.png"]) if (await exists(out + extra)) imgs.push(`<a href="${out}${extra}" target="_blank">${extra.replace(".png", "").replace(/_/g, " ")}</a>`);
+  for (const extra of ["scene.png", "before_after.png", "ledge_100.png"]) if (has(key, extra)) imgs.push(`<a href="${out}${extra}" target="_blank">${extra.replace(".png", "").replace(/_/g, " ")}</a>`);
   const rv = reviews.reviews[key] || {};
   const el = document.createElement("section");
   el.className = "card"; el.dataset.flagged = flags.length ? "1" : ""; el.dataset.reviewed = rv.verdict ? "1" : ""; el.dataset.edited = isEdited ? "1" : "";
@@ -96,6 +105,7 @@ async function card(c, a, info) {
       <h2>${esc(key)}</h2>
       <div><span class="status ${esc(info.status)}">owner: ${esc(info.status)}</span> <span class="muted">${info.frames} frames${isEdited ? " · edited (assets untouched)" : ""}</span></div>
       <div class="feedback">${esc(info.feedback || "")}</div>
+      ${pending ? `<div class="pend">being prepared by the server: flags, images and before/after appear when it finishes</div>` : ""}
       <div><b>Tool says</b> ${flags.length ? "(suspect, never a pass):" : rep ? ": no flags (that is not a pass)." : ": <span class='muted'>not analysed yet</span>"}</div>
       <ul class="flags">${Object.entries(byCode).map(([code, fs]) => `<li>${esc(PLAIN[code] || code)}${fs[0].frames?.length ? ` <span class="muted">(frames ${esc([...new Set(fs.flatMap(f => f.frames))].slice(0, 12).join(", "))})</span>` : ""}</li>`).join("")}</ul>
       ${flags.length ? `<details><summary>details</summary><ul>${flags.map(f => `<li><code>${esc(f.code)}</code> ${esc(f.message)}</li>`).join("")}</ul><p class="muted">${esc(rep.summary)}</p></details>` : ""}
@@ -106,7 +116,8 @@ async function card(c, a, info) {
         ${/climb/.test(a) || /ladder/.test(a) ? `<a href="index.html#a=${key}&mode=scene" target="_blank">with the ledge / ladder</a>` : ""}
       </div>
       <div class="links muted">images: ${imgs.join(" ") || "none yet"}</div>
-      ${isEdited && await exists(out + "before_after.png") ? `<div class="ba"><details><summary>before / after</summary><img loading="lazy" src="${out}before_after.png" alt="before and after"></details></div>` : ""}
+      ${isEdited && !has(key, "before_after.png") ? `<div class="muted">before / after: ${pending ? "being prepared" : "not made yet"}</div>` : ""}
+      ${isEdited && has(key, "before_after.png") ? `<div class="ba"><details><summary>before / after</summary><img loading="lazy" src="${out}before_after.png" alt="before and after"></details></div>` : ""}
     </div>
     <div class="verdict">
       <label>your verdict <select class="v"><option value="">(none)</option><option>approved</option><option>needs work</option><option>rejected</option><option>unsure</option></select></label>
@@ -131,7 +142,31 @@ function applyFilter() {
   for (const el of cards) el.style.display = f === "all" || (f === "flagged" && el.dataset.flagged) || (f === "unreviewed" && !el.dataset.reviewed) || (f === "edited" && el.dataset.edited) ? "" : "none";
 }
 
+function renderSettings() {
+  const box = $("#chars"); box.innerHTML = "";
+  if (!inv) { box.innerHTML = "<span class='muted'>character scales: start the server to see and set them</span>"; return; }
+  for (const [c, v] of Object.entries(inv.settings.characters || {})) {
+    const d = document.createElement("div"); d.className = "charset";
+    d.innerHTML = `<b>${esc(c)}</b> game scale <input type="number" step="0.001" min="0.05" max="5" value="${v.game_scale}">
+      <label><input type="checkbox" ${v.confirmed ? "checked" : ""}> confirmed</label>
+      <span class="${v.confirmed ? "muted" : "warnb"}">${v.confirmed ? "" : "UNCONFIRMED: "}${esc(v.source || "")}</span>
+      <button>save</button> <span class="msg muted"></span>`;
+    d.querySelector("button").onclick = async () => {
+      const m = d.querySelector(".msg");
+      try {
+        const r = await fetch("/api/settings", { method: "POST", body: JSON.stringify({ character: c, game_scale: +d.querySelector("input[type=number]").value, confirmed: d.querySelector("input[type=checkbox]").checked }) });
+        if (!r.ok) throw new Error((await r.json()).error);
+        m.className = "msg saved"; m.textContent = "saved; the playtest is re-exported in the background";
+      } catch (e) { m.className = "msg err"; m.textContent = "not saved: " + e.message; }
+    };
+    box.appendChild(d);
+  }
+}
+
 async function render() {
+  await loadInventory();
+  if (inv) reviews = inv.reviews;
+  renderSettings();
   const list = $("#list"); list.innerHTML = ""; cards = [];
   for (const [c, ch] of Object.entries(manifest.characters))
     for (const [a, info] of Object.entries(ch.actions)) { const el = await card(c, a, info); cards.push(el); list.appendChild(el); }
@@ -143,14 +178,17 @@ async function watchPrep() {
   try {
     const s = await (await fetch("/api/status", { method: "POST" })).json();
     const p = $("#prep");
-    if (s.running || s.pending.length) { p.textContent = `preparing reports: ${s.done.length} done, ${s.pending.length} to go (the page refreshes when finished)`; setTimeout(watchPrep, 3000); window._prepWasRunning = true; }
-    else { p.textContent = Object.keys(s.failed).length ? `reports ready; failed: ${Object.keys(s.failed).join(", ")}` : "reports ready"; if (window._prepWasRunning) { window._prepWasRunning = false; render(); } }
+    const b = $("#banner");
+    if (s.running || s.pending.length) {
+      b.style.display = ""; b.textContent = `Preparing ${s.pending.length} report${s.pending.length === 1 ? "" : "s"}... (${s.done.length} done). Some flags and before/after images are missing until then; the page refreshes by itself.`;
+      p.textContent = ""; setTimeout(watchPrep, 3000); window._prepWasRunning = true;
+    }
+    else { b.style.display = "none"; p.textContent = Object.keys(s.failed).length ? `reports ready; failed: ${Object.keys(s.failed).join(", ")}` : "reports ready"; if (window._prepWasRunning) { window._prepWasRunning = false; render(); } }
   } catch { $("#prep").textContent = "server not running: Save won't work (start_workbench.bat)"; }
 }
 
 (async () => {
   manifest = await json("../assets/manifest.json");
-  try { reviews = await json("../annotations/_reviews.json"); } catch {}
   $("#filter").onchange = applyFilter;
   await render();
   watchPrep();

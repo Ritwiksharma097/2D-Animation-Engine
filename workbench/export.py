@@ -25,6 +25,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import analyze as A  # noqa: E402
 import props as P  # noqa: E402
+import settings as S  # noqa: E402
 
 EXPORT = A.OUT / "export"
 PAD = 2
@@ -85,9 +86,8 @@ def export(character, action, out_dir=EXPORT, travel_override=None, scale_overri
                        "source": act.files[k].name, "entry": act.entries[k] if act.entries else k})
     out = {"format": "workbench-export/1", "character": character, "action": action, "image": f"{action}.png",
            "cell_size": cell, "anchor": anchor,
-           "scale": A.load_manifest()["characters"][character].get("game_scale_in_old_demos") or scale_override,
-           "scale_source": "manifest game_scale_in_old_demos" if A.load_manifest()["characters"][character].get("game_scale_in_old_demos") else
-                           ("assumed: same as Ren (both drawn on 640x576 cells at a similar figure height)" if scale_override else None),
+           "scale": scale_override or S.game_scale(character)[0],
+           "scale_confirmed": S.game_scale(character)[1], "scale_source": S.game_scale(character)[2],
            "loop_mode": act.loop_mode, "facing": act.facing, "travel_mode": travel_mode, "frames": frames,
            "status_in_manifest": info.get("status"), "suspect_flags": sorted({f["code"] for f in rep["flags"]})}
     if doc.get("jump_timing"):
@@ -132,7 +132,7 @@ def export(character, action, out_dir=EXPORT, travel_override=None, scale_overri
 
 
 DEMO = [("ren", "walk_keypose"), ("ren", "climb_up"), ("ren", "climb_down"), ("ren", "jump"), ("ren", "idle")]
-REN_SCALE = 0.4777
+
 
 
 def main(argv=None):
@@ -145,8 +145,8 @@ def main(argv=None):
         p.error("give CHARACTER ACTION... or --demo")
     if a.demo:   # the guard patrols in the playtest at Ren's scale; his walk speed = stride-based estimate (his contacts walk in place)
         g = A.analyze(A.load_action("guard", "walk"))["metrics"]["walk"]
-        export("guard", "idle", scale_override=REN_SCALE)
-        o = export("guard", "walk", travel_override=round(g["stride_based_travel_px"], 2), scale_override=REN_SCALE)
+        export("guard", "idle")       # scale from annotations/_settings.json (guard's is unconfirmed)
+        o = export("guard", "walk", travel_override=round(g["stride_based_travel_px"], 2))
         print(f"guard/walk: travel {o['frames'][0]['travel_px']} px/frame (stride-based; the drawings themselves walk in place, so it slides)")
     for c, ac in todo:
         o = export(c, ac)

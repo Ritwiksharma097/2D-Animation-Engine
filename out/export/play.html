@@ -11,7 +11,7 @@
   header h1 { font-size:16px; margin:0 0 4px; }
   .note { color:var(--muted); max-width:1150px; }
   .row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:6px 14px; }
-  canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; max-width:calc(100% - 28px); }
+  canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; width:calc(100% - 28px); height:auto; }
   .bad { color:var(--warn); } .good { color:var(--ok); }
 </style>
 </head>
@@ -21,7 +21,7 @@
   <div class="note">Click the floor to walk (either way), the ledge to climb up, the floor again from the ledge to climb down, the far
   platform to jump the gap (and back). Walk travel per drawing comes from Ren's planted contacts, so his planted foot cannot slide.
   <b>His walk has only 4 drawings, so it looks choppy whatever the travel</b>: travel fixes sliding, not smoothness.
-  The guard patrols with his edited idle (held poses) and edited walk at Ren's scale; his walk drawings shuffle in place, so with any
+  The guard patrols with his edited idle (held poses) and edited walk; <b id="gscale"></b>; his walk drawings shuffle in place, so with any
   forward speed his feet slide (that walk is rejected; see specs/guard_walk.png).</div>
 </header>
 <div class="row">
@@ -40,8 +40,8 @@ const GROUND = 470, GAP = 90, CLIMB_START = 420, FRONT_BAND_CELL = 40;
 let LEDGE, FAR, ledgePct = 100;
 
 function mk(char, x, idle) { return { char, x, y: GROUND, dir: 1, surface: "floor", act: "idle", name: idle, idleName: idle, k: 0, t: 0, plan: [], pins: {}, drift: 0, maxDrift: 0 }; }
-const ren = mk("ren", 120, "ren/idle");
-const guard = mk("guard", 80, "guard/idle");
+const ren = mk("ren", 70, "ren/idle");        // start apart: Ren at the far left,
+const guard = mk("guard", 300, "guard/idle");  // the guard near the middle of his patrol
 window.playtest = { ren, guard, A };
 
 async function load(key) {
@@ -218,6 +218,8 @@ function loop(now) { const dt = Math.min(100, now - last); last = now; tick(ren,
 (async () => {
   await Promise.all(["ren/walk_keypose", "ren/climb_up", "ren/climb_down", "ren/jump", "ren/idle", "guard/idle", "guard/walk"].map(load));
   setLedge(100);
+  const gs = A["guard/walk"];
+  document.getElementById("gscale").textContent = `guard scale ${gs.scale}${gs.scale_confirmed ? "" : " (UNCONFIRMED: set it on the review page)"}`;
   const slider = document.getElementById("ledgeH");
   slider.addEventListener("input", () => { if (ren.act !== "idle" || ren.surface !== "floor") { slider.value = ledgePct; return; } setLedge(+slider.value); });
   cv.addEventListener("click", onClick);

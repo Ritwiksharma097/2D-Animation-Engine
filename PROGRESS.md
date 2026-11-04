@@ -388,6 +388,38 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
   changed from 41.9 -> 105 to 1.5 -> 64.7 px because the climb now uses the real path and
   corrected hand points).
 
+# Phase 4
+
+| Step | State |
+| --- | --- |
+| 18. Owner-PC fixes | done |
+| 19. Art intake | not started |
+| 20. Runtime ("engine") | not started |
+| 21. Ladders end to end | not started |
+| 22. Krita round trip | not started |
+
+Open owner decisions (not decided here; each lives in one place, listed in
+`annotations/_settings.json` `open_decisions`): guard ledge reading, Ren's 39 px climb step-in,
+180 ms walk timing, commissioning new frames.
+
+## Step 18 notes
+
+- `serve.py` `POST /api/inventory`: per action the files in `out/<c>/<a>/`, whether an annotation
+  exists, whether it is edited, plus reviews, settings and background-preparation state. The
+  review page loads optional files only if listed: **0 error responses** on load (was ~60 404s).
+- Review page: yellow "Preparing N reports..." banner while the server prepares; cards being
+  prepared say so; the page refreshes itself (before/after appears without a reload).
+- `annotations/_settings.json` + `workbench/settings.py`: per-character `game_scale` with
+  `confirmed`/`source`. The guard's is 0.4777, **unconfirmed** (assumed = Ren's). The review page
+  shows both scales; saving one writes the file and re-exports the playtest in the background
+  (~30 s). `export.py` reads scale from settings (no more hard-coded REN_SCALE).
+- Playtest: Ren starts at x=70, the guard at 300; the canvas is now page-width; the page says the
+  guard scale and whether it is unconfirmed.
+- `workbench/tests/phase4_fixes_checks.py` 9/9 PASS (banner shown while preparing, before/after
+  after preparation, no error responses, guard UNCONFIRMED, scale saves, re-export uses it,
+  characters apart, stage width, no page errors). Restores `_settings.json` and the exports.
+  Screenshots 60-62 looked at.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -426,7 +458,9 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 3 steps 12-17 are done. Suggested next steps, in order:
+Phase 4: next is step 19 (art intake).
+
+Phase 3 follow-ups (older list):
 1. On Windows: double-click `start_workbench.bat` (never run here) and review every action;
    `python workbench/tests/play_checks.py`, `review_checks.py`, `regions_checks.py`, `ui_checks.py`.
 2. Owner decisions: guard climb reading (90 px ledge), whether the 39 px step-in before Ren's climb

@@ -9,6 +9,8 @@ back to downloading the JSON. This server additionally:
   POST /api/analyze?character=..&action=..       re-runs analyze.py so report.json uses the annotations
   POST /api/review {key, verdict, comment}       merges one verdict into annotations/_reviews.json
   POST /api/status                               background report preparation progress
+  POST /api/inventory                            which out/ files and annotations exist, reviews, settings, pending
+  POST /api/settings {character, game_scale, confirmed}   per-character scale in annotations/_settings.json
 """
 from __future__ import annotations
 
@@ -120,6 +122,31 @@ class Handler(SimpleHTTPRequestHandler):
                                         "bands": {n: m["band"] for n, m in model.items()}})
             except Exception as e:
                 return self._json(400, {"error": repr(e)})
+        if u.path == "/api/inventory":
+            # one call instead of probing optional files (which 404 and fill the console)
+            import settings
+            inv = {}
+            for c, ac in analyze.all_actions():
+                od = analyze.OUT / c / ac
+                inv[f"{c}/{ac}"] = {"out": sorted(f.name for f in od.iterdir()) if od.is_dir() else [],
+                                    "annotation": (analyze.ANNOTATIONS / c / f"{ac}.json").exists(), "edited": edited(c, ac)}
+            return self._json(200, {"actions": inv, "reviews": load_reviews(), "settings": settings.load(),
+                                    "pending": STATUS["pending"], "running": STATUS["running"], "failed": STATUS["failed"]})
+        if u.path == "/api/settings":
+            import settings
+            try:
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+                c = body["character"]
+                if c not in analyze.load_manifest()["characters"]:
+                    raise ValueError("unknown character")
+                v = float(body["game_scale"])
+                if not 0.05 <= v <= 5:
+                    raise ValueError("game_scale out of range (0.05-5)")
+                settings.set_game_scale(c, v, bool(body.get("confirmed")))
+            except (ValueError, KeyError, json.JSONDecodeError) as e:
+                return self._json(400, {"error": str(e)})
+            threading.Thread(target=reexport, daemon=True).start()
+            return self._json(200, {"saved": c, "game_scale": v})
         if u.path == "/api/status":
             return self._json(200, STATUS)
         if u.path == "/api/scene":
@@ -200,6 +227,15 @@ def prepare_reports():
             STATUS["failed"][f"{c}/{a}"] = repr(e)
         STATUS["pending"].remove(f"{c}/{a}")
     STATUS["running"] = False
+
+
+def reexport():
+    """After a settings change: rebuild the playtest exports so they use the new scale."""
+    import contextlib
+    import io
+    import export
+    with contextlib.redirect_stdout(io.StringIO()):
+        export.main(["--demo"])
 
 
 def main():
