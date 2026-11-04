@@ -53,17 +53,28 @@ export function adaptClimb(clip, heightGame, { strict = false } = {}) {
  * Characters on the floor stop before a platform face; on a platform they stop at its edges.
  */
 export class World {
-  constructor({ floorY, platforms = [], ladders = [], frontBandCell = 40 }) {
-    this.floorY = floorY; this.platforms = platforms; this.ladders = ladders; this.frontBandCell = frontBandCell;
+  constructor({ floorY, floors = null, platforms = [], ladders = [], frontBandCell = 40 }) {
+    // floors: walk regions [{id, x0, x1, y, left: "face"|"edge", right: "face"|"edge"}] (see runtime/level.js);
+    // without them there is one endless floor called "floor" at floorY (the single-screen demos).
+    this.floors = floors; this.floorY = floorY ?? floors?.[0]?.y; this.platforms = platforms; this.ladders = ladders; this.frontBandCell = frontBandCell;
   }
+  region(id) { return this.floors?.find(f => f.id === id); }
+  /** y of the floor a platform stands on. */
+  baseY(p) { return p.base ?? this.floorY; }
   /** Ladders: {id, x, top, rungSpacing, toSurface}; rungs every rungSpacing up from the floor. */
   ladder(id) { return this.ladders.find(l => l.id === id); }
   platform(id) { return this.platforms.find(p => p.id === id); }
-  surfaceY(surface) { return surface === "floor" ? this.floorY : this.platform(surface).top; }
+  surfaceY(surface) {
+    if (surface === "floor") return this.floorY;
+    const f = this.region(surface); if (f) return f.y;
+    return this.platform(surface).top;
+  }
   /** Walking limits [min, max] for a character on `surface` with walk clip `walk`, currently at x. */
   limits(surface, walk, x) {
-    if (surface !== "floor") { const p = this.platform(surface); return [p.x0 + 10, p.x1 - 10]; }
     const fe = frontExtent(walk), band = this.frontBandCell * walk.scale;
+    const f = this.region(surface);
+    if (f) return [f.left === "face" ? f.x0 - band + fe : f.x0 + 10, f.right === "face" ? f.x1 + band - fe : f.x1 - 10];
+    if (surface !== "floor") { const p = this.platform(surface); return [p.x0 + 10, p.x1 - 10]; }
     let lo = -Infinity, hi = Infinity;
     for (const p of this.platforms) {
       if (p.x0 >= x) hi = Math.min(hi, p.x0 + band - fe);   // stop before the face (a near limb may overlap 40 cell px)
@@ -129,24 +140,27 @@ export class Character {
       this.startTurn();
     } else if (cmd.type === "climb_up" || cmd.type === "climb_down") {
       const clip = this.c(cmd.type), p = this.world.platform(cmd.platform);
-      const height = this.world.floorY - p.top;
+      const base = this.world.baseY(p), height = base - p.top;
       const a = adaptClimb(clip, height, cmd);
       if (!a.ok) { this.emit("refused", { command: cmd, reason: a.reason }); this.queue = []; return this.next(); }
-      cmd.path = a.path; cmd.marginal = a.marginal;
-      // drawings are placed relative to the ledge face: start exactly there (a visible step if the walk had to stop short)
-      const sx = p.x0 - a.entry.front_x * clip.scale;
-      cmd.stepIn = sx - this.x; this.x = sx; this.dir = 1;
-      this.y = cmd.type === "climb_up" ? this.world.floorY : p.top;
+      cmd.path = a.path; cmd.marginal = a.marginal; cmd.base = base;
+      // drawings are placed relative to the ledge face: start exactly there (a visible step if the walk had to stop short).
+      // side "back" climbs the far face mirrored (facing left).
+      const dir = cmd.side === "back" ? -1 : 1;
+      const sx = dir > 0 ? p.x0 - a.entry.front_x * clip.scale : p.x1 + a.entry.front_x * clip.scale;
+      cmd.stepIn = sx - this.x; this.x = sx; this.dir = dir; cmd.dir = dir;
+      this.y = cmd.type === "climb_up" ? base : p.top;
       cmd.start = { x: this.x, y: this.y };
       this.setState("climb", clip);
     } else if (cmd.type === "ladder") {
       const clip = this.c("ladder"), l = this.world.ladder(cmd.ladder), L = clip.ladder;
       if (!L) { this.emit("refused", { command: cmd, reason: `${clip.key} has no ladder block` }); this.queue = []; return this.next(); }
-      const perCycle = L.rise_px_per_cycle * clip.scale, height = this.world.floorY - l.top;
+      const bottom = this.world.surfaceY(l.from ?? "floor");
+      const perCycle = L.rise_px_per_cycle * clip.scale, height = bottom - l.top;
       cmd.cycles = Math.max(1, Math.round(height / perCycle));
       cmd.leftover = height - cmd.cycles * perCycle;
       cmd.frames = cmd.cycles * clip.frames.length; cmd.done = 0;
-      this.x = l.x; this.y = this.world.floorY; this.dir = 1;
+      this.x = l.x; this.y = bottom; this.dir = 1; cmd.bottom = bottom;
       this.emit("ladder_on", { ladder: l.id, cycles: cmd.cycles, assumedRise: !!L.rise_assumed });
       this.setState("ladder", clip); this.rungError = this.measureRungs(l);
     } else if (cmd.type === "jump") {
@@ -163,9 +177,17 @@ export class Character {
   }
 
   /** Where a climb on platform `platformId` starts (x), or null when the ledge height is refused. */
-  climbStartX(role, platformId) {
-    const clip = this.c(role), p = this.world.platform(platformId), a = adaptClimb(clip, this.world.floorY - p.top);
-    return a.ok ? p.x0 - a.entry.front_x * clip.scale : null;
+  climbStartX(role, platformId, side = "front") {
+    const clip = this.c(role), p = this.world.platform(platformId), a = adaptClimb(clip, this.world.baseY(p) - p.top);
+    if (!a.ok) return null;
+    return side === "back" ? p.x1 + a.entry.front_x * clip.scale : p.x0 - a.entry.front_x * clip.scale;
+  }
+  /** Where a climb ends (x), relative to the same start rule. */
+  climbEndX(role, platformId, side = "front") {
+    const clip = this.c(role), p = this.world.platform(platformId), a = adaptClimb(clip, this.world.baseY(p) - p.top);
+    if (!a.ok) return null;
+    const last = a.path[a.path.length - 1], dir = side === "back" ? -1 : 1;
+    return this.climbStartX(role, platformId, side) + dir * last[0] * clip.scale;
   }
 
   startTurn() { this.turnLeft = this.turnMs; this.setState("turn"); }
@@ -194,7 +216,7 @@ export class Character {
     let worst = 0;
     for (const c of Object.values(this.clip.frames[this.k].contacts || {})) {
       if (c.state !== "planted" || c.surface !== "ladder_rung") continue;
-      const w = this.toWorld(c), r = (this.world.floorY - w.y) / l.rungSpacing;
+      const w = this.toWorld(c), r = (this.world.surfaceY(l.from ?? "floor") - w.y) / l.rungSpacing;
       worst = Math.max(worst, Math.abs(r - Math.round(r)) * l.rungSpacing);
     }
     return worst;
@@ -238,8 +260,8 @@ export class Character {
     if (this.state === "climb") {
       this.k++;
       const p = cmd.path[Math.min(this.k, n - 1)];
-      this.x = cmd.start.x + p[0] * clip.scale; this.y = cmd.start.y + p[1] * clip.scale;
-      if (this.k >= n) { this.k = n - 1; this.surface = cmd.type === "climb_up" ? cmd.platform : "floor"; this.y = this.world.surfaceY(this.surface); this.next(); return "stop"; }
+      this.x = cmd.start.x + (cmd.dir ?? 1) * p[0] * clip.scale; this.y = cmd.start.y + p[1] * clip.scale;
+      if (this.k >= n) { this.k = n - 1; this.surface = cmd.type === "climb_up" ? cmd.platform : (cmd.to ?? "floor"); this.y = this.world.surfaceY(this.surface); this.next(); return "stop"; }
       this.enterFrame(); return;
     }
     if (this.state === "ladder") {

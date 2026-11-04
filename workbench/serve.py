@@ -9,6 +9,7 @@ back to downloading the JSON. This server additionally:
   POST /api/analyze?character=..&action=..       re-runs analyze.py so report.json uses the annotations
   POST /api/review {key, verdict, comment}       merges one verdict into annotations/_reviews.json
   POST /api/status                               background report preparation progress
+  POST /api/level?name=N                          writes levels/N.json (workbench-level/1)
   POST /api/inventory                            which out/ files and annotations exist, reviews, settings, pending
   POST /api/settings {character, game_scale, confirmed}   per-character scale in annotations/_settings.json
 """
@@ -155,6 +156,21 @@ class Handler(SimpleHTTPRequestHandler):
                 return self._json(400, {"error": str(e)})
             threading.Thread(target=reexport, daemon=True).start()
             return self._json(200, {"saved": c, "game_scale": v})
+        if u.path == "/api/level":
+            q = parse_qs(u.query)
+            name = q.get("name", [""])[0]
+            try:
+                if not re.fullmatch(NAME, name):
+                    raise ValueError("bad level name")
+                doc = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+                if doc.get("format") != "workbench-level/1" or not doc.get("floors"):
+                    raise ValueError("not a workbench-level/1 document with floors")
+            except (ValueError, json.JSONDecodeError) as e:
+                return self._json(400, {"error": str(e)})
+            path = ROOT / "levels" / f"{name}.json"
+            path.parent.mkdir(exist_ok=True)
+            path.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+            return self._json(200, {"saved": analyze.rel(path)})
         if u.path == "/api/status":
             return self._json(200, STATUS)
         if u.path == "/api/scene":

@@ -504,7 +504,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | Step | State |
 | --- | --- |
 | 23. Owner-PC fixes + new Ren reactions | done |
-| 24. Levels and navigation | not started |
+| 24. Levels and navigation | done |
 | 25. Interactions and guard AI | not started |
 | 26. Mechanics sandbox | not started |
 | 27. Robustness and packaging | not started |
@@ -524,6 +524,27 @@ Open owner decisions (not decided here; each lives in one place, listed in
   caught_game_over, ladder_up and the interact contact sheet.
 - `annotations/ren/interact.json`: `hand_r` per drawing 3-8 (lowest skin pixel of the front hand),
   planted on the ground in 5-6; `pickup` event at drawing 5 (exported as frame index 4, with the point).
+
+## Step 24 notes
+
+- Level format in FORMAT.md; `levels/demo.json` (2600 px wide). `runtime/level.js`: `compileLevel`
+  (walk regions split by ledges, face/edge sides), `worldFromLevel`, `surfaceAt`, `navGraph`
+  (climbs on both faces via the ledge adapter, jumps by `jump_max_gap` / `jump_max_rise`, ladders
+  only with a ladder clip that has rung data, no ladder-down), `planRoute` (Dijkstra over transition
+  endpoints, only ok edges; when no route, lists the refused transitions), `queueRoute`, `goTo`,
+  `Camera` (dead zone, frame-rate-independent easing, clamped). Runtime World gained floor regions,
+  platform `base`, back-side (mirrored) climbs, `climbEndX`, ladders from any surface.
+- `node --test runtime/test/level.test.mjs` 6/6 (one bug found by it: a ledge followed by another
+  ledge got no back side), runtime tests 9/9.
+- `out/export/level_play.html`: click anywhere, Ren routes there; camera follows; transitions drawn
+  green / amber / red. `workbench/level_editor.html`: drag / resize props, numeric fields, add / delete,
+  character select, transitions coloured and listed with reasons, save via serve.py.
+  `level_checks.py` 8/8 PASS (onto the ledge, down its back, jump with the camera following, ladder
+  platform and 170 px wall refused for Ren with reasons, dragging L1 80 px higher turns its climbs
+  red, save). Screenshots 80-83 looked at.
+- Limits: jumps are only between surfaces at nearly the same height (Ren's drawings are a same-level
+  jump); the planner's walking cost ignores time spent in climbs; the editor doesn't snap or check
+  overlaps.
 
 ## Known problems
 
@@ -570,7 +591,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 5: next is step 24 (levels and navigation).
+Phase 5: next is step 25 (interactions and guard AI).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

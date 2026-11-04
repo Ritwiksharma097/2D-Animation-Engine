@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Level Editor</title>
+<style>
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; color:#1e1e1e; background:#f6f6f4; }
+  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  h1 { font-size:16px; margin:0; } .note { color:#666; }
+  main { display:flex; gap:12px; padding:10px 14px; flex-wrap:wrap; align-items:flex-start; }
+  canvas { background:#fff; border:1px solid #ddd; cursor:default; width:100%; height:auto; display:block; }
+  .stage { flex:1 1 900px; min-width:0; } .side { flex:0 0 340px; background:#fff; border:1px solid #ddd; border-radius:6px; padding:8px; }
+  .side input { width:80px; } .tr { margin:2px 0; } .ok { color:#1baf7a; } .bad { color:#c81e28; } .marg { color:#9a6b00; }
+  button, select { font:inherit; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Level editor</h1>
+  <label>level <input id="name" value="demo" style="width:90px"></label> <button id="load">load</button> <button id="save">save</button>
+  <label>character <select id="char"><option value="ren">Ren</option><option value="guard">guard</option></select></label>
+  <button data-add="ledge">+ ledge</button> <button data-add="platform">+ platform</button> <button data-add="ladder">+ ladder</button>
+  <button data-add="floor">+ floor</button> <button data-add="hotspot">+ hotspot</button> <button id="del">delete</button>
+  <span id="msg" class="note"></span>
+  <a href="../out/export/level_play.html">play the level</a>
+</header>
+<main>
+  <div class="stage"><canvas id="cv" width="1300" height="300"></canvas>
+    <div class="note">Drag a prop to move it; drag its top edge to change its height, its left/right edge to resize. Lines are transitions for the
+    chosen character, judged from its drawings: green = it can, amber = marginal, red dashed = it can't (reason in the list).</div></div>
+  <div class="side"><b>Selected</b><div id="props" class="note">nothing</div><hr><b>Transitions</b><div id="trans"></div></div>
+</main>
+<script type="module">
+import { loadClips, Character } from "../runtime/anim.js";
+import { compileLevel, worldFromLevel, navGraph } from "../runtime/level.js";
+const $ = s => document.querySelector(s), cv = $("#cv"), ctx = cv.getContext("2d");
+const clips = await loadClips("../out/export", ["ren/walk_keypose", "ren/climb_up", "ren/climb_down", "ren/jump", "ren/idle", "guard/idle", "guard/walk", "guard/ladder_up"]);
+const NAMES = { ren: { idle: "ren/idle", walk: "ren/walk_keypose", climb_up: "ren/climb_up", climb_down: "ren/climb_down", jump: "ren/jump" },
+                guard: { idle: "guard/idle", walk: "guard/walk", ladder: "guard/ladder_up" } };
+let level, C, edges = [], sel = null, drag = null, k = 0.5;
+window.ed = { get level() { return level; }, get edges() { return edges; }, select: s => { sel = s; refresh(); } };
+
+const msg = t => { $("#msg").textContent = t; };
+async function load(name) {
+  try { level = await (await fetch(`../levels/${name}.json`, { cache: "no-store" })).json(); msg(`loaded levels/${name}.json`); }
+  catch { msg(`levels/${name}.json not found`); return; }
+  sel = null; refresh(); document.body.dataset.ready = "1";
+}
+function items() {
+  const out = [];
+  for (const f of level.floors) out.push({ kind: "floor", o: f, x0: f.x0, x1: f.x1, top: f.y, bottom: level.size[1] });
+  for (const l of level.ledges || []) out.push({ kind: "ledge", o: l, x0: l.x0, x1: l.x1, top: l.top, bottom: level.floors.find(f => f.id === l.on)?.y ?? level.size[1] });
+  for (const p of level.platforms || []) out.push({ kind: "platform", o: p, x0: p.x0, x1: p.x1, top: p.top, bottom: p.top + 14 });
+  for (const l of level.ladders || []) out.push({ kind: "ladder", o: l, x0: l.x - 25, x1: l.x + 25, top: surfY(l.to) - 20, bottom: surfY(l.from) });
+  for (const h of level.hotspots || []) out.push({ kind: "hotspot", o: h, x0: h.x - 10, x1: h.x + 10, top: surfY(h.on) - 20, bottom: surfY(h.on) });
+  return out;
+}
+const surfY = id => (level.floors.find(f => f.id === id)?.y) ?? (level.ledges?.find(l => l.id === id)?.top) ?? (level.platforms?.find(p => p.id === id)?.top) ?? level.size[1];
+function refresh() {
+  // ledges stand on the floor under their middle
+  for (const l of level.ledges || []) { const f = level.floors.find(f => f.x0 <= (l.x0 + l.x1) / 2 && (l.x0 + l.x1) / 2 <= f.x1); if (f) l.on = f.id; }
+  k = cv.width / level.size[0]; cv.height = Math.round(level.size[1] * k);
+  C = compileLevel(level);
+  const who = $("#char").value;
+  const ch = new Character({ id: who, clips, world: worldFromLevel(C), x: C.regions[0].x0 + 50, surface: C.regions[0].id, names: NAMES[who] });
+  edges = navGraph(C, ch);
+  draw(); panel();
+}
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  for (const it of items()) {
+    const on = sel && sel.o === it.o;
+    if (it.kind === "ladder") {
+      ctx.strokeStyle = on ? "#2a78d6" : "#785a32"; ctx.lineWidth = 3 / k;
+      for (const xr of [it.x0, it.x1]) { ctx.beginPath(); ctx.moveTo(xr, it.bottom); ctx.lineTo(xr, it.top); ctx.stroke(); }
+      for (let y = it.bottom - (it.o.rung_spacing || 32); y > it.top; y -= it.o.rung_spacing || 32) { ctx.beginPath(); ctx.moveTo(it.x0, y); ctx.lineTo(it.x1, y); ctx.stroke(); }
+    } else if (it.kind === "hotspot") { ctx.fillStyle = on ? "#2a78d6" : "#eda100"; ctx.beginPath(); ctx.arc(it.o.x, it.bottom - 10, 9, 0, 7); ctx.fill(); }
+    else {
+      ctx.fillStyle = it.kind === "floor" ? "#d6ccba" : it.kind === "ledge" ? "#c9bc9f" : "#b9b0a0";
+      ctx.fillRect(it.x0, it.top, it.x1 - it.x0, it.bottom - it.top);
+      if (on) { ctx.strokeStyle = "#2a78d6"; ctx.lineWidth = 3 / k; ctx.strokeRect(it.x0, it.top, it.x1 - it.x0, it.bottom - it.top); }
+      ctx.fillStyle = "#333"; ctx.font = `${12 / k}px system-ui`; ctx.fillText(it.o.id + (it.kind === "ledge" ? ` ${(it.bottom - it.top).toFixed(0)}px` : ""), it.x0 + 4 / k, it.top + 14 / k);
+    }
+  }
+  for (const e of edges) {
+    const ya = surfY(e.from.split("#")[0]) - 4, yb = surfY(e.to.split("#")[0]) - 4;
+    ctx.strokeStyle = e.ok ? (e.marginal ? "#eda100" : "#1baf7a") : "#c81e28"; ctx.lineWidth = 2.5 / k; ctx.setLineDash(e.ok ? [] : [8 / k, 5 / k]);
+    ctx.beginPath(); ctx.moveTo(e.fromX, ya); ctx.quadraticCurveTo((e.fromX + e.toX) / 2, Math.min(ya, yb) - 50, e.toX, yb); ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+function panel() {
+  const t = $("#trans"); t.innerHTML = "";
+  for (const e of edges) {
+    const d = document.createElement("div"); d.className = "tr " + (e.ok ? (e.marginal ? "marg" : "ok") : "bad");
+    d.textContent = `${e.ok ? (e.marginal ? "~" : "✓") : "✗"} ${e.type}${e.side ? " (" + e.side + ")" : ""} ${e.from} → ${e.to}${e.ok ? "" : ": " + e.reason}`;
+    t.appendChild(d);
+  }
+  const p = $("#props"); p.innerHTML = "";
+  if (!sel) { p.textContent = "nothing (click a prop)"; return; }
+  for (const [key, v] of Object.entries(sel.o)) {
+    const row = document.createElement("div");
+    if (typeof v === "number") {
+      row.innerHTML = `${key} <input type="number" value="${v}">`;
+      row.querySelector("input").onchange = e => { sel.o[key] = +e.target.value; refresh(); };
+    } else row.textContent = `${key}: ${v}`;
+    p.appendChild(row);
+  }
+}
+const pt = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width / k, y: (e.clientY - r.top) * cv.height / r.height / k }; };
+cv.addEventListener("mousedown", e => {
+  const p = pt(e), its = items().reverse();   // props drawn last are on top
+  const it = its.find(i => i.kind !== "floor" && p.x >= i.x0 - 6 && p.x <= i.x1 + 6 && p.y >= i.top - 6 && p.y <= i.bottom + 2) ?? its.find(i => p.x >= i.x0 && p.x <= i.x1 && p.y >= i.top - 6);
+  sel = it ?? null; if (!it) { refresh(); return; }
+  const edge = 8 / k;
+  const mode = it.kind === "ladder" || it.kind === "hotspot" ? "move" : Math.abs(p.y - it.top) < edge ? "top" : Math.abs(p.x - it.x1) < edge ? "right" : Math.abs(p.x - it.x0) < edge ? "left" : "move";
+  drag = { mode, p, o: JSON.parse(JSON.stringify(it.o)), kind: it.kind };
+  refresh();
+});
+window.addEventListener("mousemove", e => {
+  if (!drag) return;
+  const p = pt(e), dx = Math.round(p.x - drag.p.x), dy = Math.round(p.y - drag.p.y), o = sel.o, b = drag.o;
+  const topKey = drag.kind === "floor" ? "y" : "top";
+  if (drag.mode === "top") o[topKey] = b[topKey] + dy;
+  else if (drag.mode === "right") o.x1 = Math.max(b.x0 + 20, b.x1 + dx);
+  else if (drag.mode === "left") o.x0 = Math.min(b.x1 - 20, b.x0 + dx);
+  else if ("x" in o) o.x = b.x + dx;
+  else { o.x0 = b.x0 + dx; o.x1 = b.x1 + dx; if (drag.kind === "platform") o.top = b.top + dy; }
+  refresh();
+});
+window.addEventListener("mouseup", () => { if (drag) { drag = null; msg("unsaved changes"); } });
+document.querySelectorAll("[data-add]").forEach(b => b.onclick = () => {
+  const kind = b.dataset.add, f = level.floors[0], n = Date.now() % 10000;
+  if (kind === "ledge") (level.ledges ??= []).push({ id: `L${n}`, x0: f.x0 + 200, x1: f.x0 + 360, top: f.y - 94, on: f.id });
+  if (kind === "platform") (level.platforms ??= []).push({ id: `P${n}`, x0: f.x0 + 200, x1: f.x0 + 400, top: f.y - 180 });
+  if (kind === "floor") { const last = level.floors[level.floors.length - 1]; level.floors.push({ id: `F${n}`, x0: last.x1 + 100, x1: last.x1 + 600, y: last.y }); level.size[0] = Math.max(level.size[0], last.x1 + 600); }
+  if (kind === "ladder") { const p = (level.platforms || [])[0]; if (!p) { msg("add a platform first"); return; } (level.ladders ??= []).push({ id: `LD${n}`, x: p.x0 - 40, from: f.id, to: p.id, rung_spacing: 32 }); }
+  if (kind === "hotspot") (level.hotspots ??= []).push({ id: `H${n}`, x: f.x0 + 100, on: f.id, kind: "item", item: "item", use: "interact" });
+  refresh(); msg("unsaved changes");
+});
+$("#del").onclick = () => {
+  if (!sel || sel.kind === "floor" && level.floors.length === 1) return;
+  for (const key of ["floors", "ledges", "platforms", "ladders", "hotspots"]) if (level[key]) level[key] = level[key].filter(o => o !== sel.o);
+  sel = null; refresh(); msg("unsaved changes");
+};
+$("#save").onclick = async () => {
+  try { const r = await fetch(`/api/level?name=${$("#name").value}`, { method: "POST", body: JSON.stringify(level) }); const j = await r.json(); if (!r.ok) throw new Error(j.error); msg(`saved ${j.saved}`); }
+  catch (e) { msg("not saved (needs serve.py): " + e.message); }
+};
+$("#load").onclick = () => load($("#name").value);
+$("#char").onchange = refresh;
+await load(new URLSearchParams(location.search).get("level") || "demo");
+</script>
+</body>
+</html>

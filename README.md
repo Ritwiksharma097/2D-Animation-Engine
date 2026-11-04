@@ -158,3 +158,9 @@ python workbench/ladder.py spec                              # specs/guard_ladde
 `python workbench/krita_export.py ren walk_keypose --spec specs/ren_walk_inbetweens.json`, then follow
 `out/krita/ren_walk_keypose/KRITA_STEPS.md` and bring the render back with `intake.py ... --as-is`.
 See `KRITA.md` (why there is no `.kra` writer).
+
+## Levels
+
+- Play: http://localhost:8000/out/export/level_play.html (click anywhere; Ren routes there).
+- Edit: http://localhost:8000/workbench/level_editor.html (save writes `levels/<name>.json`).
+- Tests: `node --test runtime/test/level.test.mjs`, `python workbench/tests/level_checks.py`.

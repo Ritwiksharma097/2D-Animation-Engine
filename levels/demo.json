@@ -1,0 +1,24 @@
+{
+ "format": "workbench-level/1",
+ "name": "demo",
+ "note": "Navigation test level (placeholder shapes, not a game level). Game px; y grows downward.",
+ "size": [2600, 520],
+ "floors": [
+  {"id": "A", "x0": 0, "x1": 1300, "y": 470},
+  {"id": "B", "x0": 1400, "x1": 2600, "y": 470}
+ ],
+ "ledges": [
+  {"id": "L1", "x0": 500, "x1": 700, "top": 376, "on": "A"},
+  {"id": "L2", "x0": 2350, "x1": 2480, "top": 300, "on": "B"}
+ ],
+ "platforms": [
+  {"id": "P", "x0": 1900, "x1": 2200, "top": 300}
+ ],
+ "ladders": [
+  {"id": "LD", "x": 1860, "from": "B", "to": "P", "rung_spacing": 32}
+ ],
+ "hotspots": [
+  {"id": "item", "x": 2100, "on": "P", "kind": "item", "item": "key", "use": "interact"}
+ ],
+ "rules": {"jump_max_gap": 140, "jump_max_rise": 12}
+}

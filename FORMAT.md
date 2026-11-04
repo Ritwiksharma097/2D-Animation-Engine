@@ -198,3 +198,31 @@ Reviews of intakes use the key `<character>/incoming__<action>`.
 `"events": {"pickup": {"frame": 4, "point": [400.9, 519.0], "note": "..."}}` in an action document;
 `frame` is the 1-based drawing number. The export converts it to the 0-based played-frame index.
 `point` (optional, cell px of that drawing, before edits) is passed to the runtime as a world point.
+
+## Levels (`levels/<name>.json`, format `workbench-level/1`)
+
+Game px, y grows downward. Read by `runtime/level.js`, edited by `workbench/level_editor.html`,
+saved through `serve.py` (`POST /api/level?name=`).
+
+```json
+{"format": "workbench-level/1", "name": "demo", "size": [2600, 520],
+ "floors":    [{"id": "A", "x0": 0, "x1": 1300, "y": 470}, {"id": "B", "x0": 1400, "x1": 2600, "y": 470}],
+ "ledges":    [{"id": "L1", "x0": 500, "x1": 700, "top": 376, "on": "A"}],
+ "platforms": [{"id": "P", "x0": 1900, "x1": 2200, "top": 300}],
+ "ladders":   [{"id": "LD", "x": 1860, "from": "B", "to": "P", "rung_spacing": 32}],
+ "hotspots":  [{"id": "item", "x": 2100, "on": "P", "kind": "item", "item": "key", "use": "interact"}],
+ "rules":     {"jump_max_gap": 140, "jump_max_rise": 12}}
+```
+
+- **floors:** walkable segments. A gap is simply where no floor exists.
+- **ledges:** solid blocks standing on a floor (`on`). The front face is `x0`, the back face `x1`;
+  both can be climbed (the back is the climb mirrored).
+- **platforms:** floating surfaces, reached by jumping or by ladder.
+- **ladders:** `from` a floor (or surface) id `to` a surface id, at `x`.
+- **hotspots:** items or use points on a surface (`on`).
+- **rules:** jump limits and transition costs; they override `runtime/level.js` `DEF_RULES`.
+
+`compileLevel` turns floors into **walk regions** split by the ledges standing on them, e.g.
+`A#0` is left of L1 and `A#1` right of it. A region's sides are `face` (stop before the ledge,
+allowing the 40 cell px front band) or `edge` (stop 10 px from a drop). `navGraph` lists the
+transitions (climb up / down per face, jump, ladder), judging each against the character's drawings.
