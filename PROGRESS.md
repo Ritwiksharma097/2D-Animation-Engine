@@ -396,7 +396,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | 19. Art intake | done |
 | 20. Runtime ("engine") | done |
 | 21. Ladders end to end | done |
-| 22. Krita round trip | not started |
+| 22. Krita round trip | done (file level; Krita never run) |
 
 Open owner decisions (not decided here; each lives in one place, listed in
 `annotations/_settings.json` `open_decisions`): guard ledge reading, Ren's 39 px climb step-in,
@@ -484,6 +484,21 @@ Open owner decisions (not decided here; each lives in one place, listed in
 - Not done: get-on / get-off drawings (none exist; both are cuts), ladder down (the old "down" was the
   up sequence reversed; the runtime has no `ladder_down` yet).
 
+## Step 22 notes
+
+- `workbench/krita_export.py <c> <a> [--spec S]` -> `out/krita/<c>_<a>/` with `frames/` (kept
+  drawings, keys shifted by the spec's key offsets, blank cells to draw), `targets/`, `onion/`
+  (previous blue / next orange), `ghost/` (current drawing named by the spec), `ground.png`,
+  `pack.json`, `KRITA_STEPS.md`. Ren in-betweens: draw 2, 4, 6, 8; guard walk: draw all 8 over ghosts.
+  Composited layers looked at (`out/report_examples/phase4/krita_layers_ren.png`): onion + targets
+  sit on the ground line beside the kept keys.
+- `intake.py --as-is`: frames already on the cell are copied untouched (no re-scale, no re-align);
+  refuses frames of another size. `test_krita.py`: pack layout, simulated drawing saved with Krita's
+  render names (`frame_0000.png`), intake --as-is -> pixel-identical (27 tests pass).
+- **No `.kra` writer**: see `KRITA.md` (animated paint layers use Krita's undocumented tiled LZF
+  format; not verifiable without Krita). Krita itself was never run here, so the import / render steps
+  in KRITA_STEPS.md are from Krita's documented menus and untested.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -522,7 +537,13 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 4: next is step 22 (Krita round trip).
+Phase 4 steps 18-22 are done. Suggested next steps, in order:
+1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,
+   `guard_demo_checks.py`, `play_checks.py`, `node --test runtime/test/runtime.test.mjs`.
+2. Try the Krita round trip once in Krita (KRITA.md) with the Ren in-betweens pack; fix the steps
+   if a menu differs.
+3. Owner decisions, still open (each in one place, see `annotations/_settings.json`): guard scale,
+   guard ledge reading, Ren's 39 px step-in, 180 ms walk timing, new frames.
 
 Phase 3 follow-ups (older list):
 1. On Windows: double-click `start_workbench.bat` (never run here) and review every action;

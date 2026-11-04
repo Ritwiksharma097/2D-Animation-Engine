@@ -152,3 +152,9 @@ Tests: `node --test runtime/test/runtime.test.mjs`.
 python workbench/ladder.py check guard ladder_up --rungs 8   # rung landing, cycles, out/guard/ladder_up/ladder.png
 python workbench/ladder.py spec                              # specs/guard_ladder.png redraw targets
 ```
+
+## Krita round trip
+
+`python workbench/krita_export.py ren walk_keypose --spec specs/ren_walk_inbetweens.json`, then follow
+`out/krita/ren_walk_keypose/KRITA_STEPS.md` and bring the render back with `intake.py ... --as-is`.
+See `KRITA.md` (why there is no `.kra` writer).

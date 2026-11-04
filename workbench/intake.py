@@ -171,7 +171,7 @@ def place(fig: np.ndarray, scale: float, cell, ground_y: float, hx: float):
 
 # ---------------------------------------------------------------- the command
 
-def intake(src, character, action, replaces=None, grid=None, spec=None, height_scale=None, images=True):
+def intake(src, character, action, replaces=None, grid=None, spec=None, height_scale=None, images=True, as_is=False):
     figs = load_source(Path(src), grid)
     if not figs:
         raise SystemExit("no figures found")
@@ -188,8 +188,16 @@ def intake(src, character, action, replaces=None, grid=None, spec=None, height_s
             old.unlink()
     dest.mkdir(parents=True, exist_ok=True)
     reg_frames = []
+    if as_is:
+        bad = [i + 1 for i, f in enumerate(figs) if [f.shape[1], f.shape[0]] != tg["cell"]]
+        if bad:
+            raise SystemExit(f"--as-is needs every frame at the cell size {tg['cell']}; frames {bad} are not")
+        scale = 1.0
     for k, fig in enumerate(figs):
-        out, info = place(fig, scale, tg["cell"], tg["ground_y"], tg["head_x"])
+        if as_is:   # drawn on the cell (e.g. a Krita round trip): keep the artist's placement exactly
+            out, info = fig, {"offset": [0, 0], "size": tg["cell"], "clipped_by_cell": False, "as_is": True}
+        else:
+            out, info = place(fig, scale, tg["cell"], tg["ground_y"], tg["head_x"])
         name = f"{k + 1:02d}.png"
         Image.fromarray(out, "RGBA").save(dest / name)
         reg_frames.append({"file": name, **info})
@@ -198,7 +206,7 @@ def intake(src, character, action, replaces=None, grid=None, spec=None, height_s
            "replaces": f"{character}/{replaces}" if replaces else None, "spec": spec,
            "fitted_to": tg, "scale": round(scale, 4), "frames": reg_frames,
            "created": datetime.now().isoformat(timespec="seconds"),
-           "alignment": "head centre (median x of the top third) at the target's head x; lowest pixel on ground_y; uniform scale to the target's median height"}
+           "alignment": "as drawn on the cell (--as-is)" if as_is else "head centre (median x of the top third) at the target's head x; lowest pixel on ground_y; uniform scale to the target's median height"}
     (dest / "intake.json").write_text(json.dumps(reg, indent=1), encoding="utf-8")
     report = analyse(dest, reg, images)
     return reg, report
@@ -245,8 +253,9 @@ def main(argv=None):
     p.add_argument("--spec", help="spec JSON to check against (see specs/)")
     p.add_argument("--scale", type=float, help="force a scale instead of fitting the height")
     p.add_argument("--no-images", action="store_true")
+    p.add_argument("--as-is", action="store_true", help="frames are already on the cell (Krita round trip): no re-scale or re-align")
     a = p.parse_args(argv)
-    reg, rep = intake(a.source, a.character, a.action, a.replaces, a.grid, a.spec, a.scale, not a.no_images)
+    reg, rep = intake(a.source, a.character, a.action, a.replaces, a.grid, a.spec, a.scale, not a.no_images, a.as_is)
     print(f"{len(reg['frames'])} frames -> incoming/{a.character}/{a.action}/ (scale {reg['scale']}, fitted to {reg['fitted_to']['from']})")
     print(rep["summary"])
     if "spec_check" in rep:
