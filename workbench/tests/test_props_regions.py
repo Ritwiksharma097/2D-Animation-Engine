@@ -26,9 +26,15 @@ def test_surfaces_and_distance():
 
 
 def test_clip_and_support_on_a_box_figure():
-    img = blank(); rect(img, 280, 300, 320, 420)   # figure overlapping the ledge front by 20px, bottom at 419
+    img = blank(); rect(img, 280, 300, 320, 420)   # overlaps the front face by 20px: a near limb, allowed
+    f = P.frame_checks(img, (0, 0), LEDGE, P.surfaces(LEDGE), P.solids(LEDGE), None)
+    assert f["clip_px"] == 0 and f["allowed_overlap"]["in_front_of_face_px"] > 0
+    img = blank(); rect(img, 380, 300, 420, 430)   # sinks 30px through the top, well behind the front: clipping
     f = P.frame_checks(img, (0, 0), LEDGE, P.surfaces(LEDGE), P.solids(LEDGE), None)
     assert f["clip_px"] > 0 and f["clip_depth"] >= 10
+    hand = {"hand_r": {"x": 400, "y": 408, "state": "planted", "surface": "ledge_top"}}  # fingers 8px over the edge
+    f = P.frame_checks(blank(), (0, 0), LEDGE, P.surfaces(LEDGE), P.solids(LEDGE), hand)
+    assert f["contacts"][0]["dist"] <= f["contacts"][0]["tol"] and not f["contacts"][0]["in_solid"]
     img2 = blank(); rect(img2, 100, 300, 140, 500)  # standing on the floor (rows up to 499)
     f2 = P.frame_checks(img2, (0, 0), LEDGE, P.surfaces(LEDGE), P.solids(LEDGE), None)
     assert f2["clip_px"] == 0 and "floor" in f2["touching"]

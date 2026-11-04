@@ -18,7 +18,7 @@
    "file": "01.png",
    "duration_ms": 110.7,
    "contacts": {
-    "foot_l": {
+    "foot_r": {
      "x": 230,
      "y": 438,
      "state": "planted",
@@ -43,9 +43,10 @@
      "surface": "ground"
     },
     "hand_r": {
-     "x": 455,
-     "y": 247,
-     "state": "free"
+     "x": 398.0,
+     "y": 246.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -66,9 +67,10 @@
      "surface": "ground"
     },
     "hand_r": {
-     "x": 438,
-     "y": 253,
-     "state": "free"
+     "x": 399.0,
+     "y": 248.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -89,9 +91,10 @@
      "surface": "ground"
     },
     "hand_r": {
-     "x": 440,
-     "y": 258,
-     "state": "free"
+     "x": 400.0,
+     "y": 253.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -111,9 +114,10 @@
      "state": "free"
     },
     "hand_r": {
-     "x": 442,
-     "y": 256,
-     "state": "free"
+     "x": 402.0,
+     "y": 251.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -128,9 +132,10 @@
      "surface": "ground"
     },
     "hand_r": {
-     "x": 428,
-     "y": 246,
-     "state": "free"
+     "x": 381.0,
+     "y": 240.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -145,9 +150,10 @@
      "surface": "ground"
     },
     "hand_r": {
-     "x": 430,
-     "y": 238,
-     "state": "free"
+     "x": 380.0,
+     "y": 235.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -369,5 +375,5 @@
    "timing": "played frame k at t = k/(n-1), as round(t*13) in the old demo"
   }
  },
- "contacts_note": "Contacts by the cloud assistant (not the owner): feet from the drawing's own floor line, hands from skin-colour palms or fingertips, checked by eye. Frames 2-7 reaching hand marked free; planted hands/knees are expected on the ledge top; feet may be on any surface. Revised: the trailing foot in drawings 8-12 is free (hanging); its position at the cell bottom comes only from lowest-pixel alignment."
+ "contacts_note": "Contacts by the cloud assistant (not the owner): feet from the drawing's own floor line, hands from skin-colour palms or fingertips, checked by eye. Frames 2-7 reaching hand marked free; planted hands/knees are expected on the ledge top; feet may be on any surface. Revised: the trailing foot in drawings 8-12 is free (hanging); its position at the cell bottom comes only from lowest-pixel alignment. Phase 3: hand_r in drawings 2-7 is the fingertip (front-most arm pixel, its lowest point) and is planted on the ledge top, as the old demo pinned it; drawing 1's merged foot cluster is foot_r (the foot that stays)."
 }

@@ -16,64 +16,238 @@
  "frames": [
   {
    "file": "01.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 369,
+     "y": 457,
+     "state": "planted",
+     "surface": "ledge_top"
+    },
+    "hand_r": {
+     "x": 385.86899563318775,
+     "y": 453.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
   },
   {
    "file": "02.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 364,
+     "y": 458,
+     "state": "planted",
+     "surface": "ledge_top"
+    },
+    "hand_r": {
+     "x": 383.12068965517244,
+     "y": 454.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
   },
   {
    "file": "03.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 349,
+     "y": 487,
+     "state": "planted",
+     "surface": "ledge_top"
+    },
+    "hand_r": {
+     "x": 416.20588235294116,
+     "y": 465.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
   },
   {
    "file": "04.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 242,
+     "y": 501,
+     "state": "planted",
+     "surface": "ledge_top"
+    },
+    "hand_r": {
+     "x": 398.40579710144925,
+     "y": 466.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
   },
   {
    "file": "05.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 248,
+     "y": 517,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 407.48704663212436,
+     "y": 435.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
   },
   {
    "file": "06.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 330,
+     "y": 527,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 419.3954545454545,
+     "y": 413.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
   },
   {
    "file": "07.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 300,
+     "y": 530,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 416.4739336492891,
+     "y": 428.0,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
   },
   {
    "file": "08.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 262,
+     "y": 507,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 386.83008356545963,
+     "y": 480.0,
+     "state": "free"
+    }
+   }
   },
   {
    "file": "09.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 268,
+     "y": 507,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 398.5,
+     "y": 486.0,
+     "state": "free"
+    }
+   }
   },
   {
    "file": "10.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 242,
+     "y": 505,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 386.1929824561403,
+     "y": 439.0,
+     "state": "free"
+    }
+   }
   },
   {
    "file": "11.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 207,
+     "y": 527,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 384.9931506849315,
+     "y": 402.0,
+     "state": "free"
+    }
+   }
   },
   {
    "file": "12.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 244,
+     "y": 530,
+     "state": "planted",
+     "surface": "ground"
+    }
+   }
   },
   {
    "file": "13.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 264,
+     "y": 530,
+     "state": "planted",
+     "surface": "ground"
+    }
+   }
   },
   {
    "file": "14.png",
-   "duration_ms": 83.3
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 301,
+     "y": 530,
+     "state": "planted",
+     "surface": "ground"
+    }
+   }
   }
  ],
  "scene": {
   "units": "cell px",
-  "source": "scenario-B ledge from climb_up; straight path from standing on the top (frame 1) to the floor (frame 14); heuristic only",
+  "source": "scenario-B ledge (90px) from guard climb_up; path pinned to contacts (base: line from the top to the floor)",
   "floor_y": 1000.0,
   "anchor": [
    320,
@@ -93,15 +267,19 @@
    }
   ],
   "path": {
-   "type": "line",
-   "from": [
-    1110.8815789473683,
-    910
-   ],
-   "to": [
-    900.8815789473683,
-    927
-   ]
+   "type": "from_contacts",
+   "base": {
+    "type": "line",
+    "from": [
+     1110.8815789473683,
+     910
+    ],
+    "to": [
+     900.8815789473683,
+     1000
+    ]
+   }
   }
- }
+ },
+ "contacts_note": "Heuristic contacts (cloud assistant): lowest foot cluster (on the top in drawings 1-4, floor after); front-most glove planted on the top in 1-7, free in 8-11, none in 12-14 (detector hits the helmet)."
 }

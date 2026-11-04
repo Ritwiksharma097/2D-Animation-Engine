@@ -85,8 +85,8 @@ function onClick(ev) {
   const target = y < LEDGE.top + 10 && x >= LEDGE.x0 ? (x >= FAR.x0 ? "far" : "ledge") : "floor";
   ren.plan = [];
   if (ren.surface === "floor") {
-    if (target === "floor") ren.plan.push(["walk", Math.min(x, ren.climbStart)]);
-    else { ren.plan.push(["walk", ren.climbStart], ["climb"]); }
+    if (target === "floor") ren.plan.push(["walk", Math.min(x, ren.floorLimit)]);
+    else { ren.plan.push(["walk", Math.min(ren.climbStart, ren.floorLimit)], ["climb"]); }
   }
   if (ren.surface === "floor" && target !== "floor" || ren.surface === "ledge") {
     if (target === "ledge") ren.plan.push(["walk", Math.max(LEDGE.x0 + 20, Math.min(x, LEDGE.x1 - 40))]);
@@ -118,6 +118,7 @@ function tick(dt) {
     if (ren.act === "walk") {
       const adv = stepTravel(ren.k);
       if (Math.abs(ren.target - ren.x) < adv * 0.5) { nextStep(); return; }   // stop on a contact frame boundary
+      if (ren.dir > 0 && ren.surface === "floor" && ren.x + adv > ren.floorLimit) { nextStep(); return; }  // never step into the ledge face
       ren.x += ren.dir * adv; ren.k = (ren.k + 1) % a.frames.length; updatePins();
     } else if (ren.act === "climb") {
       ren.k++;
@@ -161,6 +162,10 @@ function loop(now) { const dt = now - last; last = now; tick(dt); if (ren.act ==
   const c = A.climb_up, s = c.scale, led = c.props.find(p => p.type === "ledge");
   ren.climbStart = 420;
   LEDGE = { x0: ren.climbStart + led.front_x * s, x1: ren.climbStart + led.back_x * s, top: GROUND + led.top_y * s };
+  // walking on the floor stops where the walk drawings' front-most pixel reaches the ledge face, allowing the same
+  // 40 cell px "near limb in front of the face" band as props.py
+  const w = A.walk_keypose, front = Math.max(...w.frames.map(f => f.offset[0] + f.rect[2] - w.anchor[0])) * w.scale;
+  ren.floorLimit = LEDGE.x0 + 40 * w.scale - front;
   GAP = 90;
   FAR = { x0: LEDGE.x1 + GAP, x1: cv.width - 10, top: LEDGE.top };
   cv.addEventListener("click", onClick);

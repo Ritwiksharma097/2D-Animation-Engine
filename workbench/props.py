@@ -21,6 +21,8 @@ ALPHA_T = 128
 TOL = 6.0        # cell px: a planted contact within this of a surface counts as on it (~3 game px for Ren)
 CLIP_TOL = 4.0   # cell px: pixels deeper than this inside a solid count as clipping
 FOOT = ("foot", "toe", "heel")
+HAND_ALLOW = 14.0   # cell px: pixels this close to a hand contact may overlap a solid (fingers curl over a cap)
+FRONT_BAND = 40.0   # cell px behind a ledge's front face: a near limb drawn in front of the face, not inside it
 HAND = ("hand", "palm", "finger")
 
 
@@ -100,7 +102,7 @@ def target_y(scene: dict, surface: str | None) -> float | None:
     return None
 
 
-def contact_path(scene: dict, contacts: list[dict], base: list[tuple[float, float]]) -> tuple[list, list]:
+def contact_path(scene: dict, contacts: list[dict], base: list[tuple[float, float]], images=None) -> tuple[list, list]:
     """Per-frame cell offsets with x from `base` and y chosen so planted contacts sit on their named surfaces.
 
     Frames with no planted contact on a horizontal surface keep the base y. Returns (offsets, notes)."""
@@ -119,13 +121,19 @@ def contact_path(scene: dict, contacts: list[dict], base: list[tuple[float, floa
     for k in range(len(xs)):
         xs[k] += shift_x
         for c in (contacts[k] or {}).values():
-            if c.get("state") == "planted" and c.get("surface") == "ledge_top" and ledges:
+            if c.get("state") != "planted" or not ledges:
+                continue
+            wx = xs[k] + float(c["x"])
+            d = 0.0
+            if c.get("surface") == "ledge_top":
                 lo, hi = ledges[0]["front_x"] + TOL, ledges[0]["back_x"] - TOL
-                wx = xs[k] + float(c["x"])
                 if wx < lo or wx > hi:
                     d = (lo - wx) if wx < lo else (hi - wx)
-                    xs[k] += d; shift_x += d
-                    notes_shift.append(f"frame {k + 1}: moved {d:+.0f}px to put {c.get('name', 'contact')} over the ledge top")
+            elif c.get("surface") == "ground" and ledges[0]["front_x"] - TOL < wx < ledges[0]["back_x"]:
+                d = (ledges[0]["front_x"] - TOL) - wx      # the floor under a ledge is not a surface: step in front of it
+            if d:
+                xs[k] += d; shift_x += d
+                notes_shift.append(f"frame {k + 1}: moved {d:+.0f}px to put {c.get('name', 'contact')} on its {c.get('surface')}")
     base = [(x, y) for x, (_, y) in zip(xs, base)]
     for k, (ox, oy) in enumerate(base):
         ds = [target_y(scene, c.get("surface")) - float(c["y"]) for c in (contacts[k] or {}).values()
@@ -134,16 +142,31 @@ def contact_path(scene: dict, contacts: list[dict], base: list[tuple[float, floa
             out.append((ox, float(np.mean(ds)))); notes.append(f"y from {len(ds)} planted contact(s), spread {np.ptp(ds):.0f}px")
         else:
             out.append((ox, oy)); notes.append("no planted contact on a horizontal surface: base path")
+    # frames standing on the floor only: step clear of a ledge face the body would otherwise be inside
+    if images is not None and ledges:
+        L = ledges[0]; carry = 0.0
+        for k in range(len(out)):
+            ox, oy = out[k][0] + carry, out[k][1]
+            planted = [c for c in (contacts[k] or {}).values() if c.get("state") == "planted"]
+            if planted and all(c.get("surface") == "ground" for c in planted):
+                ys, xs_ = np.nonzero(images[k][..., 3] > ALPHA_T)
+                wx, wy = xs_ + ox, ys + oy
+                inside = (wy > L["top_y"] + CLIP_TOL) & (wx > L["front_x"]) & (wx < L["back_x"])
+                if inside.any():
+                    d = -(float(wx[inside].max()) - L["front_x"] + 1)
+                    carry += d; ox += d
+                    notes.append(f"frame {k + 1}: stepped {d:+.0f}px clear of the ledge face (floor-only contacts)")
+            out[k] = (ox, oy)
     return out, notes + notes_shift
 
 
-def path_offsets(scene: dict, n: int, contacts: list[dict] | None = None) -> list[tuple[float, float]]:
+def path_offsets(scene: dict, n: int, contacts: list[dict] | None = None, images=None) -> list[tuple[float, float]]:
     """Cell-origin position in the world for each played frame."""
     ax, ay = scene["anchor"]
     path = scene["path"]
     if path["type"] == "from_contacts":
         base = path_offsets({**scene, "path": path["base"]}, n)
-        return contact_path(scene, contacts or [{}] * n, base)[0]
+        return contact_path(scene, contacts or [{}] * n, base, images)[0]
     if path["type"] == "line":
         (x0, y0), (x1, y1) = path["from"], path["to"]
         ts = path.get("t") or [k / max(n - 1, 1) for k in range(n)]
@@ -167,14 +190,36 @@ def inside_depth(xs, ys, box):
     return inside, np.where(inside, depth, 0)
 
 
+def allowed_overlap(wx, wy, scene, hands):
+    """Masks of solid-overlap pixels treated as drawing conventions rather than clipping.
+
+    fingers: within HAND_ALLOW of a hand contact. front: inside a ledge but within FRONT_BAND of its front face
+    and below the top surface by more than CLIP_TOL (a limb in front of the face; sinking through the top
+    away from the front still counts as clipping)."""
+    fingers = np.zeros(len(wx), bool)
+    for hx, hy in hands:
+        fingers |= np.hypot(wx - hx, wy - hy) <= HAND_ALLOW
+    front = np.zeros(len(wx), bool)
+    for p in scene.get("props", []):
+        if p["type"] == "ledge":
+            front |= (wx >= p["front_x"]) & (wx <= p["front_x"] + FRONT_BAND) & (wy > p["top_y"] + CLIP_TOL)
+    return fingers, front
+
+
 def frame_checks(img: np.ndarray, off, scene, surfs, sols, contacts: dict | None):
     ys, xs = np.nonzero(img[..., 3] > ALPHA_T)
     wx, wy = xs + off[0], ys + off[1]
     clip_px, clip_depth = 0, 0.0
     clip_where = []
+    hands = [(float(c["x"]) + off[0], float(c["y"]) + off[1]) for n, c in (contacts or {}).items() if n.split("_")[0] in HAND]
+    fingers, front = allowed_overlap(wx, wy, scene, hands)
+    allowed = {"fingers_px": 0, "in_front_of_face_px": 0}
     for box in sols:
         inside, depth = inside_depth(wx, wy, box)
         deep = depth > CLIP_TOL
+        allowed["fingers_px"] += int((deep & fingers).sum())
+        allowed["in_front_of_face_px"] += int((deep & front & ~fingers).sum())
+        deep &= ~fingers & ~front
         if deep.any():
             clip_px += int(deep.sum()); clip_depth = max(clip_depth, float(depth.max()))
             clip_where.append([float(wx[deep].mean()), float(wy[deep].mean())])
@@ -192,23 +237,27 @@ def frame_checks(img: np.ndarray, off, scene, surfs, sols, contacts: dict | None
             touching[s["id"]] = int(m.sum())
     lowest = (float(wx[wy.argmax()]), float(wy.max())) if len(wy) else None
     out = {"offset": [float(off[0]), float(off[1])], "clip_px": clip_px, "clip_depth": round(clip_depth, 1),
-           "clip_at": clip_where, "touching": touching, "lowest": lowest, "contacts": []}
+           "clip_at": clip_where, "allowed_overlap": allowed, "touching": touching, "lowest": lowest, "contacts": []}
     for name, c in (contacts or {}).items():
         p = (float(c["x"]) + off[0], float(c["y"]) + off[1])
         want = c.get("surface")
         kind = want if want and want != "ground" else ("ground" if want == "ground" else None)
         near = nearest_surface(p, surfs, kind)
         anywhere = nearest_surface(p, surfs)
-        in_solid = any(box[0] + CLIP_TOL < p[0] < box[2] - CLIP_TOL and box[1] + CLIP_TOL < p[1] < box[3] - CLIP_TOL for box in sols)
+        pf, pfr = allowed_overlap(np.array([p[0]]), np.array([p[1]]), scene, [] if name.split("_")[0] not in HAND else [])
+        is_hand = name.split("_")[0] in HAND
+        tol = HAND_ALLOW if is_hand else TOL   # fingers drawn curling over an edge
+        in_solid = (any(box[0] + CLIP_TOL < p[0] < box[2] - CLIP_TOL and box[1] + CLIP_TOL < p[1] < box[3] - CLIP_TOL for box in sols)
+                    and not pfr[0] and not (is_hand and near and near[0] <= tol))
         out["contacts"].append({"name": name, "state": c.get("state"), "surface": want, "world": [round(p[0], 1), round(p[1], 1)],
                                 "dist": round(near[0], 1) if near else None, "nearest": anywhere[1]["id"] if anywhere else None,
-                                "nearest_dist": round(anywhere[0], 1) if anywhere else None, "in_solid": in_solid})
+                                "nearest_dist": round(anywhere[0], 1) if anywhere else None, "in_solid": in_solid, "tol": tol})
     return out
 
 
 def check_action(act, scene: dict) -> dict:
     n = len(act.frames)
-    offs = path_offsets(scene, n, act.contacts)
+    offs = path_offsets(scene, n, act.contacts, act.frames)
     surfs, sols = surfaces(scene), solids(scene)
     seq = [k % n for k in range(len(offs))]
     frames = []
@@ -235,7 +284,7 @@ def check_action(act, scene: dict) -> dict:
                 if c["in_solid"]:
                     flag("contact_in_prop", [f["frame"]], f"Frame {f['frame']}: {c['name']} (free) is inside a solid.")
                 continue
-            if c["dist"] is None or c["dist"] > TOL:
+            if c["dist"] is None or c["dist"] > c.get("tol", TOL):
                 part = c["name"].split("_")[0]
                 what = "reaching into air" if part in HAND else ("pushing off nothing" if part in FOOT else "not on a surface")
                 flag("contact_off_surface", [f["frame"]], f"Frame {f['frame']}: planted {c['name']} is {what}: "
@@ -258,7 +307,10 @@ def check_action(act, scene: dict) -> dict:
             "limits": [f"Support = any opaque pixel within {TOL:.0f}px outside a surface; it does not know which body part it is.",
                        f"Clipping counts pixels more than {CLIP_TOL:.0f}px inside a solid; a drawn shadow or loose cloth counts too.",
                        "The path is what was supplied (or fitted); a different path changes every result.",
-                       "Ladders are treated as behind the character, so the body overlapping a ladder is never clipping."]}
+                       "Ladders are treated as behind the character, so the body overlapping a ladder is never clipping.",
+                       f"Allowed as drawing conventions (counted in allowed_overlap, not as clipping): pixels within {HAND_ALLOW:.0f}px of a hand "
+                       f"contact (fingers over a cap), and pixels within {FRONT_BAND:.0f}px behind a ledge's front face below its top (a near limb "
+                       "drawn in front of the face). Sinking through the top further back still counts."]}
 
 
 # ---------------------------------------------------------------- fitting
@@ -340,13 +392,13 @@ def scene_image(act, result, cols=7, panel_w=300, title=""):
                 q = W(*cxy, px, py); d.ellipse([q[0] - 6, q[1] - 6, q[0] + 6, q[1] + 6], outline=RED, width=3)
         for c in fr["contacts"]:
             q = W(*c["world"], px, py); r = 5
-            ok = c["dist"] is not None and c["dist"] <= TOL
+            ok = c["dist"] is not None and c["dist"] <= c.get("tol", TOL)
             if c["state"] == "planted":
                 d.ellipse([q[0] - r, q[1] - r, q[0] + r, q[1] + r], fill=AQUA if ok else RED, outline=INK)
             else:
                 d.ellipse([q[0] - r, q[1] - r, q[0] + r, q[1] + r], outline=ORANGE, width=2)
         label = f"{k + 1}: frame {fr['frame']}"
-        bad = [c["name"] for c in fr["contacts"] if c["state"] == "planted" and (c["dist"] is None or c["dist"] > TOL)]
+        bad = [c["name"] for c in fr["contacts"] if c["state"] == "planted" and (c["dist"] is None or c["dist"] > c.get("tol", TOL))]
         if fr["clip_px"]:
             label += f"  CLIP {fr['clip_px']}px"
         if not fr["touching"]:

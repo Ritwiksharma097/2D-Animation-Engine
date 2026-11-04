@@ -277,6 +277,41 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 - Looked at: both annotated world strips (in `out/report_examples/phase2/`). Fixed the strip header,
   which said "least" for annotated contacts (it shows the worst shared contact).
 
+# Phase 3
+
+| Step | State |
+| --- | --- |
+| 12. Correct climb calibration | done |
+| 13. One climb, different ledge heights | not started |
+| 14. Redraw specs | not started |
+| 15. Owner review page | not started |
+| 16. Playtest completeness | not started |
+| 17. Identity regions by clicking | not started |
+
+## Step 12 notes
+
+- Ren climb_up on the real per-pose path: feet on the floor 1-7, hands/knees on the top 8-13
+  (`out/report_examples/phase2/ren_climb_up_scene.png`, looked at). My phase-2 reaching-hand points
+  were in the air ahead of the fingertips; now the front-most arm pixel, planted on the top in
+  2-7 (they sit 3-10 px below the top edge, nearly constant x ~1021). Drawing 1's merged foot
+  cluster renamed foot_r (the foot that stays). Remaining: frames 12-13 sink 12-18 cell px
+  (6-9 game px), knee 15 px in front of the cap in frame 10, steps/re-grips between drawings.
+- climb_down's phase-2 flags were my labelling bug (surface relabel keyed by climb_down's own file
+  number; drawing k = climb_up drawing 15-k, verified pixel-identical). Contacts are now copied by
+  drawing; it shows climb_up's results reversed.
+- Clip allowances (props.py `HAND_ALLOW` 14 cell px around hand contacts, `FRONT_BAND` 40 cell px
+  behind a ledge front below its top; hand contact tolerance 14 px). Reported as
+  `allowed_overlap`; unit test updated (a 30 px sink through the top still clips).
+- Guard climb_down annotated (heuristic: lowest foot on the top 1-4 then floor; glove planted on
+  the top 1-7) on the 90 px ledge with a `from_contacts` path. `contact_path` gained two rules:
+  ground contacts can't sit on the floor under a ledge (step in front of it), and frames with only
+  floor contacts step clear of the face. Clean from frame 7; frames 3-6 (leg lowered over the
+  edge) sink/clip and the hand/foot slide 24-45 px apart.
+- Playtest: floor walks stop where the walk drawings' front-most pixel reaches the ledge face
+  (+ the same 40 cell px front band). `play_checks.py` 6/6 PASS. Known: the walk stops ~39 game px
+  short of the climb start (walk steps are ~40 px), so the climb begins with a jump forward.
+- REPORT.md climb section rewritten: "perfect climb floats" withdrawn and the cause explained.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -308,7 +343,9 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 2 steps 6-11 are done. Suggested next steps, in order:
+Phase 3: next is step 13 (one climb at different ledge heights).
+
+Phase 2 follow-ups (older list):
 1. On Windows: `python -m pytest workbench/tests`, `python workbench/tests/ui_checks.py`,
    `scene_checks.py`, `play_checks.py`; then look at the guard idle before/after and play.html with the owner.
 2. Ask the owner which guard climb reading is intended (90 px ledge vs 230 px reach) and about

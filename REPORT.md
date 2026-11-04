@@ -222,33 +222,55 @@ Contacts for the guard walk and Ren's fourteen walk come from the drawings thems
 ![fourteen annotated strip](out/report_examples/phase2/ren_fourteen_annotated_strip.png)
 ![guard annotated strip](out/report_examples/phase2/guard_walk_annotated_strip.png)
 
-## Ledges and ladders (step 8)
+## Ledges and ladders (steps 8 and 12)
 
-- **Ren climb_up / climb_down (approved, "perfect").** I rebuilt the old demo's scene from the
-  manifest (the cap thickness was not recorded; I assumed 8 game px). On its straight path the tool
-  disagrees with the owner:
-  - Frames 2–7: the feet drawn planted leave the floor by 8–44 game px.
-  - Frames 8–12: the planted hand and knee sit 6–22 game px *below* the ledge top.
+**Withdrawn: "the approved climb floats".** Phase 2 reported that Ren's approved climb lifts his
+feet off the floor in frames 2–7 and sinks his hands into the top in frames 8–12. That result came
+from a wrong path: the brief, and so my scene, assumed the old demo moved him in a straight line
+from the floor to the ledge top. In fact the demo pinned his hand to the ledge pose by pose.
+With the real per-frame points (now in the manifest and `annotations/ren/climb_*.json`), the tool
+agrees with the owner that the climb is grounded:
+- **Frames 1–7:** feet on the floor, fingertips resting on the ledge top. In phase 2 I had also
+  placed the reaching hand's point in the air ahead of the real fingertips. It is now the
+  front-most arm pixel, and it sits on the top in frames 2–7, at a nearly constant x.
+- **Frames 8–13:** hands and knees on the top.
 
-  With a path derived from the contacts, the drawings fit the 197 cell px ledge much better. I
-  reported this rather than tuned for it. In a side view, part of the "clipping" is the shin in
-  front of the ledge face, so that flag over-reports. The automatic ledge fitter failed calibration
-  (it chose 32 px instead of 197) and is not used for conclusions. The heights implied by planted
-  hand–foot pairs are what worked.
-- **Guard climb_up:** the best fit is a ledge of about 90 cell px (a quarter of his height). His
-  hands land on it in frames 6–8 and he stands on it from frame 9, with contacts within 9.5 px. The
-  tall reach in frames 1–4 (about 230 px) then goes into the air above it. Reading that reach as a
-  grab on a 230 px ledge fits worse. His figure also sinks 57 px inside the cell during the
-  climb, so the frames aren't floor-aligned.
-- **Guard climb_down:** on that ledge with a straight path it clips (up to 44 px) and floats
-  (frames 7, 10, 11). It has no contacts annotated.
-- **Guard ladder_up:** the ladder geometry is my assumption. The firm finding: his feet stay at the
-  same cell height (y 526–530) in all 14 frames. Feet that never step up relative to the body must
-  slide on the rungs at any climbing speed, which fits the owner's "bad".
+What the tool still flags on Ren's climb, with the allowances made explicit:
+- **Sink in frames 12–13:** the feet and shins sink 12–18 cell px (6–9 game px) through the top.
+  This is real and matches the owner-PC check.
+- **Frame 10:** the knee rests 15 px in front of the cap rather than on it.
+- **Planted contacts that move between drawings:** these are steps and re-grips (for example the
+  hand moving 30–37 px along the top in frames 8–11), not continuous slides. Only 14 drawings
+  are played, so a re-grip happens between frames.
+- **Allowed as drawing conventions, so no longer counted as clipping:**
+  - pixels within 14 cell px (about 7 game px) of a hand contact, for fingers curling over the cap;
+  - pixels within 40 cell px (about 19 game px, roughly one limb's width) behind the ledge's front
+    face and below its top, for a near limb drawn in front of the face.
 
-![Ren climb on the old path](out/report_examples/phase2/ren_climb_up_scene.png)
-![Ren climb on the contact-derived path](out/report_examples/phase2/ren_climb_up_scene_contacts.png)
-![guard climb best fit](out/report_examples/phase2/guard_climb_up_scene.png)
+  Planted hands get the same 14 px tolerance. Sinking through the top further back still counts.
+  The amounts allowed are reported (`allowed_overlap`), not hidden.
+- **climb_down:** its flags in phase 2 (feet 124 px off the floor, `ledge_top` feet standing on the
+  floor) were my labelling bug. climb_down drawing k is pixel-identical to climb_up drawing 15−k,
+  and I had keyed its surface labels by its own frame number. With contacts copied by drawing, it
+  shows exactly climb_up's results, reversed. The down drawings match the up table.
+
+**Guard, with contact-pinned paths** (no straight lines):
+- **climb_up:** the best fit remains a ledge of about 90 cell px. His hands are on it in frames
+  6–8, with contacts within 9.5 px; one clip of 16 px in frame 6.
+- **climb_down:** a different set of drawings, annotated heuristically:
+  - Frames 1–4: crouching on the top.
+  - Frames 5–7: hands still on the top while his feet reach the floor. The 82–114 px hand–foot gap
+    is consistent with the same 90 px ledge.
+  - Frames 7–14: clean. The path steps him clear of the ledge face once only floor contacts remain.
+  - Frames 3–6: where he lowers a leg over the edge, the foot sinks 11–18 px into the top and the leg
+    goes up to 45 px into the face (beyond the 40 px band), and the hand and foot slide in opposite
+    directions by 24–45 px. These are the frames to check against a real ledge.
+- **ladder_up:** unchanged. His feet never move up relative to his body, so they slide on any rungs.
+
+![Ren climb on the real path](out/report_examples/phase2/ren_climb_up_scene.png)
+![Ren climb_down on the real path](out/report_examples/phase2/ren_climb_down_scene.png)
+![guard climb_up, contact-pinned path](out/report_examples/phase2/guard_climb_up_scene.png)
+![guard climb_down, contact-pinned path](out/report_examples/phase2/guard_climb_down_scene.png)
 ![guard ladder](out/report_examples/phase2/guard_ladder_up_scene.png)
 
 ## Per-region identity (step 9)

@@ -22,7 +22,7 @@
      "x": 240,
      "y": 438,
      "state": "planted",
-     "surface": "ground"
+     "surface": "ledge_top"
     }
    }
   },
@@ -34,7 +34,7 @@
      "x": 211,
      "y": 438,
      "state": "planted",
-     "surface": "ground"
+     "surface": "ledge_top"
     }
    }
   },
@@ -45,8 +45,7 @@
     "foot_l": {
      "x": 219,
      "y": 439,
-     "state": "planted",
-     "surface": "ground"
+     "state": "free"
     },
     "hand_r": {
      "x": 324,
@@ -63,8 +62,7 @@
     "foot_l": {
      "x": 130,
      "y": 438,
-     "state": "planted",
-     "surface": "ground"
+     "state": "free"
     },
     "knee_l": {
      "x": 233,
@@ -87,8 +85,7 @@
     "foot_l": {
      "x": 131,
      "y": 438,
-     "state": "planted",
-     "surface": "ground"
+     "state": "free"
     },
     "knee_l": {
      "x": 220,
@@ -111,8 +108,7 @@
     "foot_l": {
      "x": 159,
      "y": 438,
-     "state": "planted",
-     "surface": "ground"
+     "state": "free"
     },
     "hand_r": {
      "x": 369,
@@ -129,8 +125,7 @@
     "foot_l": {
      "x": 166,
      "y": 438,
-     "state": "planted",
-     "surface": "ground"
+     "state": "free"
     },
     "hand_r": {
      "x": 361,
@@ -147,12 +142,14 @@
     "foot_l": {
      "x": 184,
      "y": 439,
-     "state": "free"
+     "state": "planted",
+     "surface": "ground"
     },
     "hand_r": {
-     "x": 430,
-     "y": 238,
-     "state": "free"
+     "x": 380.0,
+     "y": 235.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -163,12 +160,14 @@
     "foot_l": {
      "x": 178,
      "y": 438,
-     "state": "free"
+     "state": "planted",
+     "surface": "ground"
     },
     "hand_r": {
-     "x": 428,
-     "y": 246,
-     "state": "free"
+     "x": 381.0,
+     "y": 240.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -179,7 +178,8 @@
     "foot_l": {
      "x": 157,
      "y": 438,
-     "state": "free"
+     "state": "planted",
+     "surface": "ground"
     },
     "foot_r": {
      "x": 258,
@@ -187,9 +187,10 @@
      "state": "free"
     },
     "hand_r": {
-     "x": 442,
-     "y": 256,
-     "state": "free"
+     "x": 402.0,
+     "y": 251.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -200,17 +201,20 @@
     "foot_l": {
      "x": 159,
      "y": 438,
-     "state": "free"
+     "state": "planted",
+     "surface": "ground"
     },
     "foot_r": {
      "x": 251,
      "y": 438,
-     "state": "free"
+     "state": "planted",
+     "surface": "ground"
     },
     "hand_r": {
-     "x": 440,
-     "y": 258,
-     "state": "free"
+     "x": 400.0,
+     "y": 253.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -221,17 +225,20 @@
     "foot_l": {
      "x": 162,
      "y": 439,
-     "state": "free"
+     "state": "planted",
+     "surface": "ground"
     },
     "foot_r": {
      "x": 270,
      "y": 436,
-     "state": "free"
+     "state": "planted",
+     "surface": "ground"
     },
     "hand_r": {
-     "x": 438,
-     "y": 253,
-     "state": "free"
+     "x": 399.0,
+     "y": 248.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -243,18 +250,19 @@
      "x": 163,
      "y": 439,
      "state": "planted",
-     "surface": "ledge_top"
+     "surface": "ground"
     },
     "foot_r": {
      "x": 260,
      "y": 437,
      "state": "planted",
-     "surface": "ledge_top"
+     "surface": "ground"
     },
     "hand_r": {
-     "x": 455,
-     "y": 247,
-     "state": "free"
+     "x": 398.0,
+     "y": 246.0,
+     "state": "planted",
+     "surface": "ledge_top"
     }
    }
   },
@@ -262,11 +270,11 @@
    "file": "14.png",
    "duration_ms": 110.7,
    "contacts": {
-    "foot_l": {
+    "foot_r": {
      "x": 230,
      "y": 438,
      "state": "planted",
-     "surface": "ledge_top"
+     "surface": "ground"
     }
    }
   }
@@ -367,5 +375,5 @@
    "timing": "played frame k at t = k/(n-1), as round(t*13) in the old demo"
   }
  },
- "contacts_note": "Contacts by the cloud assistant (not the owner): feet from the drawing's own floor line, hands from skin-colour palms or fingertips, checked by eye. Frames 2-7 reaching hand marked free; planted hands/knees are expected on the ledge top; feet may be on any surface. Revised: the trailing foot in drawings 8-12 is free (hanging); its position at the cell bottom comes only from lowest-pixel alignment."
+ "contacts_note": "Contacts copied from climb_up by drawing: climb_down NN.png is pixel-identical to climb_up (15-NN).png, so each drawing carries the same contacts. (Phase 2 had keyed the surface relabel by climb_down's own file number, which put ledge_top/ground on the wrong poses.)"
 }
