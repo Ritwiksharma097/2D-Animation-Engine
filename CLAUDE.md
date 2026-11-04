@@ -85,3 +85,30 @@ Phases 1-2 are done; see `PROGRESS.md` (including the owner-PC check of phase 2)
 17. **Identity regions by clicking in the page**, saved to `_identity.json`.
 
 Out of scope: generating or redrawing art, rigs, the actual game.
+
+# Phase 4
+
+Phases 1-3 are done and were checked on the owner's Windows PC (see `PROGRESS.md`). Same rules: commit and push after each step, keep `PROGRESS.md` current, verify visually, report honestly, stop cleanly when the budget runs out. The owner's open decisions from phase 3 (guard ledge reading, Ren's 39 px step-in, 180 ms walk timing, commissioning new frames) are still open: don't decide them, but keep each easy to change in one place.
+
+18. **Fixes from the owner-PC check.**
+    - The review page fires about 60 HEAD/GET requests for optional files (`scene.png`, `before_after.png`, `ledge_100.png`, missing annotations) that 404 and fill the console with errors. Serve a file list from `serve.py` instead, and probe only what exists.
+    - While `serve.py` is still preparing reports in the background (about a minute on first start), the review page shows actions without their before/after images and gives no hint. Show a "preparing N reports..." notice and refresh when they're ready.
+    - Playtest: Ren and the guard start on the same spot, overlapping, so start them apart. The guard is drawn at Ren's scale, which is an assumption: add a per-character `game_scale` (or relative height) setting in one place, mark the guard's as unconfirmed, and show it on the review page so the owner can set it.
+    - The playtest stage uses a small part of the page; let it fill the width.
+19. **Art intake for the next art round.** New frames will come from image generation or Krita. Make one command take a generated sheet or a folder of frames and:
+    - find the figures (grid or connected components, keeping detached effects and props, as `../gpt` build scripts did), scale them to the character's reference height, and align them on the ground and contacts
+    - write an action into `incoming/<character>/<action>/` (never `assets/`) with its own registry file
+    - run the analysis and, if a spec is named, `spec_check`
+    - list it on the review page as "new, awaiting owner" with its report, beside the action it would replace
+
+    Test it with synthetic sheets, and with an existing asset re-packed into a sheet; that round trip should reproduce the original frames within a pixel or two.
+20. **A reusable animation runtime: the "engine" part.** Turn the playtest's ad hoc code into `runtime/` (vanilla JS module, no build step) that any game page can use.
+    - Load exports.
+    - A per-character state machine (idle, walk, turn, climb up/down, jump, one-shot reactions such as happy/eat/love, returning to idle).
+    - Contact-driven travel, mirroring for facing, and the ledge-height adapter from step 13, refusing unsupported heights.
+    - Events at named frames (e.g. "pickup" when the hand reaches the item), plus a debug overlay for contacts and drift.
+    - Document its API in `runtime/README.md`, rebuild `play.html` on top of it, and add a small second demo for the guard: patrol, get distracted by food (eat), return to patrol. Unit-test the state machine and travel logic in Node if available, otherwise with Playwright.
+21. **Ladders, end to end.** Rung contacts, a looping climb that adapts to ladder height by cycle count, getting on at the bottom and off at the top, and checks that hands and feet land on rungs. Run it on the guard's ladder and write a pose-target spec for a redrawn ladder cycle (the current one keeps the feet at one height), like step 14.
+22. **Krita round trip.** Krita is installed on the owner's PC; there is none in the cloud. Export an action plus its spec as a PNG sequence with separate guide images (onion ghosts, foot targets, ground line) that Krita's animation import can load. Document the steps to draw in-betweens in Krita and bring them back through step 19's intake. If writing `.kra` files directly is reliable (Krita's format is a zip with XML), do that too, and say how far it was tested without Krita.
+
+Out of scope: generating or redrawing art yourself, rigs, the actual game's story and levels.

@@ -417,6 +417,13 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 - Re-ran `export.py --demo` so `play.html` uses the real path. Playtest checked in the browser: walk, then climb onto the ledge, no console errors. Bug: clicking the floor near the ledge lets Ren walk into the ledge face.
 - Not rechecked locally: the guard idle edit, the Playwright UI scripts.
 
+## Phase 3 checked on the owner's Windows PC (local assistant, 2026-11-04)
+
+- Python 3.14.3: 24 tests pass. `assets/` unchanged by phase 3.
+- `start_workbench.bat` works when run as a double-click would (Start-Process): the server starts, the review page opens in the default browser, and `review.html` returns 200.
+- Review page lists every action with flags and links. The console shows ~60 404 errors from probing optional files, and the before/after images only appear about a minute after the first start, with no notice (phase 4, step 18). Looked at `out/guard/idle/before_after.png`: 14 frames at 83 ms became 6 held poses (2.67 s) with the feet on the ground line.
+- Playtest loads with no console errors and the height slider shows 98-101% supported. Ren and the guard start overlapping, and the guard is at Ren's height (an assumption).
+
 ## Next step
 
 Phase 3 steps 12-17 are done. Suggested next steps, in order:
