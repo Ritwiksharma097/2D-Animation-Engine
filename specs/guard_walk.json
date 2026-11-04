@@ -1,0 +1,192 @@
+{
+ "format": "workbench-spec/1",
+ "character": "guard",
+ "action": "walk",
+ "replaces": "guard/walk (rejected)",
+ "cell_size": [
+  640,
+  576
+ ],
+ "ground_y": 535.0,
+ "figure_height_px": 413.5,
+ "step_length_px": 148.9,
+ "travel_px_per_frame": 37.21,
+ "frames": [
+  {
+   "frame": 1,
+   "pose": "contact",
+   "leading_leg": "l",
+   "contacts": {
+    "heel_l": {
+     "x": 384.4,
+     "y": 535.0,
+     "state": "planted"
+    },
+    "toe_r": {
+     "x": 235.6,
+     "y": 535.0,
+     "state": "planted"
+    }
+   },
+   "hip_y": 328.2,
+   "source": "faint: current frame 3 (scale/costume only)"
+  },
+  {
+   "frame": 2,
+   "pose": "down",
+   "leading_leg": "l",
+   "contacts": {
+    "foot_l": {
+     "x": 347.2,
+     "y": 535.0,
+     "state": "planted"
+    },
+    "toe_r": {
+     "x": 254.2,
+     "y": 526.7,
+     "state": "free"
+    }
+   },
+   "hip_y": 340.7,
+   "source": "faint: current frame 5 (scale/costume only)"
+  },
+  {
+   "frame": 3,
+   "pose": "passing",
+   "leading_leg": "l",
+   "contacts": {
+    "foot_l": {
+     "x": 310.0,
+     "y": 535.0,
+     "state": "planted"
+    },
+    "foot_r": {
+     "x": 310.0,
+     "y": 510.2,
+     "state": "free"
+    }
+   },
+   "hip_y": 324.1,
+   "source": "faint: current frame 12 (scale/costume only)"
+  },
+  {
+   "frame": 4,
+   "pose": "up",
+   "leading_leg": "l",
+   "contacts": {
+    "toe_l": {
+     "x": 272.8,
+     "y": 535.0,
+     "state": "planted"
+    },
+    "heel_r": {
+     "x": 373.3,
+     "y": 518.5,
+     "state": "free"
+    }
+   },
+   "hip_y": 320.0,
+   "source": "faint: current frame 8 (scale/costume only)"
+  },
+  {
+   "frame": 5,
+   "pose": "contact",
+   "leading_leg": "r",
+   "contacts": {
+    "heel_r": {
+     "x": 384.4,
+     "y": 535.0,
+     "state": "planted"
+    },
+    "toe_l": {
+     "x": 235.6,
+     "y": 535.0,
+     "state": "planted"
+    }
+   },
+   "hip_y": 328.2,
+   "source": "faint: current frame 3 (scale/costume only)"
+  },
+  {
+   "frame": 6,
+   "pose": "down",
+   "leading_leg": "r",
+   "contacts": {
+    "foot_r": {
+     "x": 347.2,
+     "y": 535.0,
+     "state": "planted"
+    },
+    "toe_l": {
+     "x": 254.2,
+     "y": 526.7,
+     "state": "free"
+    }
+   },
+   "hip_y": 340.7,
+   "source": "faint: current frame 5 (scale/costume only)"
+  },
+  {
+   "frame": 7,
+   "pose": "passing",
+   "leading_leg": "r",
+   "contacts": {
+    "foot_r": {
+     "x": 310.0,
+     "y": 535.0,
+     "state": "planted"
+    },
+    "foot_l": {
+     "x": 310.0,
+     "y": 510.2,
+     "state": "free"
+    }
+   },
+   "hip_y": 324.1,
+   "source": "faint: current frame 12 (scale/costume only)"
+  },
+  {
+   "frame": 8,
+   "pose": "up",
+   "leading_leg": "r",
+   "contacts": {
+    "toe_r": {
+     "x": 272.8,
+     "y": 535.0,
+     "state": "planted"
+    },
+    "heel_l": {
+     "x": 373.3,
+     "y": 518.5,
+     "state": "free"
+    }
+   },
+   "hip_y": 320.0,
+   "source": "faint: current frame 8 (scale/costume only)"
+  }
+ ],
+ "criteria": {
+  "frame_count": 8,
+  "distinct_poses": 8,
+  "near_duplicates": 0,
+  "steps_per_loop": 2,
+  "max_min_stride_ratio": 0.45,
+  "max_pose_change_cv": 0.35,
+  "travel_px_per_frame": 37.21,
+  "max_slide_per_loop_px": 29.8,
+  "baseline_tolerance_px": 3,
+  "ground_y": 535.0,
+  "planted_target_tolerance_px": 17.9,
+  "no_flags": [
+   "stance_not_moving",
+   "slide_unavoidable",
+   "out_of_order"
+  ],
+  "manual": [
+   "legs visibly swap between frames 1 and 5 (the tool cannot tell left from right)",
+   "same costume, proportions and colours as the approved poses (region check helps but does not see shapes)"
+  ],
+  "identity_note": "Region colour/size checks are left out for the guard: his only reference is concept art whose tabard differs from every sprite; compare with his approved actions by eye."
+ },
+ "how": "Draw 8 frames on 640x576 transparent cells, feet on y=535, facing right. Planted feet (filled dots) must touch the ground at the marked x; free feet (rings) are lifted about that much. The leading leg swaps at frame 5. Step length = 0.36 x figure height, travel 37.2 px per frame, bob: down lowest, up highest."
+}

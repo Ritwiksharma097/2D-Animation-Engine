@@ -114,3 +114,10 @@ python workbench/tests/play_checks.py      # walk/climb/jump checks with screens
 python workbench/ledge_sweep.py ren climb_up     # supported range + ledge_<pct>.png scene images
 python workbench/export.py --demo                # exports paths_by_height for the playtest slider
 ```
+
+## Redraw specs
+
+```
+python workbench/specs.py all                                         # specs/*.png + *.json
+python workbench/spec_check.py specs/guard_walk.json path\to\new_frames   # meets / MISSES per criterion
+```

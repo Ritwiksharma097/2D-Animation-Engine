@@ -327,3 +327,32 @@ message saying the drawings won't work there.
 ![70%](out/report_examples/phase3/ledge_70.png)
 ![100%](out/report_examples/phase3/ledge_100.png)
 ![130%](out/report_examples/phase3/ledge_130.png)
+
+## Redraw specs (step 14)
+
+`specs/guard_walk.png` / `.json` and `specs/ren_walk_inbetweens.png` / `.json` are pose-target sheets
+for whoever redraws the frames, in Krita or with image generation. They are not art.
+
+- **Guard walk, 8 frames:** contact, down, passing, up, then the same with the legs swapped.
+  - Step length is 0.36 x his height (149 px), and he travels 37.2 px per frame.
+  - Each planted-foot target moves back exactly that much per frame, so this speed cannot slide.
+  - Bob (hip height, marked on the sheet): lowest at down, highest at up.
+  - A faint silhouette of his current drawing shows scale and costume only.
+  - On his current 14 frames, `spec_check.py` misses almost every criterion: frame count, steps
+    per loop (3), passing pose (57%), evenness, slide (418 px per loop against a limit of 30),
+    ground line.
+- **Ren, 4 in-betweens:** the approved keys stay as they are. An honest limit: the four keys move
+  the stance foot 357 cell px per cycle, but 8 frames at the old 41.9 px/frame cover only 335, so
+  **no in-betweens make that exactly slide-free.**
+  - Non-destructive x offsets on the keys (+0, +8.8, −10.5, +8.2) even out the key spacing.
+  - The in-betweens then put the stance foot half way between the keys (44.6 px per frame).
+  - At 41.9 px/frame the remaining slide is 2.7 cell px (about 1.3 game px) per frame, which is
+    under the tolerance. At 44.6 px/frame (21.3 game px) it is exactly zero.
+- **Checking new frames:** put them in a folder as `NN.png` and run
+  `python workbench/spec_check.py specs/guard_walk.json <folder>`. It prints "meets" or "MISSES"
+  for each criterion and writes the report and diagnostics to `out/spec_checks/<folder>/`. Two
+  things it cannot check, and says so: whether the legs visibly swap, and whether the costume
+  stays the same.
+
+![guard spec](out/report_examples/phase3/guard_walk.png)
+![Ren in-betweens spec](out/report_examples/phase3/ren_walk_inbetweens.png)

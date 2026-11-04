@@ -1,0 +1,231 @@
+{
+ "format": "workbench-spec/1",
+ "character": "ren",
+ "action": "walk_keypose_8",
+ "based_on": "ren/walk_keypose (approved; keys unchanged)",
+ "cell_size": [
+  640,
+  576
+ ],
+ "ground_y": 535,
+ "key_offsets_x": [
+  0.0,
+  8.75,
+  -10.5,
+  8.25
+ ],
+ "stance_travel_between_keys": [
+  98.0,
+  70.0,
+  108.0,
+  81.0
+ ],
+ "travel_px_per_frame_exact": 44.62,
+ "old_travel_px_per_frame": 41.9,
+ "residual_slide_per_frame_at_old_travel_px": 2.73,
+ "frames": [
+  {
+   "frame": 1,
+   "pose": "key 1 (existing drawing)",
+   "offset_x": 0.0,
+   "contacts": {
+    "heel_l": {
+     "x": 403.0,
+     "y": 533.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 272.0,
+     "y": 531.1,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "hip_y": 325.0,
+   "source": "existing walk_keypose 01.png, shifted +0.0px"
+  },
+  {
+   "frame": 2,
+   "pose": "in-between 1->2 (NEW)",
+   "contacts": {
+    "heel_l": {
+     "x": 358.4,
+     "y": 533.1,
+     "state": "planted"
+    },
+    "foot_r": {
+     "x": 342.9,
+     "y": 470.1,
+     "state": "free"
+    }
+   },
+   "hip_y": 325.0,
+   "source": "faint: key 1 (draw the half-way pose)"
+  },
+  {
+   "frame": 3,
+   "pose": "key 2 (existing drawing)",
+   "offset_x": 8.75,
+   "contacts": {
+    "heel_l": {
+     "x": 313.8,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_l": {
+     "x": 355.8,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 413.8,
+     "y": 495.1,
+     "state": "free",
+     "surface": "ground"
+    }
+   },
+   "hip_y": 325.0,
+   "source": "existing walk_keypose 02.png, shifted +8.8px"
+  },
+  {
+   "frame": 4,
+   "pose": "in-between 2->3 (NEW)",
+   "contacts": {
+    "heel_l": {
+     "x": 269.2,
+     "y": 534.1,
+     "state": "planted"
+    },
+    "toe_l": {
+     "x": 311.2,
+     "y": 534.1,
+     "state": "planted"
+    },
+    "foot_r": {
+     "x": 408.1,
+     "y": 470.1,
+     "state": "free"
+    }
+   },
+   "hip_y": 325.0,
+   "source": "faint: key 2 (draw the half-way pose)"
+  },
+  {
+   "frame": 5,
+   "pose": "key 3 (existing drawing)",
+   "offset_x": -10.5,
+   "contacts": {
+    "toe_l": {
+     "x": 266.5,
+     "y": 531.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "heel_r": {
+     "x": 402.5,
+     "y": 533.1,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "hip_y": 325.0,
+   "source": "existing walk_keypose 03.png, shifted -10.5px"
+  },
+  {
+   "frame": 6,
+   "pose": "in-between 3->4 (NEW)",
+   "contacts": {
+    "heel_r": {
+     "x": 357.9,
+     "y": 533.1,
+     "state": "planted"
+    },
+    "foot_l": {
+     "x": 321.9,
+     "y": 468.1,
+     "state": "free"
+    }
+   },
+   "hip_y": 325.0,
+   "source": "faint: key 3 (draw the half-way pose)"
+  },
+  {
+   "frame": 7,
+   "pose": "key 4 (existing drawing)",
+   "offset_x": 8.25,
+   "contacts": {
+    "heel_r": {
+     "x": 313.2,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 361.2,
+     "y": 534.1,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "heel_l": {
+     "x": 377.2,
+     "y": 493.1,
+     "state": "free",
+     "surface": "ground"
+    }
+   },
+   "hip_y": 325.0,
+   "source": "existing walk_keypose 04.png, shifted +8.2px"
+  },
+  {
+   "frame": 8,
+   "pose": "in-between 4->1 (NEW)",
+   "contacts": {
+    "heel_r": {
+     "x": 268.6,
+     "y": 534.1,
+     "state": "planted"
+    },
+    "toe_r": {
+     "x": 316.6,
+     "y": 534.1,
+     "state": "planted"
+    },
+    "foot_l": {
+     "x": 390.1,
+     "y": 468.1,
+     "state": "free"
+    }
+   },
+   "hip_y": 325.0,
+   "source": "faint: key 4 (draw the half-way pose)"
+  }
+ ],
+ "criteria": {
+  "frame_count": 8,
+  "distinct_poses": 8,
+  "near_duplicates": 0,
+  "steps_per_loop": 2,
+  "max_min_stride_ratio": 0.45,
+  "max_pose_change_cv": 0.35,
+  "travel_px_per_frame": 41.9,
+  "max_slide_per_loop_px": 53.8,
+  "baseline_tolerance_px": 3,
+  "ground_y": 535,
+  "planted_target_tolerance_px": 10.7,
+  "no_flags": [
+   "stance_not_moving",
+   "slide_unavoidable",
+   "region_colour_drift",
+   "region_size_drift",
+   "out_of_order"
+  ],
+  "manual": [
+   "legs visibly swap between frames 1 and 5 (the tool cannot tell left from right)",
+   "same costume, proportions and colours as the approved poses (region check helps but does not see shapes)"
+  ]
+ },
+ "truth": "The 4 keys move the stance foot 357 cell px per cycle; 8 frames at 41.9 px/frame cover 335. No in-betweens make that exactly slide-free. With the key offsets ['+0.0', '+8.8', '-10.5', '+8.2'] (non-destructive edits) every key interval becomes 89.2px, so the in-betweens put the stance foot half way (44.6px per frame). At 41.9 px/frame the residual slide is 2.7 cell px (~1.3 game px) per frame, under the 4 px slide tolerance; 44.6 px/frame (= 21.3 game px) is exactly slide-free."
+}

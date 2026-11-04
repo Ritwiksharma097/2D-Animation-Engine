@@ -283,7 +283,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | --- | --- |
 | 12. Correct climb calibration | done |
 | 13. One climb, different ledge heights | done |
-| 14. Redraw specs | not started |
+| 14. Redraw specs | done |
 | 15. Owner review page | not started |
 | 16. Playtest completeness | not started |
 | 17. Identity regions by clicking | not started |
@@ -328,6 +328,20 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 - `play_checks.py` 9/9 PASS incl. 70% marked unsupported and climbing onto it, 100% marked
   supported. Screenshot 34 looked at.
 
+## Step 14 notes
+
+- `workbench/specs.py all` -> `specs/guard_walk.{json,png}`, `specs/ren_walk_inbetweens.{json,png}`
+  (both sheets looked at). `workbench/spec_check.py <spec> <folder>` -> meets/MISSES per criterion,
+  report + diagnostics in `out/spec_checks/<folder>/`. Test `test_specs.py`: synthetic frames
+  drawn to the guard spec meet slide / steps / targets; 8 copies of one frame miss (24 tests pass).
+- First version of spec_check wrote `spec_report.json` into the frames folder, which for the demo
+  run was `assets/guard/walk/`; I deleted it immediately (git shows assets/ clean) and the report
+  now always goes to `out/`. analyze.py's report paths no longer assume frames are inside the repo.
+- Guard spec leaves out region colour/size criteria (concept-art reference differs from all his
+  sprites). Ren spec: keys need non-destructive x offsets; exact slide-free travel is 44.6 px/frame;
+  at 41.9 the residual is ~1.3 game px per frame.
+- Ren's spec has not been run on real in-betweens (none exist yet).
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -359,7 +373,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 3: next is step 14 (redraw specs).
+Phase 3: next is step 15 (owner review page + start_workbench.bat).
 
 Phase 2 follow-ups (older list):
 1. On Windows: `python -m pytest workbench/tests`, `python workbench/tests/ui_checks.py`,

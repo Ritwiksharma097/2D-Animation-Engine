@@ -521,6 +521,14 @@ def walk_analysis(act: Action, foot: list[dict]) -> dict:
 _REGION_MODELS: dict = {}
 
 
+def rel(path: Path) -> str:
+    """Path relative to the repo when inside it (frames from a user folder may not be)."""
+    try:
+        return str(Path(path).resolve().relative_to(ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(path)
+
+
 def analyze(act: Action) -> dict:
     n = len(act.frames)
     loop = act.loop_mode == "loop"
@@ -659,7 +667,7 @@ def analyze(act: Action) -> dict:
 
     report = {
         "character": act.character, "action": act.action,
-        "source": [str(f.relative_to(ROOT)).replace("\\", "/") for f in act.files],
+        "source": [rel(f) for f in act.files],
         "frame_count": n, "entries": act.entries, "edits": act.edits, "status_in_manifest": act.status, "owner_feedback": act.feedback,
         "settings": {"loop_mode": act.loop_mode, "ground_y": act.ground_y, "facing": act.facing,
                      "travel_px_per_frame": act.travel, "travel_source": act.travel_source,
