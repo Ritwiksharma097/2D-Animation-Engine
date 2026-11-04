@@ -395,7 +395,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | 18. Owner-PC fixes | done |
 | 19. Art intake | done |
 | 20. Runtime ("engine") | done |
-| 21. Ladders end to end | not started |
+| 21. Ladders end to end | done |
 | 22. Krita round trip | not started |
 
 Open owner decisions (not decided here; each lives in one place, listed in
@@ -465,6 +465,25 @@ Open owner decisions (not decided here; each lives in one place, listed in
   before the snap shift (a few px).
 - No turn drawings exist: `turn` is a 120 ms hold then a mirror.
 
+## Step 21 notes
+
+- `workbench/ladder.py`: `contact_rise` (planted ladder_rung contacts moving down the cell = body
+  rise), `plan` (cycles for a ladder height, two rungs per cycle), `check` (scene with the spec's rung
+  spacing, rails centred on his contacts, vertical_loop path; writes `out/<c>/<a>/ladder.{json,png}`),
+  `spec` (`specs/guard_ladder.{json,png}`: 8 frames, diagonal limbs, grippers move down 16.8 px per
+  frame). Both images looked at.
+- Guard: contact rise 0 px/cycle (his annotation marks hand and foot planted in every frame, and his
+  feet move 4 px), so the rise is assumed (2 x 67 = 135 px/cycle) and 53/56 frames have contacts off
+  rungs. Phase 2's rails were centred on his feet, so his hands fell outside them; recentred.
+- Export: `ladder` block (per-frame rise, `rise_assumed`, rung spacing, rungs per cycle). Runtime:
+  `World.ladders`, `Character.climbLadder(id)` (walk to ladder, get-on cut, whole cycles, get-off cut
+  onto `toSurface`), `rungError`; events `ladder_on` (cycles, assumedRise) / `ladder_off`. Node test
+  8/8 (`node --test runtime/test/runtime.test.mjs`; a bare directory argument doesn't work in
+  Node 22). Guard demo gained a ladder to a loft; `guard_demo_checks.py` 7/7 PASS, screenshot 71
+  looked at.
+- Not done: get-on / get-off drawings (none exist; both are cuts), ladder down (the old "down" was the
+  up sequence reversed; the runtime has no `ladder_down` yet).
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -503,7 +522,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 4: next is step 21 (ladders end to end).
+Phase 4: next is step 22 (Krita round trip).
 
 Phase 3 follow-ups (older list):
 1. On Windows: double-click `start_workbench.bat` (never run here) and review every action;

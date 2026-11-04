@@ -59,6 +59,6 @@ Debug: `drawDebug(ctx)` draws planted (green) and free (orange) contacts and red
 contacts landed; `drift` / `maxDrift` report how far a planted contact has moved since landing.
 
 ## Tests
-`node --test runtime/test` (7 tests: travel and drift, turning, stopping before a face, adapter
+`node --test runtime/test/runtime.test.mjs` (8 tests: travel and drift, turning, stopping before a face, ladder cycles and rung error, adapter
 supported / marginal / refused, climb path and refusal, jump arc and landing, one-shot events).
 Browser checks: `python workbench/tests/play_checks.py` and `python workbench/tests/guard_demo_checks.py`.

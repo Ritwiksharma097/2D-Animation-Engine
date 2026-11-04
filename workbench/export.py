@@ -99,6 +99,17 @@ def export(character, action, out_dir=EXPORT, travel_override=None, scale_overri
             k = entries.index(want) if want in entries else min(range(n), key=lambda i: abs(entries[i] - want))
             ev[name] = {**e, "frame": k}
         out["events"] = ev
+    if scene and any(q["type"] == "ladder" for q in scene.get("props", [])):
+        import ladder as LD
+        cr = LD.contact_rise(act)
+        spec_p = A.ROOT / "specs" / f"{character}_ladder.json"
+        sp = json.loads(spec_p.read_text()) if spec_p.exists() else {}
+        s_ = sp.get("rung_spacing_px") or next(q for q in scene["props"] if q["type"] == "ladder")["rung_spacing"]
+        assumed = abs(cr["rise_per_cycle"]) < 0.25 * s_
+        per_cycle = 2 * s_ if assumed else cr["rise_per_cycle"]
+        out["ladder"] = {"rise_px": [round(per_cycle / n, 2)] * n if assumed else [round(r["rise"] or 0, 2) for r in cr["steps"]],
+                         "rise_px_per_cycle": round(per_cycle, 1), "rung_spacing_px": s_, "rungs_per_cycle": 2,
+                         "rise_assumed": assumed, "rise_source": f"ASSUMED 2 rungs per cycle: the drawings' rung contacts rise {cr['rise_per_cycle']:.1f}px per cycle" if assumed else "from rung contacts"}
     if doc.get("jump_timing"):
         out["jump"] = doc["jump_timing"]
     if scene:
@@ -156,6 +167,7 @@ def main(argv=None):
         g = A.analyze(A.load_action("guard", "walk"))["metrics"]["walk"]
         export("guard", "idle")       # scale from annotations/_settings.json (guard's is unconfirmed)
         export("guard", "eating")
+        export("guard", "ladder_up")
         o = export("guard", "walk", travel_override=round(g["stride_based_travel_px"], 2))
         print(f"guard/walk: travel {o['frames'][0]['travel_px']} px/frame (stride-based; the drawings themselves walk in place, so it slides)")
     for c, ac in todo:

@@ -144,4 +144,11 @@ Writes `incoming/<character>/<action>/` (never `assets/`); the review page shows
 
 `runtime/anim.js` plays exports in any page (API in `runtime/README.md`). Demos:
 http://localhost:8000/out/export/play.html and http://localhost:8000/out/export/guard_demo.html.
-Tests: `node --test runtime/test`.
+Tests: `node --test runtime/test/runtime.test.mjs`.
+
+## Ladders
+
+```
+python workbench/ladder.py check guard ladder_up --rungs 8   # rung landing, cycles, out/guard/ladder_up/ladder.png
+python workbench/ladder.py spec                              # specs/guard_ladder.png redraw targets
+```

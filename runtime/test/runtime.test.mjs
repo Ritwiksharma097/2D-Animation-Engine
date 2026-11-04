@@ -75,3 +75,17 @@ test("one-shot reaction fires its named event and returns to idle", () => {
   c.play("happy"); run(c, 1000);
   assert.deepEqual(seen, [1, "play"]); assert.equal(c.state, "idle");
 });
+
+test("ladder: whole cycles for the ladder height, ends on top, rung error from planted rung contacts", () => {
+  const rf = (y) => frame(0, { hand_r: { x: 0, y, state: "planted", surface: "ladder_rung" } });
+  // 4 frames rising 10 each (40 per cycle); the planted hand moves DOWN 10 per frame in the cell, i.e. stays on its rung
+  const lad = makeClip("t/ladder", { ...base, frames: [-40, -30, -20, -10].map(rf), ladder: { rise_px: [10, 10, 10, 10], rise_px_per_cycle: 40, rung_spacing_px: 20 } });
+  const world = new World({ floorY: 0, platforms: [{ id: "top", x0: 50, x1: 300, top: -120 }], ladders: [{ id: "L", x: 30, top: -120, rungSpacing: 20, toSurface: "top" }] });
+  const c = new Character({ id: "g", clips: { ...clips, ladder: lad }, world, x: 0 });
+  const ev = []; c.on("ladder_on", e => ev.push(["on", e.cycles])); c.on("ladder_off", () => ev.push(["off"]));
+  let worst = 0; c.on("frame", () => { worst = Math.max(worst, c.rungError); });
+  c.climbLadder("L"); run(c, 5000);
+  assert.deepEqual(ev, [["on", 3], ["off"]]);   // 120 / 40 per cycle
+  assert.equal(c.surface, "top"); assert.equal(c.y, -120); assert.equal(c.x, 30);
+  assert.ok(worst < 0.01, `rung error ${worst}`);
+});

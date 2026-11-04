@@ -53,9 +53,11 @@ export function adaptClimb(clip, heightGame, { strict = false } = {}) {
  * Characters on the floor stop before a platform face; on a platform they stop at its edges.
  */
 export class World {
-  constructor({ floorY, platforms = [], frontBandCell = 40 }) {
-    this.floorY = floorY; this.platforms = platforms; this.frontBandCell = frontBandCell;
+  constructor({ floorY, platforms = [], ladders = [], frontBandCell = 40 }) {
+    this.floorY = floorY; this.platforms = platforms; this.ladders = ladders; this.frontBandCell = frontBandCell;
   }
+  /** Ladders: {id, x, top, rungSpacing, toSurface}; rungs every rungSpacing up from the floor. */
+  ladder(id) { return this.ladders.find(l => l.id === id); }
   platform(id) { return this.platforms.find(p => p.id === id); }
   surfaceY(surface) { return surface === "floor" ? this.floorY : this.platform(surface).top; }
   /** Walking limits [min, max] for a character on `surface` with walk clip `walk`, currently at x. */
@@ -81,10 +83,10 @@ export class World {
 export class Character {
   constructor({ id, clips, world, x, surface = "floor", dir = 1, names = {}, turnMs = 120 }) {
     this.id = id; this.clips = clips; this.world = world; this.x = x; this.surface = surface; this.dir = dir;
-    this.names = { idle: "idle", walk: "walk", climb_up: "climb_up", climb_down: "climb_down", jump: "jump", ...names };
+    this.names = { idle: "idle", walk: "walk", climb_up: "climb_up", climb_down: "climb_down", jump: "jump", ladder: "ladder", ...names };
     this.y = world.surfaceY(surface); this.turnMs = turnMs;
     this.queue = []; this.cmd = null; this.state = "idle"; this.clip = this.c("idle"); this.k = 0; this.t = 0;
-    this.pins = {}; this.drift = 0; this.maxDrift = 0; this.handlers = {}; this.travelOverride = null;
+    this.pins = {}; this.drift = 0; this.maxDrift = 0; this.handlers = {}; this.travelOverride = null; this.rungError = 0;
   }
   c(role) { const k = this.names[role] ?? role, c = this.clips[k]; if (!c) throw new Error(`${this.id}: no clip for ${role} (${k})`); return c; }
   on(evt, fn) { (this.handlers[evt] ??= []).push(fn); return this; }
@@ -95,6 +97,8 @@ export class Character {
   turn(dir) { this.queue.push({ type: "turn", dir }); return this; }
   climbUp(platformId, opts = {}) { this.queue.push({ type: "climb_up", platform: platformId, ...opts }); return this; }
   climbDown(platformId, opts = {}) { this.queue.push({ type: "climb_down", platform: platformId, ...opts }); return this; }
+  /** Walk to the ladder, get on (a cut: no get-on drawings), loop the climb a whole number of cycles, get off on top (a cut). */
+  climbLadder(ladderId) { const l = this.world.ladder(ladderId); this.queue.push({ type: "walk", x: l.x }, { type: "ladder", ladder: ladderId }); return this; }
   jumpTo(x, surface) { this.queue.push({ type: "jump", x, surface }); return this; }
   play(role, { loops = 1 } = {}) { this.queue.push({ type: "play", role, loops }); return this; }
   wait(ms) { this.queue.push({ type: "wait", ms }); return this; }
@@ -135,6 +139,16 @@ export class Character {
       this.y = cmd.type === "climb_up" ? this.world.floorY : p.top;
       cmd.start = { x: this.x, y: this.y };
       this.setState("climb", clip);
+    } else if (cmd.type === "ladder") {
+      const clip = this.c("ladder"), l = this.world.ladder(cmd.ladder), L = clip.ladder;
+      if (!L) { this.emit("refused", { command: cmd, reason: `${clip.key} has no ladder block` }); this.queue = []; return this.next(); }
+      const perCycle = L.rise_px_per_cycle * clip.scale, height = this.world.floorY - l.top;
+      cmd.cycles = Math.max(1, Math.round(height / perCycle));
+      cmd.leftover = height - cmd.cycles * perCycle;
+      cmd.frames = cmd.cycles * clip.frames.length; cmd.done = 0;
+      this.x = l.x; this.y = this.world.floorY; this.dir = 1;
+      this.emit("ladder_on", { ladder: l.id, cycles: cmd.cycles, assumedRise: !!L.rise_assumed });
+      this.setState("ladder", clip); this.rungError = this.measureRungs(l);
     } else if (cmd.type === "jump") {
       const clip = this.c("jump");
       if (!clip.jump) { this.emit("refused", { command: cmd, reason: "jump clip has no jump timing" }); return this.next(); }
@@ -175,6 +189,17 @@ export class Character {
     this.pins = now; this.drift = worst; this.maxDrift = Math.max(this.maxDrift, worst);
   }
 
+  /** Largest distance (game px) from a planted rung contact to the nearest rung. */
+  measureRungs(l) {
+    let worst = 0;
+    for (const c of Object.values(this.clip.frames[this.k].contacts || {})) {
+      if (c.state !== "planted" || c.surface !== "ladder_rung") continue;
+      const w = this.toWorld(c), r = (this.world.floorY - w.y) / l.rungSpacing;
+      worst = Math.max(worst, Math.abs(r - Math.round(r)) * l.rungSpacing);
+    }
+    return worst;
+  }
+
   stepTravel() {
     const f = this.clip.frames[this.k];
     return (this.travelOverride ?? f.travel_px) * this.clip.scale;
@@ -213,6 +238,16 @@ export class Character {
       this.x = cmd.start.x + p[0] * clip.scale; this.y = cmd.start.y + p[1] * clip.scale;
       if (this.k >= n) { this.k = n - 1; this.surface = cmd.type === "climb_up" ? cmd.platform : "floor"; this.y = this.world.surfaceY(this.surface); this.next(); return "stop"; }
       this.enterFrame(); return;
+    }
+    if (this.state === "ladder") {
+      const L = clip.ladder, l = this.world.ladder(cmd.ladder);
+      this.y -= (L.rise_px[this.k] ?? L.rise_px_per_cycle / n) * clip.scale;
+      this.k = (this.k + 1) % n; cmd.done++;
+      if (cmd.done >= cmd.frames) {
+        this.y = l.top; this.surface = l.toSurface ?? this.surface;
+        this.emit("ladder_off", { ladder: l.id, note: "get-off is a cut: no get-off drawings" }); this.next(); return "stop";
+      }
+      this.enterFrame(); this.rungError = this.measureRungs(l); return;
     }
     if (this.state === "jump") {
       this.k++;

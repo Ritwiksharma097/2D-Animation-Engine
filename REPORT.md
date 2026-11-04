@@ -381,3 +381,27 @@ character's identity reference: click to place or move a region seed, add or del
 save to `annotations/<character>/_identity.json`, and check any action against the saved regions.
 The check shows a table and an overlay image. `workbench/tests/regions_checks.py` asserts the
 whole loop and restores the real seeds afterwards.
+
+# Phase 4 results
+
+## Ladders end to end (step 21)
+
+- `workbench/ladder.py check guard ladder_up --rungs 8` puts the guard on an 8-rung ladder. The
+  rungs are a sixth of his height apart (67 cell px, the same as the redraw spec), with the rails
+  centred between his hands and feet. A planted rung contact must move *down* the cell by the
+  body's rise; that is the vertical twin of walk travel. The guard's contacts rise **0 px per
+  cycle** and his feet stay within 4 px of one height. So the rise has to be assumed (2 rungs per
+  cycle), and **53 of 56 frames** then have a planted hand or foot off its rung. This agrees with
+  the owner's "bad".
+- In the runtime, `climbLadder(id)` walks to the ladder, gets on (a cut), loops the climb a whole
+  number of cycles for the ladder's height (3 for the demo's 6 rungs), and gets off on the loft
+  (also a cut). No get-on or get-off drawings exist; the runtime says so in its event. `rungError`
+  shows how far planted contacts sit from the nearest rung: up to 14.5 game px in the guard demo,
+  nearly half a rung.
+- `specs/guard_ladder.png` / `.json` is a pose-target sheet for a redrawn cycle: 8 frames, back
+  view, with diagonal limbs moving together. Gripping hands and feet move down the cell 16.8 px per
+  frame while the moving pair travels up one rung, so the loop rises two rungs per cycle and the
+  feet alternate height.
+
+![guard ladder check](out/report_examples/phase4/guard_ladder_check.png)
+![ladder spec](out/report_examples/phase4/guard_ladder.png)
