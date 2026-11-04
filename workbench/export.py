@@ -57,8 +57,10 @@ def pack(images, max_w=2048):
     return Image.fromarray(sheet, "RGBA"), rects
 
 
-def export(character, action, out_dir=EXPORT):
+def export(character, action, out_dir=EXPORT, travel_override=None, scale_override=None):
     act = A.load_action(character, action)
+    if travel_override is not None:
+        act.travel, act.travel_mode, act.travel_source = float(travel_override), "constant", "export override"
     rep = A.analyze(act)
     info = A.load_manifest()["characters"][character]["actions"][action]
     cell = list(act.frames[0].shape[1::-1])
@@ -82,11 +84,16 @@ def export(character, action, out_dir=EXPORT):
                        "contacts": (act.contacts[k] if act.contacts else {}),
                        "source": act.files[k].name, "entry": act.entries[k] if act.entries else k})
     out = {"format": "workbench-export/1", "character": character, "action": action, "image": f"{action}.png",
-           "cell_size": cell, "anchor": anchor, "scale": A.load_manifest()["characters"][character].get("game_scale_in_old_demos"),
+           "cell_size": cell, "anchor": anchor,
+           "scale": A.load_manifest()["characters"][character].get("game_scale_in_old_demos") or scale_override,
+           "scale_source": "manifest game_scale_in_old_demos" if A.load_manifest()["characters"][character].get("game_scale_in_old_demos") else
+                           ("assumed: same as Ren (both drawn on 640x576 cells at a similar figure height)" if scale_override else None),
            "loop_mode": act.loop_mode, "facing": act.facing, "travel_mode": travel_mode, "frames": frames,
            "status_in_manifest": info.get("status"), "suspect_flags": sorted({f["code"] for f in rep["flags"]})}
+    if doc.get("jump_timing"):
+        out["jump"] = doc["jump_timing"]
     if scene:
-        offs = P.path_offsets(scene, n, act.contacts)
+        offs = P.path_offsets(scene, n, act.contacts, act.frames)
         ax, ay = anchor
         start = (offs[0][0] + ax, offs[0][1] + ay)
         out["path"] = [[round(o[0] + ax - start[0], 2), round(o[1] + ay - start[1], 2)] for o in offs]
@@ -124,7 +131,8 @@ def export(character, action, out_dir=EXPORT):
     return out
 
 
-DEMO = [("ren", "walk_keypose"), ("ren", "climb_up"), ("ren", "jump")]
+DEMO = [("ren", "walk_keypose"), ("ren", "climb_up"), ("ren", "climb_down"), ("ren", "jump"), ("ren", "idle")]
+REN_SCALE = 0.4777
 
 
 def main(argv=None):
@@ -135,6 +143,11 @@ def main(argv=None):
     todo = DEMO if a.demo else [(a.character, x) for x in a.actions]
     if not todo:
         p.error("give CHARACTER ACTION... or --demo")
+    if a.demo:   # the guard patrols in the playtest at Ren's scale; his walk speed = stride-based estimate (his contacts walk in place)
+        g = A.analyze(A.load_action("guard", "walk"))["metrics"]["walk"]
+        export("guard", "idle", scale_override=REN_SCALE)
+        o = export("guard", "walk", travel_override=round(g["stride_based_travel_px"], 2), scale_override=REN_SCALE)
+        print(f"guard/walk: travel {o['frames'][0]['travel_px']} px/frame (stride-based; the drawings themselves walk in place, so it slides)")
     for c, ac in todo:
         o = export(c, ac)
         tr = [f["travel_px"] for f in o["frames"]]

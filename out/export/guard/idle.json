@@ -1,0 +1,132 @@
+{
+ "format": "workbench-export/1",
+ "character": "guard",
+ "action": "idle",
+ "image": "idle.png",
+ "cell_size": [
+  640,
+  576
+ ],
+ "anchor": [
+  320.0,
+  535.0
+ ],
+ "scale": 0.4777,
+ "scale_source": "assumed: same as Ren (both drawn on 640x576 cells at a similar figure height)",
+ "loop_mode": "loop",
+ "facing": "right",
+ "travel_mode": "none",
+ "frames": [
+  {
+   "rect": [
+    360,
+    0,
+    173,
+    425
+   ],
+   "offset": [
+    224,
+    116
+   ],
+   "duration_ms": 250.0,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "01.png",
+   "entry": 0
+  },
+  {
+   "rect": [
+    0,
+    0,
+    177,
+    426
+   ],
+   "offset": [
+    226,
+    115
+   ],
+   "duration_ms": 250.0,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "02.png",
+   "entry": 1
+  },
+  {
+   "rect": [
+    177,
+    0,
+    183,
+    426
+   ],
+   "offset": [
+    227,
+    115
+   ],
+   "duration_ms": 250.0,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "03.png",
+   "entry": 2
+  },
+  {
+   "rect": [
+    533,
+    0,
+    178,
+    425
+   ],
+   "offset": [
+    225,
+    115
+   ],
+   "duration_ms": 1332.8,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "04.png",
+   "entry": 3
+  },
+  {
+   "rect": [
+    711,
+    0,
+    182,
+    422
+   ],
+   "offset": [
+    223,
+    118
+   ],
+   "duration_ms": 333.2,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "12.png",
+   "entry": 11
+  },
+  {
+   "rect": [
+    893,
+    0,
+    178,
+    422
+   ],
+   "offset": [
+    224,
+    118
+   ],
+   "duration_ms": 250.0,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "14.png",
+   "entry": 13
+  }
+ ],
+ "status_in_manifest": "rejected",
+ "suspect_flags": [
+  "few_distinct",
+  "near_duplicate",
+  "out_of_order",
+  "proportion_bulk",
+  "region_colour_drift",
+  "region_size_drift"
+ ]
+}

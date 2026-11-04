@@ -9,43 +9,77 @@
   body { margin:0; font:14px/1.4 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
   header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; }
   header h1 { font-size:16px; margin:0 0 4px; }
-  .note { color:var(--muted); max-width:1100px; }
+  .note { color:var(--muted); max-width:1150px; }
   .row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:6px 14px; }
   canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; max-width:calc(100% - 28px); }
-  #drift { font-weight:600; }
   .bad { color:var(--warn); } .good { color:var(--ok); }
 </style>
 </head>
 <body>
 <header>
   <h1>Playtest built only from workbench exports</h1>
-  <div class="note">Click the floor to walk, the ledge to climb it, the far platform to jump the gap. Walk travel per drawing comes from
-  the planted contacts in <code>ren/walk_keypose.json</code>, so the planted foot cannot slide; the red pins mark where each planted
-  contact landed. <b>This walk has only 4 drawings, so it looks choppy whatever the travel</b>: travel fixes sliding, not smoothness.</div>
+  <div class="note">Click the floor to walk (either way), the ledge to climb up, the floor again from the ledge to climb down, the far
+  platform to jump the gap (and back). Walk travel per drawing comes from Ren's planted contacts, so his planted foot cannot slide.
+  <b>His walk has only 4 drawings, so it looks choppy whatever the travel</b>: travel fixes sliding, not smoothness.
+  The guard patrols with his edited idle (held poses) and edited walk at Ren's scale; his walk drawings shuffle in place, so with any
+  forward speed his feet slide (that walk is rejected; see specs/guard_walk.png).</div>
 </header>
 <div class="row">
-  <label><input type="checkbox" id="oldTiming"> use the old demo's constant 41.9 px per drawing (to see the slide)</label>
+  <label><input type="checkbox" id="pins" checked> show contact pins and drift</label>
+  <label><input type="checkbox" id="oldTiming"> Ren: old constant 41.9 px per drawing (to see the slide)</label>
   <label>ledge height <input type="range" id="ledgeH" min="60" max="140" step="1" value="100"> <b id="ledgeHv">100%</b></label>
   <span id="ledgeMsg"></span>
-  <span id="drift"></span> <span id="state" class="note"></span>
 </div>
+<div class="row"><span id="drift"></span> <span id="state" class="note"></span></div>
 <canvas id="cv" width="1200" height="520"></canvas>
 <script>
 "use strict";
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
 const A = {};
-const GROUND = 470;                       // game px
-let LEDGE, GAP, FAR;                      // set from the climb export
-let ledgePct = 100;
-// ledge height: the climb export carries a contact-pinned path per height (60-140%) with the tool's verdict.
-// At 100% the owner's approved per-pose path is used unchanged.
-function heightInfo() { return A.climb_up.paths_by_height[String(ledgePct)]; }
-function climbPath() { return ledgePct === 100 ? A.climb_up.path : heightInfo().path; }
+const GROUND = 470, GAP = 90, CLIMB_START = 420, FRONT_BAND_CELL = 40;
+let LEDGE, FAR, ledgePct = 100;
+
+function mk(char, x, idle) { return { char, x, y: GROUND, dir: 1, surface: "floor", act: "idle", name: idle, idleName: idle, k: 0, t: 0, plan: [], pins: {}, drift: 0, maxDrift: 0 }; }
+const ren = mk("ren", 120, "ren/idle");
+const guard = mk("guard", 80, "guard/idle");
+window.playtest = { ren, guard, A };
+
+async function load(key) {
+  const j = await (await fetch(`${key}.json`)).json();
+  const img = new Image(); img.src = `${key.split("/")[0]}/${j.image}`; await img.decode();
+  A[key] = { ...j, img };
+}
+
+// ---------------------------------------------------------------- drawing + contacts (mirroring = dir -1)
+function drawFrame(key, k, x, y, dir) {
+  const a = A[key], f = a.frames[k], s = a.scale, [rx, ry, rw, rh] = f.rect;
+  ctx.save(); ctx.translate(x, y); ctx.scale(dir * s, s);
+  ctx.drawImage(a.img, rx, ry, rw, rh, f.offset[0] - a.anchor[0], f.offset[1] - a.anchor[1], rw, rh);
+  ctx.restore();
+}
+function world(ch, c) { const a = A[ch.name]; return { x: ch.x + ch.dir * (c.x - a.anchor[0]) * a.scale, y: ch.y + (c.y - a.anchor[1]) * a.scale }; }
+function updatePins(ch) {
+  const f = A[ch.name].frames[ch.k], now = {}; let worst = 0;
+  for (const [n, c] of Object.entries(f.contacts || {})) {
+    if (c.state !== "planted") continue;
+    const w = world(ch, c);
+    now[n] = ch.pins[n] ?? w;
+    worst = Math.max(worst, Math.abs(w.x - now[n].x));
+  }
+  ch.pins = now; ch.drift = worst; ch.maxDrift = Math.max(ch.maxDrift, worst);
+}
+
+// ---------------------------------------------------------------- ledge height (contact-pinned paths per height)
+function hinfo(key = "ren/climb_up") { return A[key].paths_by_height[String(ledgePct)]; }
+function climbPath(key) { return ledgePct === 100 ? A[key].path : hinfo(key).path; }
+function frontExtent(key) { const w = A[key]; return Math.max(...w.frames.map(f => f.offset[0] + f.rect[2] - w.anchor[0])) * w.scale; }
 function setLedge(pct) {
   ledgePct = pct;
-  const c = A.climb_up, h = heightInfo(), s = c.scale, w = LEDGE.x1 - LEDGE.x0;
-  LEDGE.x0 = ren.climbStart + h.front_x * s; LEDGE.x1 = LEDGE.x0 + w; LEDGE.top = GROUND - h.height * s;
-  if (FAR) FAR = { x0: LEDGE.x1 + GAP, x1: cv.width - 10, top: LEDGE.top };
+  const c = A["ren/climb_up"], h = hinfo(), s = c.scale, w = 210;
+  LEDGE = { x0: CLIMB_START + h.front_x * s, top: GROUND - h.height * s }; LEDGE.x1 = LEDGE.x0 + w;
+  FAR = { x0: LEDGE.x1 + GAP, x1: cv.width - 10, top: LEDGE.top };
+  ren.floorLimit = LEDGE.x0 + FRONT_BAND_CELL * A["ren/walk_keypose"].scale - frontExtent("ren/walk_keypose");
+  guard.floorLimit = LEDGE.x0 + FRONT_BAND_CELL * A["guard/walk"].scale - frontExtent("guard/walk");
   const r = c.height_rule;
   document.getElementById("ledgeHv").textContent = `${pct}% (${(h.height * s).toFixed(0)} game px)`;
   const m = document.getElementById("ledgeMsg");
@@ -53,152 +87,139 @@ function setLedge(pct) {
   m.textContent = h.supported ? `supported (${r.strict_range_pct.join("-")}%)`
     : h.supported_2x ? `marginal: contacts up to 2x tolerance (looser range ${r.loose_range_pct.join("-")}%)`
     : `NOT supported: these climb drawings won't work at this height; it needs new drawings or another climb category (step-up, pull-up). Supported ${r.strict_range_pct.join("-")}%, marginal ${r.loose_range_pct.join("-")}%.`;
-  if (ren) { const w2 = A.walk_keypose, front = Math.max(...w2.frames.map(f => f.offset[0] + f.rect[2] - w2.anchor[0])) * w2.scale; ren.floorLimit = LEDGE.x0 + 40 * w2.scale - front; }
 }
-const ren = { x: 120, y: GROUND, dir: 1, surface: "floor", act: "idle", k: 0, t: 0, plan: [], pins: {}, drift: 0, maxDrift: 0 };
-window.playtest = { ren, A };
+function climbDownStart() { return { x: LEDGE.x0 - hinfo("ren/climb_down").front_x * A["ren/climb_down"].scale, y: LEDGE.top }; }
 
-async function load(name) {
-  const j = await (await fetch(`ren/${name}.json`)).json();
-  const img = new Image(); img.src = `ren/${j.image}`; await img.decode();
-  A[name] = { ...j, img };
-}
-
-function drawFrame(name, k, x, y, dir) {
-  const a = A[name], f = a.frames[k], s = a.scale, [rx, ry, rw, rh] = f.rect;
-  ctx.save(); ctx.translate(x, y); ctx.scale(dir * s, s);
-  ctx.drawImage(a.img, rx, ry, rw, rh, f.offset[0] - a.anchor[0], f.offset[1] - a.anchor[1], rw, rh);
-  ctx.restore();
-}
-
-function contactWorld(name, k, c) {     // contact in game px for the current position
-  const a = A[name];
-  return { x: ren.x + ren.dir * (c.x - a.anchor[0]) * a.scale, y: ren.y + (c.y - a.anchor[1]) * a.scale };
-}
-
-function stepTravel(k) {
-  const a = A.walk_keypose;
-  return (document.getElementById("oldTiming").checked ? 41.9 : a.frames[k].travel_px) * a.scale;
-}
-
-function updatePins() {
-  const f = A.walk_keypose.frames[ren.k], now = {};
-  let worst = 0;
-  for (const [n, c] of Object.entries(f.contacts)) {
-    if (c.state !== "planted") continue;
-    const w = contactWorld("walk_keypose", ren.k, c);
-    now[n] = ren.pins[n] ?? w;                 // keep the landing position while it stays planted
-    worst = Math.max(worst, Math.abs(w.x - now[n].x));
-  }
-  ren.pins = now; ren.drift = worst; ren.maxDrift = Math.max(ren.maxDrift, worst);
-}
-
-function surfaceAt(x) {
-  if (x >= LEDGE.x0 && x <= LEDGE.x1) return { name: "ledge", y: LEDGE.top };
-  if (x >= FAR.x0 && x <= FAR.x1) return { name: "far", y: FAR.top };
-  if (x < LEDGE.x0) return { name: "floor", y: GROUND };
-  return null;
-}
-
+// ---------------------------------------------------------------- Ren's plans
 function onClick(ev) {
   const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) * cv.width / r.width, y = (ev.clientY - r.top) * cv.height / r.height;
   if (ren.act !== "idle") return;
-  const target = y < LEDGE.top + 10 && x >= LEDGE.x0 ? (x >= FAR.x0 ? "far" : "ledge") : "floor";
-  ren.plan = [];
+  const onTop = y < LEDGE.top + 10;
+  const target = onTop && x >= FAR.x0 ? "far" : onTop && x >= LEDGE.x0 ? "ledge" : "floor";
+  const P = ren.plan = [];
+  const clampFloor = v => Math.max(20, Math.min(v, ren.floorLimit));
+  const clampLedge = v => Math.max(climbDownStart().x, Math.min(v, LEDGE.x1 - 40));
+  const clampFar = v => Math.max(FAR.x0 + 40, Math.min(v, FAR.x1 - 20));
+  const toLedgeFromFloor = () => P.push(["walk", Math.min(CLIMB_START, ren.floorLimit)], ["climb", "ren/climb_up"]);
+  const toFloorFromLedge = () => P.push(["walk", climbDownStart().x], ["climb", "ren/climb_down"]);
   if (ren.surface === "floor") {
-    if (target === "floor") ren.plan.push(["walk", Math.min(x, ren.floorLimit)]);
-    else { ren.plan.push(["walk", Math.min(ren.climbStart, ren.floorLimit)], ["climb"]); }
+    if (target === "floor") P.push(["walk", clampFloor(x)]);
+    else { toLedgeFromFloor(); if (target === "ledge") P.push(["walk", clampLedge(x)]); else P.push(["walk", LEDGE.x1 - 50], ["jump", FAR.x0 + 50], ["walk", clampFar(x)]); }
+  } else if (ren.surface === "ledge") {
+    if (target === "ledge") P.push(["walk", clampLedge(x)]);
+    else if (target === "far") P.push(["walk", LEDGE.x1 - 50], ["jump", FAR.x0 + 50], ["walk", clampFar(x)]);
+    else { toFloorFromLedge(); P.push(["walk", clampFloor(x)]); }
+  } else {
+    if (target === "far") P.push(["walk", clampFar(x)]);
+    else { P.push(["walk", FAR.x0 + 50], ["jump", LEDGE.x1 - 50]); if (target === "ledge") P.push(["walk", clampLedge(x)]); else { toFloorFromLedge(); P.push(["walk", clampFloor(x)]); } }
   }
-  if (ren.surface === "floor" && target !== "floor" || ren.surface === "ledge") {
-    if (target === "ledge") ren.plan.push(["walk", Math.max(LEDGE.x0 + 20, Math.min(x, LEDGE.x1 - 40))]);
-    if (target === "far") ren.plan.push(["walk", LEDGE.x1 - 50], ["jump"], ["walk", Math.max(FAR.x0 + 40, Math.min(x, FAR.x1 - 20))]);
-  }
-  if (ren.surface === "far" && target === "far") ren.plan.push(["walk", Math.max(FAR.x0 + 20, Math.min(x, FAR.x1 - 20))]);
-  nextStep();
+  nextStep(ren);
 }
 
-function nextStep() {
-  const s = ren.plan.shift();
-  if (!s) { ren.act = "idle"; return; }
-  ren.t = 0; ren.k = 0; ren.pins = {};
+function nextStep(ch) {
+  const s = ch.plan.shift();
+  ch.t = 0; ch.k = 0; ch.pins = {};
+  if (!s) { ch.act = "idle"; ch.name = ch.idleName; return; }
   if (s[0] === "walk") {
-    ren.target = s[1]; ren.dir = s[1] >= ren.x ? 1 : -1;
-    if (Math.abs(s[1] - ren.x) < 25) return nextStep();
-    ren.act = "walk"; updatePins();
+    ch.target = s[1]; ch.dir = s[1] >= ch.x ? 1 : -1; ch.name = `${ch.char}/walk${ch.char === "ren" ? "_keypose" : ""}`;
+    if (Math.abs(s[1] - ch.x) < 12) return nextStep(ch);
+    ch.act = "walk"; updatePins(ch);
   } else if (s[0] === "climb") {
-    // the climb drawings are placed relative to the ledge: start exactly at the climb start (a visible step forward
-    // when the walk had to stop short of it, because the walk drawings are too wide to get closer)
-    ren.dir = 1; ren.act = "climb"; ren.popIn = ren.climbStart - ren.x; ren.x = ren.climbStart; ren.start = { x: ren.x, y: ren.y };
-  }
-  else if (s[0] === "jump") { ren.dir = 1; ren.act = "jump"; ren.start = { x: ren.x, y: ren.y }; }
+    ch.name = s[1]; ch.act = "climb"; ch.dir = 1;
+    if (s[1] === "ren/climb_up") { ch.popIn = CLIMB_START - ch.x; ch.x = CLIMB_START; ch.y = GROUND; }
+    else { const p = climbDownStart(); ch.popIn = p.x - ch.x; ch.x = p.x; ch.y = p.y; }
+    ch.start = { x: ch.x, y: ch.y };
+  } else if (s[0] === "idle") { ch.act = "idle"; ch.name = ch.idleName; ch.idleLeft = s[1]; }
+  else { ch.name = "ren/jump"; ch.act = "jump"; ch.dir = s[1] >= ch.x ? 1 : -1; ch.start = { x: ch.x, y: ch.y }; ch.landX = s[1]; }
 }
 
-const JUMP_AIR = [3, 8];                  // frames (0-based) that move across the gap
-function tick(dt) {
-  if (ren.act === "idle") return;
-  const name = ren.act === "walk" ? "walk_keypose" : ren.act === "climb" ? "climb_up" : "jump", a = A[name];
-  ren.t += dt;
-  while (ren.act !== "idle" && ren.t >= a.frames[ren.k].duration_ms) {
-    ren.t -= a.frames[ren.k].duration_ms;
-    if (ren.act === "walk") {
-      const adv = stepTravel(ren.k);
-      if (ren.dir * (ren.target - ren.x) < adv * 0.5) { nextStep(); return; }   // stop on a contact frame boundary, never overshoot
-      if (ren.dir > 0 && ren.surface === "floor" && ren.x + adv > ren.floorLimit) { nextStep(); return; }  // never step into the ledge face
-      ren.x += ren.dir * adv; ren.k = (ren.k + 1) % a.frames.length; updatePins();
-    } else if (ren.act === "climb") {
-      ren.k++;
-      if (ren.k >= a.frames.length) { const cp = climbPath(), p = cp[cp.length - 1]; ren.x = ren.start.x + p[0] * a.scale; ren.y = ren.start.y + p[1] * a.scale; ren.surface = "ledge"; nextStep(); return; }
-      const p = climbPath()[ren.k]; ren.x = ren.start.x + p[0] * a.scale; ren.y = ren.start.y + p[1] * a.scale;
-    } else {
-      ren.k++;
-      const dist = FAR.x0 + 50 - ren.start.x, span = JUMP_AIR[1] - JUMP_AIR[0] + 1;
-      const air = Math.min(span, Math.max(0, ren.k - JUMP_AIR[0]));
-      ren.x = ren.start.x + dist * air / span;
-      ren.y = ren.start.y - 50 * Math.sin(Math.PI * air / span);
-      if (ren.k >= a.frames.length) { ren.k = a.frames.length - 1; ren.y = FAR.top; ren.surface = "far"; nextStep(); return; }
+function stepTravel(ch) {
+  const a = A[ch.name];
+  if (ch === ren && document.getElementById("oldTiming").checked) return 41.9 * a.scale;
+  return a.frames[ch.k].travel_px * a.scale;
+}
+
+function tick(ch, dt) {
+  const a = A[ch.name];
+  ch.t += dt;
+  let guardLoop = 0;
+  while (ch.t >= a.frames[ch.k].duration_ms && guardLoop++ < 20) {
+    ch.t -= a.frames[ch.k].duration_ms;
+    if (ch.act === "idle") {
+      ch.k = (ch.k + 1) % a.frames.length;
+      if (ch.idleLeft !== undefined && (ch.idleLeft -= 1) <= 0) { ch.idleLeft = undefined; nextStep(ch); return; }
+    } else if (ch.act === "walk") {
+      const adv = stepTravel(ch);
+      const lim = ch.surface === "floor" && ch.dir > 0 ? ch.floorLimit : Infinity;
+      if (ch.dir * (ch.target - ch.x) < Math.max(adv, 1) * 0.5 || ch.x + ch.dir * adv > lim) { nextStep(ch); return; }
+      ch.x += ch.dir * adv; ch.k = (ch.k + 1) % a.frames.length; updatePins(ch);
+    } else if (ch.act === "climb") {
+      ch.k++;
+      const path = climbPath(ch.name);
+      if (ch.k >= a.frames.length) { const p = path[path.length - 1]; ch.x = ch.start.x + p[0] * a.scale; ch.y = ch.start.y + p[1] * a.scale; ch.surface = ch.name.endsWith("up") ? "ledge" : "floor"; nextStep(ch); return; }
+      const p = path[ch.k]; ch.x = ch.start.x + p[0] * a.scale; ch.y = ch.start.y + p[1] * a.scale;
+    } else if (ch.act === "jump") {
+      ch.k++;
+      const J = a.jump, t0 = J.takeoff_after, t1 = J.land_at;
+      const u = Math.max(0, Math.min(1, (ch.k - t0) / (t1 - t0)));
+      ch.x = ch.start.x + (ch.landX - ch.start.x) * u;
+      ch.y = ch.start.y - J.arc_height_px * a.scale * Math.sin(Math.PI * u);
+      if (ch.k >= a.frames.length) { ch.k = a.frames.length - 1; ch.y = ch.start.y; ch.surface = ch.landX > LEDGE.x1 ? "far" : "ledge"; nextStep(ch); return; }
     }
   }
 }
 
+// ---------------------------------------------------------------- guard patrol: idle cycle, walk to the other end, repeat
+function guardBrain() {
+  if (guard.act !== "idle" || guard.plan.length || guard.idleLeft !== undefined) return;
+  const ends = [40, guard.floorLimit - 10];
+  const to = Math.abs(guard.x - ends[0]) < Math.abs(guard.x - ends[1]) ? ends[1] : ends[0];
+  guard.plan.push(["idle", A["guard/idle"].frames.length], ["walk", to]);
+  nextStep(guard);
+}
+
+// ---------------------------------------------------------------- render
+function drawContacts(ch) {
+  const f = A[ch.name].frames[ch.k];
+  for (const c of Object.values(f.contacts || {})) {
+    const w = world(ch, c);
+    ctx.beginPath(); ctx.arc(w.x, w.y, 3.5, 0, 7);
+    if (c.state === "planted") { ctx.fillStyle = "#1baf7a"; ctx.fill(); } else { ctx.strokeStyle = "#eb6834"; ctx.lineWidth = 1.5; ctx.stroke(); }
+  }
+  if (ch.act === "walk") for (const p of Object.values(ch.pins)) { ctx.fillStyle = "#c81e28"; ctx.fillRect(p.x - 2, p.y - 10, 4, 14); }
+}
+
 function draw() {
   ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.fillStyle = "#d6ccba"; ctx.strokeStyle = "#968a6e";
-  ctx.fillRect(0, GROUND, LEDGE.x0, cv.height - GROUND);
-  const hinfo = heightInfo();
-  if (!hinfo.supported_2x) ctx.fillStyle = "#e9b3b3"; else if (!hinfo.supported) ctx.fillStyle = "#ead9b0";
+  const h = hinfo();
+  ctx.fillStyle = "#d6ccba"; ctx.fillRect(0, GROUND, LEDGE.x0, cv.height - GROUND);
+  ctx.fillStyle = h.supported ? "#d6ccba" : h.supported_2x ? "#ead9b0" : "#e9b3b3";
   ctx.fillRect(LEDGE.x0, LEDGE.top, LEDGE.x1 - LEDGE.x0, cv.height - LEDGE.top);
-  ctx.fillStyle = "#d6ccba";
-  ctx.fillRect(FAR.x0, FAR.top, FAR.x1 - FAR.x0, cv.height - FAR.top);
+  ctx.fillStyle = "#d6ccba"; ctx.fillRect(FAR.x0, FAR.top, FAR.x1 - FAR.x0, cv.height - FAR.top);
   ctx.fillStyle = "#333"; ctx.font = "12px system-ui";
-  ctx.fillText("floor", 10, GROUND + 18); ctx.fillText(`ledge ${ledgePct}% (${hinfo.supported ? "supported" : hinfo.supported_2x ? "marginal" : "NOT SUPPORTED"})`, LEDGE.x0 + 6, LEDGE.top + 18); ctx.fillText("far platform", FAR.x0 + 6, FAR.top + 18);
-  for (let x = 0; x < LEDGE.x0; x += 20) { ctx.fillRect(x, GROUND, 1, x % 100 ? 5 : 10); }
-  const name = ren.act === "climb" ? "climb_up" : ren.act === "jump" ? "jump" : "walk_keypose";
-  const k = ren.act === "idle" ? (ren.lastIdle ?? 0) : ren.k;
-  drawFrame(ren.act === "idle" ? (ren.idleAct || "walk_keypose") : name, k, ren.x, ren.y, ren.dir);
-  if (ren.act === "walk") for (const p of Object.values(ren.pins)) { ctx.fillStyle = "#c81e28"; ctx.fillRect(p.x - 2, p.y - 10, 4, 14); }
+  ctx.fillText("floor", 10, GROUND + 18);
+  ctx.fillText(`ledge ${ledgePct}% (${h.supported ? "supported" : h.supported_2x ? "marginal" : "NOT SUPPORTED"})`, LEDGE.x0 + 6, LEDGE.top + 18);
+  ctx.fillText("far platform", FAR.x0 + 6, FAR.top + 18);
+  for (let x = 0; x < LEDGE.x0; x += 20) ctx.fillRect(x, GROUND, 1, x % 100 ? 5 : 10);
+  for (const ch of [guard, ren]) drawFrame(ch.name, ch.k, ch.x, ch.y, ch.dir);
+  const showPins = document.getElementById("pins").checked;
+  if (showPins) { drawContacts(guard); drawContacts(ren); }
   const d = document.getElementById("drift");
-  d.textContent = `planted-foot drift since landing: ${ren.drift.toFixed(1)} game px (max this session ${ren.maxDrift.toFixed(1)})`;
-  d.className = ren.maxDrift > 0.5 ? "bad" : "good";
-  document.getElementById("state").textContent = `${ren.act} on ${ren.surface}`;
+  d.innerHTML = showPins
+    ? `<span class="${ren.maxDrift > 0.5 ? "bad" : "good"}">Ren planted-foot drift ${ren.drift.toFixed(1)} game px (max ${ren.maxDrift.toFixed(1)})</span> &nbsp; ` +
+      `<span class="${guard.maxDrift > 0.5 ? "bad" : "good"}">guard drift ${guard.drift.toFixed(1)} (max ${guard.maxDrift.toFixed(1)})</span>`
+    : "";
+  document.getElementById("state").textContent = `Ren: ${ren.act} on ${ren.surface}${ren.dir < 0 ? " (facing left, mirrored)" : ""} | guard: ${guard.act}`;
 }
 
 let last = performance.now();
-function loop(now) { const dt = now - last; last = now; tick(dt); if (ren.act === "idle") { ren.idleAct = ren.surface === "floor" && ren.lastAct === "climb" ? "climb_up" : ren.idleAct; } draw(); requestAnimationFrame(loop); }
+function loop(now) { const dt = Math.min(100, now - last); last = now; tick(ren, dt); guardBrain(); tick(guard, dt); draw(); requestAnimationFrame(loop); }
 
 (async () => {
-  await Promise.all(["walk_keypose", "climb_up", "jump"].map(load));
-  const c = A.climb_up, s = c.scale, led = c.props.find(p => p.type === "ledge");
-  ren.climbStart = 420;
-  LEDGE = { x0: ren.climbStart + led.front_x * s, x1: ren.climbStart + led.back_x * s, top: GROUND + led.top_y * s };
+  await Promise.all(["ren/walk_keypose", "ren/climb_up", "ren/climb_down", "ren/jump", "ren/idle", "guard/idle", "guard/walk"].map(load));
+  setLedge(100);
   const slider = document.getElementById("ledgeH");
   slider.addEventListener("input", () => { if (ren.act !== "idle" || ren.surface !== "floor") { slider.value = ledgePct; return; } setLedge(+slider.value); });
-  setLedge(100);
-  // walking on the floor stops where the walk drawings' front-most pixel reaches the ledge face, allowing the same
-  // 40 cell px "near limb in front of the face" band as props.py
-  const w = A.walk_keypose, front = Math.max(...w.frames.map(f => f.offset[0] + f.rect[2] - w.anchor[0])) * w.scale;
-  ren.floorLimit = LEDGE.x0 + 40 * w.scale - front;
-  GAP = 90;
-  FAR = { x0: LEDGE.x1 + GAP, x1: cv.width - 10, top: LEDGE.top };
   cv.addEventListener("click", onClick);
   document.getElementById("oldTiming").addEventListener("change", () => { ren.maxDrift = 0; });
   document.body.dataset.ready = "1";

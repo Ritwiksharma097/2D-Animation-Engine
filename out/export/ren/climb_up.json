@@ -12,6 +12,7 @@
   439.6
  ],
  "scale": 0.4777,
+ "scale_source": "manifest game_scale_in_old_demos",
  "loop_mode": "once",
  "facing": "right",
  "travel_mode": "none",

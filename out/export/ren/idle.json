@@ -1,0 +1,40 @@
+{
+ "format": "workbench-export/1",
+ "character": "ren",
+ "action": "idle",
+ "image": "idle.png",
+ "cell_size": [
+  640,
+  576
+ ],
+ "anchor": [
+  320.0,
+  535.0
+ ],
+ "scale": 0.4777,
+ "scale_source": "manifest game_scale_in_old_demos",
+ "loop_mode": "once",
+ "facing": "right",
+ "travel_mode": "none",
+ "frames": [
+  {
+   "rect": [
+    0,
+    0,
+    170,
+    426
+   ],
+   "offset": [
+    252,
+    113
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "01.png",
+   "entry": 0
+  }
+ ],
+ "status_in_manifest": "approved",
+ "suspect_flags": []
+}

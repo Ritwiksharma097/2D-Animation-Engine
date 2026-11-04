@@ -1,0 +1,477 @@
+{
+ "format": "workbench-export/1",
+ "character": "guard",
+ "action": "walk",
+ "image": "walk.png",
+ "cell_size": [
+  640,
+  576
+ ],
+ "anchor": [
+  320.0,
+  535.0
+ ],
+ "scale": 0.4777,
+ "scale_source": "assumed: same as Ren (both drawn on 640x576 cells at a similar figure height)",
+ "loop_mode": "loop",
+ "facing": "right",
+ "travel_mode": "constant",
+ "frames": [
+  {
+   "rect": [
+    1330,
+    427,
+    228,
+    417
+   ],
+   "offset": [
+    197,
+    124
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 336.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 304.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "01.png",
+   "entry": 0
+  },
+  {
+   "rect": [
+    765,
+    427,
+    288,
+    418
+   ],
+   "offset": [
+    174,
+    123
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 374.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 273.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "02.png",
+   "entry": 1
+  },
+  {
+   "rect": [
+    1053,
+    427,
+    277,
+    418
+   ],
+   "offset": [
+    190,
+    123
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "foot_l": {
+     "x": 385.7,
+     "y": 531.0,
+     "state": "free"
+    },
+    "toe_r": {
+     "x": 276.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "03.png",
+   "entry": 2
+  },
+  {
+   "rect": [
+    0,
+    427,
+    270,
+    420
+   ],
+   "offset": [
+    177,
+    122
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 353.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 258.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "04.png",
+   "entry": 3
+  },
+  {
+   "rect": [
+    1720,
+    0,
+    262,
+    423
+   ],
+   "offset": [
+    183,
+    118
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "foot_l": {
+     "x": 360.9,
+     "y": 531.0,
+     "state": "free"
+    },
+    "toe_r": {
+     "x": 269.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "05.png",
+   "entry": 4
+  },
+  {
+   "rect": [
+    270,
+    427,
+    248,
+    419
+   ],
+   "offset": [
+    193,
+    122
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 346.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 262.7,
+     "y": 531.0,
+     "state": "free"
+    }
+   },
+   "source": "06.png",
+   "entry": 5
+  },
+  {
+   "rect": [
+    518,
+    427,
+    247,
+    419
+   ],
+   "offset": [
+    178,
+    122
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 329.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_l": {
+     "x": 382.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 240.2,
+     "y": 531.0,
+     "state": "free"
+    }
+   },
+   "source": "07.png",
+   "entry": 6
+  },
+  {
+   "rect": [
+    966,
+    0,
+    245,
+    424
+   ],
+   "offset": [
+    183,
+    117
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 330.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_l": {
+     "x": 391.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 260.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "08.png",
+   "entry": 7
+  },
+  {
+   "rect": [
+    1211,
+    0,
+    246,
+    424
+   ],
+   "offset": [
+    187,
+    117
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 336.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_l": {
+     "x": 393.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 259.9,
+     "y": 526.0,
+     "state": "free"
+    }
+   },
+   "source": "09.png",
+   "entry": 8
+  },
+  {
+   "rect": [
+    468,
+    0,
+    234,
+    425
+   ],
+   "offset": [
+    195,
+    116
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 333.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_l": {
+     "x": 399.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 258.3,
+     "y": 528.0,
+     "state": "free"
+    }
+   },
+   "source": "10.png",
+   "entry": 9
+  },
+  {
+   "rect": [
+    227,
+    0,
+    241,
+    426
+   ],
+   "offset": [
+    194,
+    115
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 339.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 265.9,
+     "y": 531.0,
+     "state": "free"
+    }
+   },
+   "source": "11.png",
+   "entry": 10
+  },
+  {
+   "rect": [
+    0,
+    0,
+    227,
+    427
+   ],
+   "offset": [
+    189,
+    115
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 306.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_l": {
+     "x": 375.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 263.7,
+     "y": 531.0,
+     "state": "free"
+    }
+   },
+   "source": "12.png",
+   "entry": 11
+  },
+  {
+   "rect": [
+    1457,
+    0,
+    263,
+    424
+   ],
+   "offset": [
+    190,
+    117
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 360.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 258.0,
+     "y": 530.0,
+     "state": "free"
+    }
+   },
+   "source": "13.png",
+   "entry": 12
+  },
+  {
+   "rect": [
+    702,
+    0,
+    264,
+    425
+   ],
+   "offset": [
+    190,
+    116
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 21.89,
+   "contacts": {
+    "heel_l": {
+     "x": 365.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "toe_r": {
+     "x": 269.0,
+     "y": 535.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "14.png",
+   "entry": 13
+  }
+ ],
+ "status_in_manifest": "rejected",
+ "suspect_flags": [
+  "foot_slide",
+  "no_passing_pose",
+  "no_shared_contact",
+  "out_of_order",
+  "proportion_bulk",
+  "region_colour_drift",
+  "region_size_drift",
+  "slide_unavoidable",
+  "stance_not_moving",
+  "step_count",
+  "uneven_jump",
+  "uneven_overall"
+ ]
+}

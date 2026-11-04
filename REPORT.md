@@ -356,3 +356,20 @@ for whoever redraws the frames, in Krita or with image generation. They are not 
 
 ![guard spec](out/report_examples/phase3/guard_walk.png)
 ![Ren in-betweens spec](out/report_examples/phase3/ren_walk_inbetweens.png)
+
+## Playtest completeness (step 16)
+
+`out/export/play.html` (served by `serve.py`) now includes:
+- Ren's idle when standing, mirrored when he faces left;
+- walking both ways (left is mirrored at draw time), with 0.00 game px of drift each way;
+- climbing up and down at any ledge height the slider allows, on contact-pinned paths;
+- jumping to the far platform and back, with timing from the export's `jump` block (air frames 5–7,
+  the drawings whose lowest pixel leaves the drawn floor, plus an arc of the drawings' own
+  lift height);
+- the guard patrolling the same floor with his edited idle (held poses) and his snapped walk, at
+  Ren's scale (assumed: both are drawn on 640×576 cells at about 410–420 px tall).
+
+**The guard's patrol shows his walk is unusable:** his drawings walk in place, so at the
+stride-based speed (21.9 cell px per frame) his planted feet drift up to 118 game px per walk.
+The "show contact pins and drift" toggle displays this live for both characters.
+`workbench/tests/play_checks.py` asserts 15 behaviours, all passing.

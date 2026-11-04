@@ -12,6 +12,7 @@
   535.0
  ],
  "scale": 0.4777,
+ "scale_source": "manifest game_scale_in_old_demos",
  "loop_mode": "once",
  "facing": "right",
  "travel_mode": "none",
@@ -269,5 +270,16 @@
   "uneven_jump",
   "uneven_overall",
   "uneven_stall"
- ]
+ ],
+ "jump": {
+  "air_frames": [
+   4,
+   6
+  ],
+  "takeoff_after": 3,
+  "land_at": 7,
+  "arc_height_px": 102.0,
+  "source": "air frames = drawings whose lowest pixel is >15 px above the drawn floor (cloud assistant); arc height = the drawings' own highest lift, added on top as a parabola in the game",
+  "durations_ms": "12 fps as in the old platform-jump demo"
+ }
 }

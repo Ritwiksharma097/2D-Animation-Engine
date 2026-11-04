@@ -285,7 +285,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | 13. One climb, different ledge heights | done |
 | 14. Redraw specs | done |
 | 15. Owner review page | done |
-| 16. Playtest completeness | not started |
+| 16. Playtest completeness | done |
 | 17. Identity regions by clicking | not started |
 
 ## Step 12 notes
@@ -360,6 +360,22 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
   `_reviews.json` afterwards (no test verdict left behind). Screenshots 40-41 looked at; that
   look is what found the stale climb_down report (old `palette_drift`), fixed by the staleness rule.
 
+## Step 16 notes
+
+- `export.py --demo` now also exports ren/climb_down (with `paths_by_height`), ren/idle,
+  guard/idle (edited holds) and guard/walk (snapped; travel overridden to the stride-based
+  21.9 cell px/frame because his contacts walk in place; scale assumed = Ren's 0.4777, recorded
+  as `scale_source`). Ren's jump timing lives in `annotations/ren/jump.json` (`jump_timing`) and
+  is exported as `jump` (air frames 5-7 = drawings lifted >15 px off the drawn floor; arc = their
+  own lift, 102 cell px).
+- `play.html` rewritten around one character model (draw/mirror/pins shared by Ren and the
+  guard). `play_checks.py` 15/15 PASS (idle, both walk directions without drift, old timing
+  slides, face stop, climb up, jump there and back, climb down, guard patrol + drift, toggle,
+  70% ledge). Screenshots 30-37 looked at.
+- Known: Ren's idle is one still drawing (as the manifest says); the jump's horizontal distance is
+  set by the scene (gap), not by the drawings; climb start still jumps ~39 game px forward from
+  where the walk has to stop.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -391,7 +407,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 3: next is step 16 (playtest completeness).
+Phase 3: next is step 17 (identity regions by clicking in the page).
 
 Phase 2 follow-ups (older list):
 1. On Windows: `python -m pytest workbench/tests`, `python workbench/tests/ui_checks.py`,
