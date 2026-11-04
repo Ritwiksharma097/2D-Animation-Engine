@@ -1,0 +1,159 @@
+{
+ "format": "workbench-level/1",
+ "name": "two_b",
+ "size": [
+  1600,
+  520
+ ],
+ "note": "Two-screen sandbox, screen 2 (step 34). A short arrival sequence with emotes, then the exit.",
+ "floors": [
+  {
+   "id": "B",
+   "x0": 0,
+   "x1": 1600,
+   "y": 470
+  }
+ ],
+ "ledges": [],
+ "platforms": [],
+ "ladders": [],
+ "hotspots": [],
+ "start": {
+  "on": "B",
+  "x": 150
+ },
+ "layers": [
+  {
+   "id": "sky",
+   "parallax": 0,
+   "depth": -300,
+   "rects": [
+    {
+     "x": 0,
+     "y": 0,
+     "w": 1200,
+     "h": 470,
+     "color": "#f5efe6"
+    }
+   ]
+  },
+  {
+   "id": "far",
+   "parallax": 0.3,
+   "depth": -200,
+   "rects": [
+    {
+     "x": 100,
+     "y": 280,
+     "w": 600,
+     "h": 190,
+     "color": "#e6dccd"
+    },
+    {
+     "x": 800,
+     "y": 320,
+     "w": 400,
+     "h": 150,
+     "color": "#e1d6c4"
+    },
+    {
+     "x": 1250,
+     "y": 300,
+     "w": 300,
+     "h": 170,
+     "color": "#e6dccd"
+    }
+   ]
+  }
+ ],
+ "occluders": [],
+ "hiding_spots": [],
+ "objects": [
+  {
+   "id": "lamp_b",
+   "kind": "lamp",
+   "x": 900,
+   "on": "B",
+   "state": "on"
+  }
+ ],
+ "doors": [
+  {
+   "id": "D0",
+   "on": "B",
+   "x": 70,
+   "to": {
+    "level": "two_a",
+    "door": "D1"
+   }
+  },
+  {
+   "id": "out",
+   "on": "B",
+   "x": 1540,
+   "kind": "exit"
+  }
+ ],
+ "sequences": [
+  {
+   "id": "two_b_arrive",
+   "trigger": {
+    "on": "level_start"
+   },
+   "steps": [
+    {
+     "do": "walk",
+     "who": "ren",
+     "x": 280
+    },
+    {
+     "do": "emote",
+     "who": "ren",
+     "kind": "?",
+     "ms": 800,
+     "wait": true
+    },
+    {
+     "do": "camera",
+     "x": 1400,
+     "ms": 900
+    },
+    {
+     "do": "wait",
+     "ms": 500
+    },
+    {
+     "do": "camera",
+     "who": "ren",
+     "ms": 700
+    },
+    {
+     "do": "emote",
+     "who": "ren",
+     "kind": "!",
+     "ms": 700,
+     "wait": true
+    },
+    {
+     "do": "sound",
+     "id": "chime"
+    },
+    {
+     "do": "emote",
+     "who": "ren",
+     "kind": "heart",
+     "ms": 900,
+     "wait": true
+    },
+    {
+     "do": "flag",
+     "name": "reached_two_b"
+    }
+   ]
+  }
+ ],
+ "rules": {
+  "jump_max_gap": 140,
+  "jump_max_rise": 12
+ }
+}

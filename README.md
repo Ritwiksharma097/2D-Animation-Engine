@@ -187,6 +187,14 @@ from here" opens `sandbox/run.html` with the unsaved level at the last clicked s
 any level file: `sandbox/run.html?level=scene_a`. Checks: `python workbench/tests/editor_v2_checks.py`,
 `node --test runtime/test/validate.test.mjs`.
 
+## Two-screen sandbox
+
+http://localhost:8000/sandbox/run.html?level=two_a (levels `levels/two_a.json`, `levels/two_b.json`):
+take the apple, hide in the crate while the guard turns, follow him to the barrel, throw the apple so he
+eats, take the key, unlock and open the gate, go through the door, watch the arrival scene, leave.
+Progress is saved in the browser ("reset progress" starts over). Check:
+`python workbench/tests/two_screen_checks.py` (plays it through, waiting on the guard like a player).
+
 ## Static build (`dist/`)
 
 ```

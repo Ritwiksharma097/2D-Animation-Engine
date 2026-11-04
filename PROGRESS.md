@@ -619,7 +619,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | 31. Sequences, emotes, sound hooks | done |
 | 32. Objects with state, puzzles | done |
 | 33. Level editor v2 | done |
-| 34. Two-screen sandbox | not started |
+| 34. Two-screen sandbox | done |
 | 35. Art request packs | not started |
 | 36. `check_all.py` | not started |
 | 37. Performance | not started |
@@ -749,9 +749,35 @@ Open owner decisions (not decided here; each lives in one place, listed in
   the validator doing its job, not a new bug. `scene_a` gained a `patrols` entry (its guard used to
   live only in `sandbox/scenes.json`).
 - Checks: `editor_v2_checks.py` 14/14; `level_checks.py` 8/8 (phase 5 editor behaviour still works);
-  Node 48/48. Screenshots d0-d2 looked at.
+  Node 45/45. Screenshots d0-d2 looked at.
 - Limits: no undo; no snapping; patrols are straight spans on one floor; the editor judges reachability
   for Ren only (the guard has no climb/jump drawings in the AI).
+
+## Step 34 notes
+
+- `levels/two_a.json` + `levels/two_b.json`, played by the step-33 runner (`sandbox/run.html?level=two_a`,
+  now the runner's default). Screen 1: intro sequence (camera to the guard and the gate), apple,
+  pillar occluder, crate and barrel hiding spots, a guard patrol 700-1350, the key, a locked gate
+  (`locked_by: key`, consumed, blocks walking) and door D1 that `requires` the gate open. Screen 2:
+  arrival sequence (walk in, `?`, camera pans to the exit, `!`, chime, heart, flag), a lamp, the exit.
+  Validation reports no problems on either screen.
+- `two_screen_checks.py` 18/18, three runs in a row. It never moves the guard: it waits for his
+  position and facing as a player would, then: apple -> crate -> follow behind him -> barrel -> he
+  walks past -> throw the apple -> he eats -> key -> unlock (key used up) -> open -> door -> arrival
+  sequence (not skipped: ?, pan, !, heart, flag, chime) -> reload resumes on screen 2 -> exit. Then
+  reset, walk at him: caught; retry restores the screen. Screenshots e0-e6 looked at.
+- What the play-through found (fixed):
+  - my first layout was too tight to play: without the apple, the guard was back before Ren could
+    reach the key and open the gate (~5.9 s vs ~7.2 s needed). Re-laid out so hiding and the
+    distraction are both needed.
+  - the runner ignored clicks while Ren walked; now a click re-targets a walk (climbs, jumps and
+    reaches still finish first).
+  - saved progress missed what a sequence did (flags, "seen"), so after a reload the arrival scene
+    replayed and blocked input; the runner now saves when a sequence ends.
+  - screen 2 was exactly the view width, so the camera pan couldn't move; widened to 1600.
+  - "unlocked the door" showed in red (the failure regex matched "locked" inside "unlocked").
+- Limits: the difficulty is one hand-tuned layout, checked by one scripted route, not by people;
+  the reach animation is used for every action; the hide pose is the placeholder crouch.
 
 ## Known problems
 
@@ -805,7 +831,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 6: next is step 34 (two-screen sandbox).
+Phase 6: next is step 35 (art request packs).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

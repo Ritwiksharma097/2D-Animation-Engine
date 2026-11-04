@@ -2,7 +2,7 @@
  "note": "Defaults for the level runner (sandbox/run.html): characters, guard brain, placeholders, sounds. A level's patrol can override the guard config. Game px, ms.",
  "exports": "../out/export",
  "levels_dir": "../levels",
- "default_level": "scene_a",
+ "default_level": "two_a",
  "view": {"width": 1200, "height": 520},
  "save_key": "workbench.runner.v1",
  "ren": {"names": {"idle": "ren/idle", "walk": "ren/walk_keypose", "climb_up": "ren/climb_up", "climb_down": "ren/climb_down", "jump": "ren/jump",

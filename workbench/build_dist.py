@@ -24,6 +24,7 @@ INDEX = """<!doctype html>
 <h1>Animation runtime demos</h1>
 <p>Static build made by <code>workbench/build_dist.py</code>. Placeholder shapes and existing art only; not the game.</p>
 <ul>
+<li><a href="sandbox/run.html?level=two_a">Two-screen sandbox</a>: hide, distract, key, gate, door, exit</li>
 <li><a href="sandbox/index.html">Mechanics sandbox</a>: reach the key past the guard</li>
 <li><a href="sandbox/scenes.html">Scene demo</a>: layers, hiding spot, doors</li>
 <li><a href="sandbox/puzzle.html">Puzzle room</a>: objects, item use, save</li>

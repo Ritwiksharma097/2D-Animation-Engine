@@ -134,7 +134,7 @@ function act(action) {
   const r = resolve(action, S.rules, puzzleState());
   setPuzzle(r.state);
   for (const e of r.events) {
-    if (e.type === "message") msg(e.value, /locked|dark|won't|don't|nothing|can't/.test(e.value) ? "bad" : "good");
+    if (e.type === "message") msg(e.value, /\blocked|dark|won't|don't|nothing|can't/.test(e.value) ? "bad" : "good");
     if (e.type === "give") { S.emotes.show("ren", "!", 900); sounds.play("pickup"); }
     if (e.type === "sound") sounds.play(e.value);
     if (e.type === "sequence") S.seqs.play(e.value);
@@ -172,7 +172,10 @@ stage.on("tap", (x, y) => {
     G.inventory = G.inventory.filter(i => i !== item); inventoryUi(); save();
     S.thrown.push({ item, from: { x: ren.x, y: ren.y - 60 }, x, on: ren.surface, t: 0 }); return;
   }
-  if (ren.busy) return;
+  if (ren.busy) {   // a click while walking changes the destination; climbs, jumps and reaches finish first
+    if (ren.state !== "walk" || ren.queue.some(c => c.type !== "walk")) return;
+    ren.clear(); ren.next(); S.pending = null;
+  }
   const route = (tx, then, surface = null) => {
     const surf = surface ?? S.C.regions.find(r => r.floor === String(ren.surface).split("#")[0] && r.x0 <= tx && tx <= r.x1)?.id ?? ren.surface;
     const rt = planRoute(S.C, S.edges, { surface: ren.surface, x: ren.x }, { surface: surf, x: tx });
@@ -237,6 +240,8 @@ run([{ update: dt => {
   const { ren } = S;
   if (S.startSeq && !fader.busy) { S.startSeq = false; S.seqs.fire({ on: "level_start" }); }
   S.seqs.update(dt); S.emotes.update(dt);
+  if (S.seqWasRunning && !S.seqs.running) save();   // a sequence may set flags; it has now been seen
+  S.seqWasRunning = S.seqs.running;
   $("#skip").hidden = !S.seqs.running;
   if (!S.over && !fader.busy && !S.seqs.running) {
     if (S.pending && !ren.busy) {

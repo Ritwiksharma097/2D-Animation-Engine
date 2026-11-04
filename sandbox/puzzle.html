@@ -54,11 +54,11 @@ function act(action) {
   const r = resolve(action, rules, st);
   st = r.state;
   for (const e of r.events) {
-    if (e.type === "message") msg(e.value, /locked|dark|won't|don't|nothing/.test(e.value) ? "bad" : "good");
+    if (e.type === "message") msg(e.value, /\blocked|dark|won't|don't|nothing/.test(e.value) ? "bad" : "good");
     if (e.type === "give") emotes.show("ren", "!", 900);
   }
   if (!r.rule && !action.use) msg("nothing to do with it");
-  if (/locked|dark|won't|nothing/.test(r.events.find(e => e.type === "message")?.value ?? "")) emotes.show("ren", "?", 900);
+  if (/\blocked|dark|won't|nothing/.test(r.events.find(e => e.type === "message")?.value ?? "")) emotes.show("ren", "?", 900);
   inventoryUi(); save();
   return r;
 }
