@@ -405,3 +405,39 @@ whole loop and restores the real seeds afterwards.
 
 ![guard ladder check](out/report_examples/phase4/guard_ladder_check.png)
 ![ladder spec](out/report_examples/phase4/guard_ladder.png)
+
+# Phase 5 results
+
+## Ren's six imported reactions (step 23)
+
+All six are unreviewed first-pass art. Numbers come from the per-region check against
+`ren/idle/01.png`. For comparison, the approved 4-pose walk reads hood 0.81x, face 0.78x and
+satchel 1.49x, with colour distance (dE) 0.7–2.9. So a swinging satchel (1.5–1.9x everywhere) and
+smaller sleeves are mostly pose, not drift.
+
+| action | what drifts (measured) | what the images show |
+|---|---|---|
+| happy | head proportion flagged; hair 1.27x, face 1.23x; sleeves 0.27x | a visibly bigger head, hood and rounder face (more chibi) than the idle, and a jump in frame 5 |
+| interact | head proportion; height 0.61x while crouching (pose) | close to the walk's look; the hand reaches the ground in drawings 5–6 |
+| hurt_stumble | face colour 6.5 dE, sleeves colour 7.6 dE | a recoloured face and sleeves; the shape is close |
+| caught_game_over | face 0.22x (hidden in the crouch), sleeves 7.2 dE, tunic 5.1 | sitting pose, so the size numbers are pose; the colour shift is real |
+| look_around | only 9 distinct poses in 14 frames (holds) | the closest to the idle; the least drift of the six |
+| ladder_up | tunic 2.03x, face 5.9 dE, sleeves 6.1 dE | **rear view**: the back of the hood counts as "tunic" (same green), so the region check is confounded by the view; the boots and hair read differently from behind |
+
+- **Most drift:** happy (shape) and hurt_stumble / caught_game_over (colour).
+- **Least drift:** look_around and interact.
+- **Not a judgement:** the region check sees colour and size, not drawing style. Reviewing these
+  stays the owner's call.
+- **interact** now has a `hand_r` contact (the lowest skin pixel of the reaching hand, planted
+  on the ground in drawings 5–6) and a `pickup` event at drawing 5. The old demo removed the
+  apple at 0.58 s, about drawing 7, when the hand is already rising again.
+
+![Ren reactions per region](out/report_examples/phase5/ren_reactions_regions.png)
+![Ren reactions identity](out/report_examples/phase5/ren_reactions_identity.png)
+
+## Guard walk speed (step 23)
+
+Contact-derived travel stays the default. `annotations/_settings.json` `travel_overrides`
+now holds a per-action placeholder: the guard walk uses his redraw spec's 37.2 cell px/frame,
+marked unconfirmed, with a reason. The export carries `travel_override`. When an override makes
+planted feet drift, the runtime's debug overlay prints "travel override: feet slide N px" in red.

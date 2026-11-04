@@ -89,3 +89,16 @@ test("ladder: whole cycles for the ladder height, ends on top, rung error from p
   assert.equal(c.surface, "top"); assert.equal(c.y, -120); assert.equal(c.x, 30);
   assert.ok(worst < 0.01, `rung error ${worst}`);
 });
+
+test("a settings travel override that makes feet slide is reported (overrideSliding)", () => {
+  // walk-in-place drawings (planted foot never moves back) moved 10 px/frame by an override
+  const still = makeClip("t/walk_ov", { ...base, travel_override: { px_per_frame: 10, reason: "placeholder" },
+    frames: [0, 1, 2, 3].map(i => frame(10, { [i < 2 ? "foot_l" : "foot_r"]: { x: 5, y: 0, state: "planted" } })) });
+  const c = new Character({ id: "g", clips: { ...clips, walk: still }, world: new World({ floorY: 0 }), x: 0 });
+  let seen = false; c.on("frame", () => { seen = seen || c.overrideSliding; });
+  c.walkTo(200); run(c, 3000);
+  assert.ok(seen); assert.ok(c.maxDrift >= 10);
+  const d = new Character({ id: "r", clips, world: new World({ floorY: 0 }), x: 0 });   // contact-derived: never flagged
+  let flagged = false; d.on("frame", () => { flagged = flagged || d.overrideSliding; });
+  d.walkTo(40); run(d, 2000); assert.equal(flagged, false);
+});

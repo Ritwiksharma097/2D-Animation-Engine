@@ -60,6 +60,9 @@ def pack(images, max_w=2048):
 
 def export(character, action, out_dir=EXPORT, travel_override=None, scale_override=None):
     act = A.load_action(character, action)
+    ov = S.travel_override(character, action)
+    if travel_override is None and ov:
+        travel_override = ov["px_per_frame"]
     if travel_override is not None:
         act.travel, act.travel_mode, act.travel_source = float(travel_override), "constant", "export override"
     rep = A.analyze(act)
@@ -88,6 +91,7 @@ def export(character, action, out_dir=EXPORT, travel_override=None, scale_overri
            "cell_size": cell, "anchor": anchor,
            "scale": scale_override or S.game_scale(character)[0],
            "scale_confirmed": S.game_scale(character)[1], "scale_source": S.game_scale(character)[2],
+           "travel_override": ov,
            "loop_mode": act.loop_mode, "facing": act.facing, "travel_mode": travel_mode, "frames": frames,
            "status_in_manifest": info.get("status"), "suspect_flags": sorted({f["code"] for f in rep["flags"]})}
     if doc.get("events"):
@@ -163,13 +167,12 @@ def main(argv=None):
     todo = DEMO if a.demo else [(a.character, x) for x in a.actions]
     if not todo:
         p.error("give CHARACTER ACTION... or --demo")
-    if a.demo:   # the guard patrols in the playtest at Ren's scale; his walk speed = stride-based estimate (his contacts walk in place)
-        g = A.analyze(A.load_action("guard", "walk"))["metrics"]["walk"]
+    if a.demo:   # the guard patrols in the playtests; scale and any travel override come from annotations/_settings.json
         export("guard", "idle")       # scale from annotations/_settings.json (guard's is unconfirmed)
         export("guard", "eating")
         export("guard", "ladder_up")
-        o = export("guard", "walk", travel_override=round(g["stride_based_travel_px"], 2))
-        print(f"guard/walk: travel {o['frames'][0]['travel_px']} px/frame (stride-based; the drawings themselves walk in place, so it slides)")
+        o = export("guard", "walk")   # travel: contact-derived unless annotations/_settings.json travel_overrides says otherwise
+        print(f"guard/walk: travel {o['frames'][0]['travel_px']} px/frame" + (f" (OVERRIDE: {o['travel_override']['reason'][:60]}...)" if o.get("travel_override") else " (contact-derived)"))
     for c, ac in todo:
         o = export(c, ac)
         tr = [f["travel_px"] for f in o["frames"]]

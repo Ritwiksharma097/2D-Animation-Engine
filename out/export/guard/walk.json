@@ -14,6 +14,11 @@
  "scale": 0.4777,
  "scale_confirmed": false,
  "scale_source": "ASSUMED: same as Ren (both drawn on 640x576 cells at a similar figure height). Owner to set.",
+ "travel_override": {
+  "px_per_frame": 37.21,
+  "confirmed": false,
+  "reason": "PLACEHOLDER speed for a rejected walk: the redraw spec's travel (specs/guard_walk.json). His drawings walk in place, so contact-derived travel (~0) barely moves him and with this speed his feet slide. Remove to go back to contact-derived travel."
+ },
  "loop_mode": "loop",
  "facing": "right",
  "travel_mode": "constant",
@@ -30,7 +35,7 @@
     124
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 336.0,
@@ -60,7 +65,7 @@
     123
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 374.0,
@@ -90,7 +95,7 @@
     123
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "foot_l": {
      "x": 385.7,
@@ -119,7 +124,7 @@
     122
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 353.0,
@@ -149,7 +154,7 @@
     118
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "foot_l": {
      "x": 360.9,
@@ -178,7 +183,7 @@
     122
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 346.0,
@@ -207,7 +212,7 @@
     122
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 329.0,
@@ -242,7 +247,7 @@
     117
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 330.0,
@@ -278,7 +283,7 @@
     117
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 336.0,
@@ -313,7 +318,7 @@
     116
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 333.0,
@@ -348,7 +353,7 @@
     115
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 339.0,
@@ -377,7 +382,7 @@
     115
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 306.0,
@@ -412,7 +417,7 @@
     117
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 360.0,
@@ -441,7 +446,7 @@
     116
    ],
    "duration_ms": 83.3,
-   "travel_px": 21.89,
+   "travel_px": 37.21,
    "contacts": {
     "heel_l": {
      "x": 365.0,

@@ -14,6 +14,7 @@
  "scale": 0.4777,
  "scale_confirmed": false,
  "scale_source": "ASSUMED: same as Ren (both drawn on 640x576 cells at a similar figure height). Owner to set.",
+ "travel_override": null,
  "loop_mode": "once",
  "facing": "right",
  "travel_mode": "none",

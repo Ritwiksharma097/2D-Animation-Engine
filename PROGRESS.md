@@ -499,6 +499,32 @@ Open owner decisions (not decided here; each lives in one place, listed in
   format; not verifiable without Krita). Krita itself was never run here, so the import / render steps
   in KRITA_STEPS.md are from Krita's documented menus and untested.
 
+# Phase 5
+
+| Step | State |
+| --- | --- |
+| 23. Owner-PC fixes + new Ren reactions | done |
+| 24. Levels and navigation | not started |
+| 25. Interactions and guard AI | not started |
+| 26. Mechanics sandbox | not started |
+| 27. Robustness and packaging | not started |
+| 28. ENGINE.md | not started |
+
+## Step 23 notes
+
+- `_settings.json` `travel_overrides` (per action, cell px/frame, `confirmed`, `reason`);
+  `settings.travel_override()`; `export.py` applies it and records `travel_override` in the export
+  (the hard-coded stride-based guard speed in phase 4 is gone). Guard walk: 37.21 (his spec's
+  travel), unconfirmed; listed under `open_decisions`. In the cloud the guard demo walked him at
+  125 px/s before this change, so I could not reproduce the owner's 20 s; likely an export without
+  the override. Runtime: `overrideSliding` + red "travel override: feet slide N px" label in
+  `drawDebug`; Node test 9/9.
+- Six Ren reactions analysed (`analyze.py --all`: 25 actions, 0 skipped) and region-checked;
+  REPORT.md section written after looking at the region overlay, the identity sheets of happy,
+  caught_game_over, ladder_up and the interact contact sheet.
+- `annotations/ren/interact.json`: `hand_r` per drawing 3-8 (lowest skin pixel of the front hand),
+  planted on the ground in 5-6; `pickup` event at drawing 5 (exported as frame index 4, with the point).
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -544,7 +570,9 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 4 steps 18-22 are done. Suggested next steps, in order:
+Phase 5: next is step 24 (levels and navigation).
+
+Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,
    `guard_demo_checks.py`, `play_checks.py`, `node --test runtime/test/runtime.test.mjs`.
 2. Try the Krita round trip once in Krita (KRITA.md) with the Ren in-betweens pack; fix the steps

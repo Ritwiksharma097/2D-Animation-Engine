@@ -200,6 +200,9 @@ export class Character {
     return worst;
   }
 
+  /** True while walking on a clip whose travel is an override from settings and the planted feet have drifted. */
+  get overrideSliding() { return !!(this.clip.travel_override || this.travelOverride !== null) && this.drift > 0.5; }
+
   stepTravel() {
     const f = this.clip.frames[this.k];
     return (this.travelOverride ?? f.travel_px) * this.clip.scale;
@@ -280,6 +283,10 @@ export class Character {
       if (c.state === "planted") { ctx.fillStyle = "#1baf7a"; ctx.fill(); } else { ctx.strokeStyle = "#eb6834"; ctx.lineWidth = 1.5; ctx.stroke(); }
     }
     if (this.state === "walk") for (const p of Object.values(this.pins)) { ctx.fillStyle = "#c81e28"; ctx.fillRect(p.x - 2, p.y - 10, 4, 14); }
+    if (this.state === "walk" && this.overrideSliding) {   // a settings travel override (not contact-derived) makes the feet slide
+      ctx.fillStyle = "#c81e28"; ctx.font = "bold 12px system-ui";
+      ctx.fillText(`travel override: feet slide ${this.drift.toFixed(0)} px`, this.x - 70, this.y + 16);
+    }
   }
 }
 

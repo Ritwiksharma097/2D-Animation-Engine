@@ -35,3 +35,8 @@ def set_game_scale(character: str, value: float, confirmed: bool, source: str = 
     doc.setdefault("characters", {})[character] = {"game_scale": float(value), "confirmed": bool(confirmed), "source": source}
     save(doc)
     return doc
+
+
+def travel_override(character: str, action: str) -> dict | None:
+    """Per-action constant travel (cell px per frame) that replaces contact-derived travel, or None."""
+    return load().get("travel_overrides", {}).get(f"{character}/{action}")

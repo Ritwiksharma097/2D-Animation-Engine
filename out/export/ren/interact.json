@@ -1,0 +1,324 @@
+{
+ "format": "workbench-export/1",
+ "character": "ren",
+ "action": "interact",
+ "image": "interact.png",
+ "cell_size": [
+  640,
+  576
+ ],
+ "anchor": [
+  320.0,
+  535.0
+ ],
+ "scale": 0.4777,
+ "scale_confirmed": true,
+ "scale_source": "manifest game_scale_in_old_demos (the scale the owner saw in the old demos)",
+ "travel_override": null,
+ "loop_mode": "once",
+ "facing": "right",
+ "travel_mode": "none",
+ "frames": [
+  {
+   "rect": [
+    782,
+    0,
+    203,
+    428
+   ],
+   "offset": [
+    227,
+    109
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "01.png",
+   "entry": 0
+  },
+  {
+   "rect": [
+    1471,
+    0,
+    285,
+    378
+   ],
+   "offset": [
+    236,
+    155
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "02.png",
+   "entry": 1
+  },
+  {
+   "rect": [
+    0,
+    433,
+    280,
+    341
+   ],
+   "offset": [
+    232,
+    192
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {
+    "hand_r": {
+     "x": 448.0,
+     "y": 446.0,
+     "state": "free"
+    }
+   },
+   "source": "03.png",
+   "entry": 2
+  },
+  {
+   "rect": [
+    280,
+    433,
+    288,
+    297
+   ],
+   "offset": [
+    187,
+    236
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {
+    "hand_r": {
+     "x": 420.0,
+     "y": 513.0,
+     "state": "free"
+    }
+   },
+   "source": "04.png",
+   "entry": 3
+  },
+  {
+   "rect": [
+    1132,
+    433,
+    285,
+    266
+   ],
+   "offset": [
+    191,
+    267
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {
+    "hand_r": {
+     "x": 412.0,
+     "y": 522.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "05.png",
+   "entry": 4
+  },
+  {
+   "rect": [
+    846,
+    433,
+    286,
+    269
+   ],
+   "offset": [
+    191,
+    264
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {
+    "hand_r": {
+     "x": 412.0,
+     "y": 522.0,
+     "state": "planted",
+     "surface": "ground"
+    }
+   },
+   "source": "06.png",
+   "entry": 5
+  },
+  {
+   "rect": [
+    568,
+    433,
+    278,
+    297
+   ],
+   "offset": [
+    208,
+    237
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {
+    "hand_r": {
+     "x": 420.0,
+     "y": 463.0,
+     "state": "free"
+    }
+   },
+   "source": "07.png",
+   "entry": 6
+  },
+  {
+   "rect": [
+    1756,
+    0,
+    260,
+    362
+   ],
+   "offset": [
+    230,
+    168
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {
+    "hand_r": {
+     "x": 413.0,
+     "y": 358.0,
+     "state": "free"
+    }
+   },
+   "source": "08.png",
+   "entry": 7
+  },
+  {
+   "rect": [
+    1225,
+    0,
+    246,
+    405
+   ],
+   "offset": [
+    236,
+    129
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "09.png",
+   "entry": 8
+  },
+  {
+   "rect": [
+    985,
+    0,
+    240,
+    416
+   ],
+   "offset": [
+    232,
+    124
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "10.png",
+   "entry": 9
+  },
+  {
+   "rect": [
+    0,
+    0,
+    195,
+    433
+   ],
+   "offset": [
+    222,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "11.png",
+   "entry": 10
+  },
+  {
+   "rect": [
+    195,
+    0,
+    196,
+    433
+   ],
+   "offset": [
+    221,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "12.png",
+   "entry": 11
+  },
+  {
+   "rect": [
+    391,
+    0,
+    192,
+    432
+   ],
+   "offset": [
+    224,
+    108
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "13.png",
+   "entry": 12
+  },
+  {
+   "rect": [
+    583,
+    0,
+    199,
+    431
+   ],
+   "offset": [
+    224,
+    109
+   ],
+   "duration_ms": 83.3,
+   "travel_px": 0.0,
+   "contacts": {},
+   "source": "14.png",
+   "entry": 13
+  }
+ ],
+ "status_in_manifest": "unreviewed",
+ "suspect_flags": [
+  "baseline_jitter",
+  "baseline_off",
+  "few_distinct",
+  "height_drift",
+  "near_duplicate",
+  "out_of_order",
+  "proportion_bulk",
+  "proportion_head",
+  "scale_drift",
+  "uneven_jump",
+  "uneven_overall",
+  "uneven_stall"
+ ],
+ "events": {
+  "pickup": {
+   "frame": 4,
+   "point": [
+    412,
+    522
+   ],
+   "note": "first drawing where the reaching hand is within ~8 px of the ground (lowest skin pixel of the front hand); the old demo removed the apple later, at 0.58 s (about drawing 7, hand already rising)"
+  }
+ }
+}
