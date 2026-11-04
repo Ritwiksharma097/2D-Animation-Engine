@@ -181,3 +181,95 @@ Browser (Playwright screenshots, looked at): annotated keypose moving at 41.9 px
 - The guard's identity reference is concept art at a different size and pose, so size and proportion
   comparisons for the guard are weak.
 - Only one action (Ren keypose) was annotated, by me, not by the owner.
+
+# Phase 2 results
+
+Images are in `out/report_examples/phase2/`. All the contacts below were placed by me (the cloud
+assistant), not the owner. Each section says how they were made.
+
+## Annotated vs heuristic walks (step 11)
+
+Contacts for the guard walk and Ren's fourteen walk come from the drawings themselves:
+- **Heel and toe points:** the columns of each boot that touch the drawn floor line give heel and toe
+  points.
+- **Left vs right:** I checked the labels by eye on a marked contact sheet. For Ren, the labels follow
+  the walk phase: passing frames 4 and 11 split the cycle. For the guard, **the same leg is drawn in
+  front in every frame**; he never swaps legs. So his front foot is `l` throughout.
+- **Ren's 4-pose walk:** annotated by hand in phase 1.
+
+| cell px per loop | heuristic slide (lower bound) at the old speed | annotated slide at the old speed | travel implied by the annotated contacts, per drawing | slide left with that travel |
+|---|---|---|---|---|
+| guard walk (old speed unknown; 8.8 used) | ≥ 115 | 302 | -3.5, -3, 18, -11, ?, 17, -5, -4, -1.5, -6, 33, **-54**, -5, -3 (mean -2.2) | 77 |
+| Ren fourteen (old 12.0) | ≥ 251 | **574** | 0.5, 1, **111, 65**, -16.5, 18, -5, -5, -5, **101, 70**, -10, 17.5, 0 (mean 24.5) | 128 |
+| Ren 4-pose (old 41.9) | ≥ 127 | 189 | 98, 70, 108, 81 (mean 89) | 0 |
+
+- **The heuristic was right about which walks slide, and too optimistic about how much.** By
+  construction its numbers are lower bounds, and the annotated slides are 1.5–2.6x larger. Its
+  verdicts all held: the guard shuffles in place, both rejected walks slide, and the approved walk
+  is the only one that can be made slide-free.
+- **Fourteen:** the annotated travel is the clearest evidence for the owner's "uneven motion,
+  sliding". The drawings put almost all the forward motion in the two passing steps (3→5 and
+  10→12). In between, the planted feet stand still or move *forward* in the cell (negative travel).
+  So constant speed is impossible (578 px of slide at the best constant 14 px/frame). Even
+  per-drawing travel leaves 128 px, because in some steps the two "planted" feet move relative to
+  each other, so one of them must slip.
+- **Guard:** the contacts say he walks in place (mean −2.2 px per drawing) with one backward lurch
+  of 54 px (12→13). That confirms phase 1's "feet never move backward" and adds the leg-swap
+  finding: he has no alternating gait at all.
+- **Ren 4-pose:** the only one whose contacts give a consistent, slide-free travel. That travel is
+  uneven, though (70–108 px per drawing).
+
+![fourteen annotated strip](out/report_examples/phase2/ren_fourteen_annotated_strip.png)
+![guard annotated strip](out/report_examples/phase2/guard_walk_annotated_strip.png)
+
+## Ledges and ladders (step 8)
+
+- **Ren climb_up / climb_down (approved, "perfect").** I rebuilt the old demo's scene from the
+  manifest (the cap thickness was not recorded; I assumed 8 game px). On its straight path the tool
+  disagrees with the owner:
+  - Frames 2–7: the feet drawn planted leave the floor by 8–44 game px.
+  - Frames 8–12: the planted hand and knee sit 6–22 game px *below* the ledge top.
+
+  With a path derived from the contacts, the drawings fit the 197 cell px ledge much better. I
+  reported this rather than tuned for it. In a side view, part of the "clipping" is the shin in
+  front of the ledge face, so that flag over-reports. The automatic ledge fitter failed calibration
+  (it chose 32 px instead of 197) and is not used for conclusions. The heights implied by planted
+  hand–foot pairs are what worked.
+- **Guard climb_up:** the best fit is a ledge of about 90 cell px (a quarter of his height). His
+  hands land on it in frames 6–8 and he stands on it from frame 9, with contacts within 9.5 px. The
+  tall reach in frames 1–4 (about 230 px) then goes into the air above it. Reading that reach as a
+  grab on a 230 px ledge fits worse. His figure also sinks 57 px inside the cell during the
+  climb, so the frames aren't floor-aligned.
+- **Guard climb_down:** on that ledge with a straight path it clips (up to 44 px) and floats
+  (frames 7, 10, 11). It has no contacts annotated.
+- **Guard ladder_up:** the ladder geometry is my assumption. The firm finding: his feet stay at the
+  same cell height (y 526–530) in all 14 frames. Feet that never step up relative to the body must
+  slide on the rungs at any climbing speed, which fits the owner's "bad".
+
+![Ren climb on the old path](out/report_examples/phase2/ren_climb_up_scene.png)
+![Ren climb on the contact-derived path](out/report_examples/phase2/ren_climb_up_scene_contacts.png)
+![guard climb best fit](out/report_examples/phase2/guard_climb_up_scene.png)
+![guard ladder](out/report_examples/phase2/guard_ladder_up_scene.png)
+
+## Per-region identity (step 9)
+
+- **Ren jump** (accepted, "look differs"): colour shifts in nearly every region (hood 6.7, tunic 6.8,
+  hair 5.8, face 5.1 dE, against 0.7–2.9 for the approved walk). This agrees with the owner.
+- **Flatboy:** hair 1.51x and face 1.21x the reference, sleeves 8.9 dE. Agrees with "character
+  changed".
+- **Fourteen:** looks like the approved walk again. The owner's "hood/hair/colour changes" are not
+  measurable in this set.
+- **Ren climb:** the face is mostly hidden and the sleeves differ (older style). Agrees.
+
+![Ren regions](out/report_examples/phase2/ren_regions.png)
+
+## Edits and export (steps 7 and 10)
+
+- The guard idle's calmer timing (14 frames → 6 held poses, 1.17 s → 2.67 s) and snap-to-ground for
+  the idle and walk are stored as edits, never in assets. Before/after images:
+  `out/report_examples/phase2/guard_*_before_after.png`. Whether they look right is for the owner:
+  `python workbench/serve.py`, then
+  http://localhost:8000/workbench/#a=guard/idle&b=guard/idle&b.raw=1&play=1
+- The playtest (`out/export/play.html`) uses only the exports. Its walk measured 0.00 game px of
+  planted-foot drift, against 31.6 with the old constant speed. **The 4-drawing walk looks choppy
+  whatever the travel.**

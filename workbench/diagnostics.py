@@ -255,7 +255,7 @@ def world_strip(act, report, travel=None, label="", loops=2):
     scale_note = f" = {total * act.game_scale:.0f} game px" if act.game_scale else ""
     v_desc = f"{np.mean(per_frame):.1f} px/frame" + (" (per-frame list)" if isinstance(travel, list) else "")
     hd = header(W, [title_line(report) + f"  -  world-space strip {label}",
-                    f"Travel {v_desc}; {loops} loop(s) left to right" + (f"; full figure drawn every {every} frames (numbers on top), feet zoom shows all" if every > 1 else "") + ". Each step: the planted foot pair that slides least. "
+                    f"Travel {v_desc}; {loops} loop(s) left to right" + (f"; full figure drawn every {every} frames (numbers on top), feet zoom shows all" if every > 1 else "") + f". Each step: {'the worst of the shared planted contacts (annotated)' if contacts_named(contacts) else 'the planted foot pair that slides least (heuristic)'}. "
                     f"Total slide {'>= ' if not contacts_named(contacts) else ''}{total:.0f} cell px{scale_note} over {len(seq) - 1} steps.",
                     f"Bars below = how far the planted foot moves on the ground in that step (red > {lim:.1f}px). Zero-length = foot stays put."], 13)
     # feet zoom panel at 2x

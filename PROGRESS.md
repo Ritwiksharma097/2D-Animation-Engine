@@ -127,7 +127,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | 8. Ledge / ladder props | done (findings below; guard fits are heuristic) |
 | 9. Per-region identity | done (seeded from the reference; no click UI) |
 | 10. Game export + playable page | done |
-| 11. More annotations | not started |
+| 11. More annotations | done |
 
 ## Step 6 notes
 
@@ -262,6 +262,21 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 - Not done: walking left uses the same frames mirrored in code (not an exported mirrored action);
   no climb_down in the demo; the jump's horizontal timing is hand-set in the page, not exported.
 
+## Step 11 notes (more annotations)
+
+- `annotations/guard/walk.json` (also keeps snap_to_ground) and
+  `annotations/ren/rejected_walk_fourteen.json`: heel/toe contacts derived from each drawing (boot
+  columns touching the drawn floor; heel if the touching run reaches the back 35% of the boot, toe
+  if it reaches the front 35%), travel `from_contacts`. Labelling L/R: first attempt by nearest
+  position swapped the legs at the passing frames (seen on the marked sheet); replaced by phase
+  labelling for Ren (passing frames 4, 11). For the guard I saw that the same leg is in front in
+  every drawing, so front = l throughout. The deriving script is not in the repo (it was a one-off
+  in the session scratchpad); its rules are written here.
+- Results and the heuristic vs annotated table are in REPORT.md "Phase 2 results". The heuristic
+  under-reports slide by 1.5-2.6x but ranks the walks the same.
+- Looked at: both annotated world strips (in `out/report_examples/phase2/`). Fixed the strip header,
+  which said "least" for annotated contacts (it shows the worst shared contact).
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -286,7 +301,13 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 2: next is step 11 (annotate guard walk + Ren fourteen; compare in REPORT.md).
+Phase 2 steps 6-11 are done. Suggested next steps, in order:
+1. On Windows: `python -m pytest workbench/tests`, `python workbench/tests/ui_checks.py`,
+   `scene_checks.py`, `play_checks.py`; then look at the guard idle before/after and play.html with the owner.
+2. Ask the owner which guard climb reading is intended (90 px ledge vs 230 px reach) and about
+   the old Ren climb path (the tool says the feet float in frames 2-7).
+3. Click-to-seed identity regions in the page (not built); a face-specific check (shape, not colour).
+4. Export climb_down and a mirrored walk; move the jump's timing into the export.
 
 Phase 1 follow-ups (older list):
 1. On the Windows PC: `pip install -r requirements.txt`, `python -m pytest workbench/tests`,
