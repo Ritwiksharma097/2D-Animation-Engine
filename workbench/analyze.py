@@ -107,14 +107,16 @@ def parse_travel(old_timing: str | None) -> float | None:
 
 
 def load_action(character: str, action: str, travel: float | None = None,
-                use_annotations: bool = True) -> Action:
+                use_annotations: bool = True, doc: dict | None = None) -> Action:
     man = load_manifest()
     ch = man["characters"][character]
     info = ch["actions"][action]
     src = ASSETS / info["dir"]
     ann_path = ANNOTATIONS / character / f"{action}.json"
     ann = None
-    if use_annotations and ann_path.exists():
+    if doc is not None:          # an unsaved document (e.g. posted by the page)
+        ann = doc
+    elif use_annotations and ann_path.exists():
         ann = json.loads(ann_path.read_text(encoding="utf-8"))
     import edits as ed
     ground_y = float((ann or {}).get("ground_anchor", {}).get("y", info.get("ground_y", man["conventions"].get("ground_y", 535))))

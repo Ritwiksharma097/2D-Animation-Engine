@@ -81,3 +81,14 @@ python workbench/analyze.py guard idle
 ```
 
 Compare in the browser: http://localhost:8000/workbench/#a=guard/idle&b=guard/idle&b.raw=1&play=1
+
+## Scenes: ledges and ladders
+
+```
+python workbench/props.py ren climb_up                   # check against the stored scene -> scene.png
+python workbench/props.py ren climb_up --path contacts   # path derived from planted contacts
+python workbench/tests/scene_checks.py                   # page screenshots + live edit check
+```
+
+In the page choose preview "scene". Ledge height / front and rung spacing are editable (live with
+serve.py). New contacts get the surface chosen next to "on".

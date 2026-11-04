@@ -1,0 +1,301 @@
+{
+ "format": "workbench-action/1",
+ "character": "guard",
+ "action": "ladder_up",
+ "source_dir": "guard/ladder_up",
+ "cell_size": [
+  640,
+  576
+ ],
+ "loop_mode": "loop",
+ "default_duration_ms": 83.3,
+ "ground_anchor": {
+  "y": 535
+ },
+ "facing": "right",
+ "frames": [
+  {
+   "file": "01.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 264,
+     "y": 530,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 410.3979238754325,
+     "y": 117.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "02.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 287,
+     "y": 529,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 409.2529411764706,
+     "y": 156.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "03.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 287,
+     "y": 529,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 395.91150442477874,
+     "y": 165.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "04.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 291,
+     "y": 530,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 411.1727272727273,
+     "y": 154.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "05.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 302,
+     "y": 529,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 333.8152173913044,
+     "y": 160.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "06.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 296,
+     "y": 528,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 372.2256097560976,
+     "y": 155.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "07.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 287,
+     "y": 526,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 426.211038961039,
+     "y": 118.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "08.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 290,
+     "y": 529,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 320.0,
+     "y": 135.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "09.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 289,
+     "y": 529,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 391.25714285714287,
+     "y": 166.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "10.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 291,
+     "y": 529,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 335.14444444444445,
+     "y": 167.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "11.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 292,
+     "y": 530,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 405.5027027027027,
+     "y": 167.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "12.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 292,
+     "y": 530,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 407.06615776081424,
+     "y": 168.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "13.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 287,
+     "y": 529,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 398.7487562189055,
+     "y": 165.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  },
+  {
+   "file": "14.png",
+   "duration_ms": 83.3,
+   "contacts": {
+    "foot_l": {
+     "x": 284,
+     "y": 529,
+     "state": "planted",
+     "surface": "ladder_rung"
+    },
+    "hand_r": {
+     "x": 400.73501577287067,
+     "y": 117.0,
+     "state": "planted",
+     "surface": "ladder_rung"
+    }
+   }
+  }
+ ],
+ "scene": {
+  "units": "cell px",
+  "source": "assumed ladder: rung spacing 89px (0.22 x figure height), rails 160px apart, rise 2 rungs per 14-frame loop",
+  "floor_y": 1000.0,
+  "anchor": [
+   320,
+   530
+  ],
+  "props": [
+   {
+    "type": "ladder",
+    "id": "ladder",
+    "x_left": 864,
+    "x_right": 1024,
+    "top_y": 466,
+    "bottom_y": 1000.0,
+    "first_rung_y": 1000.0,
+    "rung_spacing": 89
+   }
+  ],
+  "path": {
+   "type": "vertical_loop",
+   "from": [
+    1000,
+    1000
+   ],
+   "rise_per_frame": 12.714285714285714,
+   "cycles": 1
+  }
+ },
+ "contacts_note": "Heuristic contacts: foot = lowest cluster, hand = top-most glove, both assumed gripping/standing on rungs."
+}

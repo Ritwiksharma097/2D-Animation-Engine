@@ -124,7 +124,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | --- | --- |
 | 6. Close phase 1 gaps | done |
 | 7. Non-destructive edit layer | done |
-| 8. Ledge / ladder props | not started |
+| 8. Ledge / ladder props | done (findings below; guard fits are heuristic) |
 | 9. Per-region identity | not started |
 | 10. Game export + playable page | not started |
 | 11. More annotations | not started |
@@ -172,6 +172,54 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
   http://localhost:8000/workbench/#a=guard/idle&b=guard/idle&b.raw=1&play=1 (left edited, right
   original, synced play) and the same with `guard/walk`.
 
+## Step 8 notes (props and scenes)
+
+- `workbench/props.py`: floor / ledge (front edge, height, cap) / ladder (rails, rung spacing)
+  geometry, anchor paths (`line`, `points`, `vertical_loop`, `from_contacts`), checks and
+  `scene.png` (one panel per frame over the props). `python workbench/props.py <c> <a>` uses the
+  document's scene; `--path contacts` derives the path from planted contacts (`scene_contacts.png`);
+  `--fit ledge` is a grid search (see failure below). Page: preview "scene" (drawn from serve.py's
+  `POST /api/scene`, or the stored `scene_check.json` without the server), ledge height / front /
+  rung spacing inputs that re-check live, and a surface picker for new contacts.
+  `workbench/tests/scene_checks.py` screenshots 4 scenes and asserts a live edit (Ren ledge
+  197 -> 260 px moves the frame-10 hand from 41.9 to 105.2 px off the top): PASS. Screenshots in
+  `out/report_examples/phase2/2[1-4]_*.png` were looked at.
+- **Calibration, Ren climb_up/climb_down (approved, "perfect").** Old scene rebuilt from the
+  manifest (game px / 0.4777; cap thickness 8 game px assumed). climb_down is pixel-identical to
+  climb_up reversed, so one set of contacts (mine, `annotations/ren/climb_*.json`) serves both.
+  On the old straight path the tool flags the approved climb: feet drawn planted leave the floor
+  by 16/31/47/62/77/91 cell px in frames 2-7 (8-44 game px), frames 3-4 touch nothing, and in
+  frames 8-12 the planted hand / knee sit 12-46 px below the ledge top (body "clips" 9-45 px).
+  Looked at `ren_climb_up_scene.png`: true, it is visible. Not tuned. Part of the clipping is the
+  knee/shin overlapping the ledge front, which in a side view can read as the leg in front of the
+  ledge, so `body_clips_prop` over-reports for side views.
+  With the path derived from contacts (`ren_climb_up_scene_contacts.png`) the drawings fit the real
+  197 px ledge reasonably: feet stay planted through frame 7 and hands land on the top in 8-12,
+  but the reaching hand in 2-6 then goes 8-20 px into the ledge front, the knee in 10-11 is drawn
+  36-46 px below the palm (can't both be on the top), and from frame 12 no contact is shared so x
+  has to be pushed onto the ledge (+52 px jump for the hand at 9->10). My first annotation also had
+  the trailing foot "planted" in 8-12; the implied ledge heights (17-72 px) showed it can't be, and
+  it is now free.
+- **Fitter calibration failed:** `--fit ledge` (cost = clipping + unsupported frames) picks a 32 px
+  ledge for Ren instead of 197: lower is always "better" for that cost. Kept as a finding; it is
+  not used for conclusions. What does encode height is a frame with a planted hand and foot.
+- **Guard climb_up (unjudged).** Heuristic contacts (lowest foot cluster; front-most glove, which
+  hits the moustache in 9, 10, 12, 13, so no hand there). Implied ledge height (foot y - hand y):
+  222-243 px in the reach frames 1-4, 71-105 px when the hands come down in 6-8. Two readings,
+  both with contact-derived paths: A = 230 px ledge grabbed during the reach: frame 5 contacts
+  39.5 px off, clipping 22 px deep; B = 90 px ledge (~0.25 x his height), reach is a wind-up, hands
+  on the top in 6-8: worst contact 9.5 px off, clipping 16 px in frame 6. B is stored
+  (`annotations/guard/climb_up.json`, `guard_climb_up_scene.png`; A in `..._scene_A.png`).
+  Either way his figure sinks 57 px inside the cell over the climb (lowest pixel 476 -> 533), so the
+  frames are not floor-aligned; a fixed path can't fix that, contact-derived paths can.
+- **Guard climb_down:** on the B ledge with a straight path (heuristic only): clipping up to 44 px
+  (frames 3, 6, 8, 9) and frames 7, 10, 11 touch nothing. No contacts annotated.
+- **Guard ladder_up (rejected):** ladder geometry is assumed (rungs 89 px, rails 160 px apart,
+  2 rungs per loop). Robust part: his lowest foot stays at cell y 526-530 in all 14 frames, so the
+  feet never step up relative to the body; at any climbing speed planted feet slide off the rungs
+  (9-38 px here). The top-most-glove hand detector is unreliable (lands on the helmet in some
+  frames), so hand results there are weak.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -196,7 +244,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 2: next is step 8 (ledge/ladder props, calibrate on ren/climb_up + climb_down).
+Phase 2: next is step 9 (per-region identity).
 
 Phase 1 follow-ups (older list):
 1. On the Windows PC: `pip install -r requirements.txt`, `python -m pytest workbench/tests`,

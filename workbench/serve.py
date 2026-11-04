@@ -71,6 +71,16 @@ class Handler(SimpleHTTPRequestHandler):
             except Exception as e:  # report the failure to the page
                 return self._json(500, {"error": repr(e)})
             return self._json(200, {"summary": rep["summary"]})
+        if u.path == "/api/scene":
+            import props
+            try:
+                doc = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+                act = analyze.load_action(doc["character"], doc["action"], doc=doc)
+                res = props.check_action(act, doc["scene"])
+            except Exception as e:
+                return self._json(400, {"error": repr(e)})
+            return self._json(200, {"frames": [{k: f[k] for k in ("frame", "offset", "clip_px", "clip_at", "touching", "contacts")} for f in res["frames"]],
+                                    "flags": res["flags"], "surfaces": props.surfaces(doc["scene"]), "solids": props.solids(doc["scene"])})
         if u.path == "/api/suggest-idle":
             import contextlib
             import io

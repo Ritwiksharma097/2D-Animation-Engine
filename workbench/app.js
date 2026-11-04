@@ -63,6 +63,7 @@ class Viewer {
       img: await (imgs[f.file] ??= loadImage(`${ASSETS}${this.info.dir}/${f.file}`)),
     })));
     this.edits = { mirror: !!this.ann?.mirror, snap: !!this.ann?.snap_to_ground };
+    this.scene = this.ann?.scene ? structuredClone(this.ann.scene) : null; this.sceneRes = null;
     this.baselines = {};
     $(this.el, ".loop-mode").value = this.ann?.loop_mode || (this.info.loop ? "loop" : "once");
     this.cell = this.info.cell_size || manifest.conventions.cell_size;
@@ -78,7 +79,68 @@ class Viewer {
     this.tintCache.clear(); this.dirty = false;
     this.rebuildSeq(); this.pos = 0; this.resetWorld();
     $(this.el, ".edits-note").textContent = this.ann?.edits_note || "";
-    this.renderTimeline(); this.renderFlags(); this.renderContacts(); this.resize(); this.draw();
+    this.renderTimeline(); this.renderFlags(); this.renderContacts();
+    this.syncSceneInputs(); if (this.scene) await this.checkScene(true);
+    this.resize(); this.draw();
+  }
+
+  // ---------------- scene (props.py does the geometry; the page asks serve.py or reads the stored check)
+  syncSceneInputs() {
+    $(this.el, ".scene-row").style.display = this.scene ? "" : "none";
+    const led = this.scene?.props?.find(p => p.type === "ledge"), lad = this.scene?.props?.find(p => p.type === "ladder");
+    $(this.el, ".s-height").value = led ? +(this.scene.floor_y - led.top_y).toFixed(1) : "";
+    $(this.el, ".s-front").value = led ? +led.front_x.toFixed(1) : ""; $(this.el, ".s-height").disabled = $(this.el, ".s-front").disabled = !led;
+    $(this.el, ".s-rung").value = lad ? lad.rung_spacing : ""; $(this.el, ".s-rung").disabled = !lad;
+  }
+
+  async checkScene(initial) {
+    try {
+      const r = await fetch("/api/scene", { method: "POST", body: JSON.stringify(this.toDoc()) });
+      const j = await r.json(); if (!r.ok) throw new Error(j.error);
+      this.sceneRes = j;
+    } catch (e) {
+      try { this.sceneRes = await getJSON(`${OUT}${this.char}/${this.action}/scene_check.json`); if (!initial) msg("Live scene check needs serve.py; showing the stored check."); }
+      catch (e2) { this.sceneRes = null; msg("No scene check: run python workbench/props.py " + `${this.char} ${this.action}`); }
+    }
+    $(this.el, ".scene-flags").textContent = (this.sceneRes?.flags || []).map(f => f.code + ": " + f.message).join("\n") || (this.sceneRes ? "no scene flags (not a pass)" : "");
+    $(this.el, ".scene-flags").style.whiteSpace = "pre-line";
+    this.resize(); this.draw();
+  }
+
+  sceneBox() {
+    const fr = this.sceneRes.frames, [w, h] = this.cell;
+    const x0 = Math.min(...fr.map(f => f.offset[0])) - 20, x1 = Math.max(...fr.map(f => f.offset[0])) + w + 20;
+    const y0 = Math.min(...fr.map(f => f.offset[1])) - 20, y1 = this.scene.floor_y + 40;
+    return { x0, y0, x1, y1, k: 900 / (x1 - x0) };
+  }
+
+  drawScene() {
+    const ctx = this.ctx, b = this.sceneBox(), k = b.k;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, this.cv.width, this.cv.height);
+    ctx.setTransform(k, 0, 0, k, -b.x0 * k, -b.y0 * k);
+    for (const [x0, y0, x1, y1] of this.sceneRes.solids) {
+      const a0 = Math.max(x0, b.x0), a1 = Math.min(x1, b.x1), c0 = Math.max(y0, b.y0), c1 = Math.min(y1, b.y1);
+      if (a0 < a1 && c0 < c1) { ctx.fillStyle = "#d6ccba"; ctx.fillRect(a0, c0, a1 - a0, c1 - c0); ctx.strokeStyle = "#968a6e"; ctx.lineWidth = 1 / k; ctx.strokeRect(a0, c0, a1 - a0, c1 - c0); }
+    }
+    for (const sfc of this.sceneRes.surfaces) if (sfc.kind.startsWith("ladder")) {
+      ctx.strokeStyle = "#785a32"; ctx.lineWidth = (sfc.kind === "ladder_rail" ? 6 : 4) / k / 2;
+      ctx.beginPath(); ctx.moveTo(...sfc.a); ctx.lineTo(...sfc.b); ctx.stroke();
+    }
+    const kept = [...new Set(this.seq)], pi = kept.indexOf(this.idx), fr = this.sceneRes.frames[pi];
+    if (!fr) return;
+    const t = this.xf(this.idx);
+    ctx.save(); ctx.translate(fr.offset[0] + t.dx + (t.mirror ? this.cell[0] : 0), fr.offset[1] + t.dy); if (t.mirror) ctx.scale(-1, 1);
+    ctx.drawImage(this.frame.img, 0, 0); ctx.restore();
+    for (const c of fr.contacts) {
+      const ok = c.dist !== null && c.dist <= 6, r = 6 / k;
+      ctx.beginPath(); ctx.arc(c.world[0], c.world[1], r, 0, 7); ctx.lineWidth = 2 / k;
+      if (c.state === "planted") { ctx.fillStyle = ok ? COL.planted : COL.slide; ctx.fill(); ctx.strokeStyle = "#000"; ctx.stroke(); }
+      else { ctx.strokeStyle = COL.free; ctx.stroke(); }
+      ctx.fillStyle = "#000"; ctx.font = `${12 / k}px system-ui`; ctx.fillText(`${c.name}${c.state === "planted" && !ok ? ` off ${c.dist}px` : ""}`, c.world[0] + 8 / k, c.world[1] - 8 / k);
+    }
+    for (const q of fr.clip_at || []) { ctx.strokeStyle = COL.slide; ctx.lineWidth = 3 / k; ctx.beginPath(); ctx.arc(q[0], q[1], 9 / k, 0, 7); ctx.stroke(); }
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = fr.clip_px || !Object.keys(fr.touching).length ? COL.slide : "#333"; ctx.font = "13px system-ui";
+    ctx.fillText(`frame ${fr.frame}: ${fr.clip_px ? `clips ${fr.clip_px}px` : "no clipping"}; touching ${Object.keys(fr.touching).join(", ") || "NOTHING"}`, 8, 16);
   }
 
   rebuildSeq() {
@@ -236,6 +298,7 @@ class Viewer {
 
   // ---------------- drawing
   resize() {
+    if (this.mode === "scene" && this.sceneRes) { const b = this.sceneBox(); this.cv.width = 900; this.cv.height = Math.round((b.y1 - b.y0) * b.k); return; }
     const z = this.zoom;
     const w = this.mode === "moving" ? STAGE_W : this.cell[0];
     this.cv.width = Math.round(w * z); this.cv.height = Math.round(this.cell[1] * z);
@@ -262,6 +325,7 @@ class Viewer {
 
   draw() {
     if (!this.frames.length) return;
+    if (this.mode === "scene") { if (this.sceneRes) this.drawScene(); else if (!this.scene) msg("This action has no scene: add one with props.py."); return; }
     const ctx = this.ctx, z = this.zoom, moving = this.mode === "moving";
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, this.cv.width, this.cv.height);
@@ -372,7 +436,7 @@ class Viewer {
     if (!Object.keys(cs).length) { t.innerHTML = `<tr><td style="color:#888">none annotated${this.report ? " (squares = heuristic estimates)" : ""}</td></tr>`; return; }
     for (const [name, c] of Object.entries(cs)) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${name}</td><td>x ${c.x.toFixed(0)}, y ${c.y.toFixed(0)}</td>`;
+      tr.innerHTML = `<td>${name}</td><td>x ${(+c.x).toFixed(0)}, y ${(+c.y).toFixed(0)}${c.surface ? " on " + c.surface : ""}</td>`;
       const td = document.createElement("td"), sel = document.createElement("select");
       for (const s of ["planted", "free", "unknown"]) sel.add(new Option(s, s, false, s === c.state));
       sel.onchange = () => { c.state = sel.value; this.dirty = true; this.draw(); };
@@ -399,6 +463,7 @@ class Viewer {
 
   onDown(e) {
     if (this.mode !== "inplace") { msg("Switch to the in-place preview to edit contacts."); return; }
+    const surf = $(this.el, ".c-surface").value;
     this.setPlaying(false);
     const p = this.cellPoint(e);
     const near = this.nearest(p, 14 / this.zoom);
@@ -407,7 +472,7 @@ class Viewer {
     else {
       const name = $(this.el, ".c-custom").value.trim() || $(this.el, ".c-name").value;
       const q = this.fromView(this.idx, p);
-      this.frame.contacts[name] = { x: +q.x.toFixed(1), y: +q.y.toFixed(1), state: $(this.el, ".c-state").value, surface: "ground" };
+      this.frame.contacts[name] = { x: +q.x.toFixed(1), y: +q.y.toFixed(1), state: $(this.el, ".c-state").value, surface: surf };
       this.drag = name; this.dirty = true;
     }
     this.renderContacts(); this.draw();
@@ -431,6 +496,7 @@ class Viewer {
     return {
       ...extra,
       ...(this.edits.mirror ? { mirror: true } : {}), ...(this.edits.snap ? { snap_to_ground: true } : {}),
+      ...(this.scene ? { scene: this.scene } : {}),
       format: "workbench-action/1", character: this.char, action: this.action, source_dir: this.info.dir,
       cell_size: this.cell, loop_mode: this.loopMode,
       default_duration_ms: +$(this.el, ".all-ms").value || 83, ground_anchor: { y: this.groundY }, facing: "right", travel,
@@ -498,6 +564,14 @@ class Viewer {
     on(".e-drop", "change", e => { this.frame.drop = e.target.checked; edited(); });
     on(".e-mirror", "change", e => { this.edits.mirror = e.target.checked; this.tintCache.clear(); edited(); });
     on(".e-snap", "change", e => { this.edits.snap = e.target.checked; edited(); });
+    const sceneEdit = () => {
+      const led = this.scene?.props?.find(p => p.type === "ledge"), lad = this.scene?.props?.find(p => p.type === "ladder");
+      if (led) { led.top_y = this.scene.floor_y - (+$(el, ".s-height").value); const w = led.back_x - led.front_x; led.front_x = +$(el, ".s-front").value; led.back_x = led.front_x + w; }
+      if (lad) lad.rung_spacing = Math.max(5, +$(el, ".s-rung").value);
+      this.dirty = true; this.checkScene();
+    };
+    for (const s of [".s-height", ".s-front", ".s-rung"]) on(s, "change", sceneEdit);
+    on(".b-scene", "click", () => this.checkScene());
     on(".b-suggest", "click", async () => {
       try {
         const r = await fetch(`/api/suggest-idle?character=${this.char}&action=${this.action}`, { method: "POST" });

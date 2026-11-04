@@ -107,3 +107,37 @@ consecutive frames whose silhouette is within the near-duplicate threshold (3%) 
 drawing become one entry with `hold` = run length; the absorbed frames are marked `drop`. Each held
 pose lasts run length x base duration x 2, clamped to 250-1500 ms. It refuses to overwrite a
 document that already has contacts or holds.
+
+## Scenes (props and paths)
+
+`scene` in an action document places the action in a world with props. Units are the action's own
+cell px (Ren's climbs: game px / 0.4777). Checked by `workbench/props.py` and drawn by the page's
+"scene" preview.
+
+```json
+"scene": {
+  "floor_y": 1243.5,
+  "anchor": [256, 439.6],
+  "props": [
+    {"type": "ledge", "id": "ledge", "front_x": 967.1, "back_x": 1394.2, "top_y": 1046.7,
+     "cap": {"overhang": 16.7, "thickness": 16.7}},
+    {"type": "ladder", "id": "ladder", "x_left": 920, "x_right": 1080, "bottom_y": 1000,
+     "top_y": 466, "first_rung_y": 1000, "rung_spacing": 89}
+  ],
+  "path": {"type": "line", "from": [889.7, 1243.5], "to": [1063.4, 1046.7]}
+}
+```
+
+- The frame's cell is placed so its `anchor` point sits on the path. `line`: played frame k at
+  t = k/(n-1) (optional `t` list). `points`: one position per frame. `vertical_loop`: `from`, rising
+  `rise_per_frame`, for `cycles` loops (ladders). `from_contacts`: `base` is another path; y is
+  replaced per frame so planted contacts with a horizontal `surface` (`ground`, `ledge_top`) sit
+  on it, x holds shared planted contacts fixed between frames and is shifted just enough to put a
+  `ledge_top` contact over the ledge.
+- Surfaces a contact can name: `ground`, `ledge_top`, `ledge_face` (cap front/underside and body
+  face), `ladder_rung`, `ladder_rail`, or a surface id (`ledge.top`). Solids: floor, ledge cap and
+  body. Ladders are behind the character, so overlapping them is not clipping.
+- Flags: `body_clips_prop` (pixels > 4 px inside a solid), `unsupported_body` (no pixel within
+  6 px of any surface), `contact_off_surface` (planted contact > 6 px from its surface: "reaching
+  into air" for hands, "pushing off nothing" for feet), `contact_in_prop`, and
+  `planted_contact_slides` (a planted contact moves > 6 px along its surface between frames).

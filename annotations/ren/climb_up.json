@@ -1,0 +1,311 @@
+{
+ "format": "workbench-action/1",
+ "character": "ren",
+ "action": "climb_up",
+ "source_dir": "ren/climb_up",
+ "cell_size": [
+  512,
+  448
+ ],
+ "loop_mode": "once",
+ "default_duration_ms": 83.3,
+ "ground_anchor": {
+  "y": 439.6
+ },
+ "facing": "right",
+ "frames": [
+  {
+   "file": "01.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 230,
+     "y": 438,
+     "state": "planted",
+     "surface": "ground"
+    }
+   }
+  },
+  {
+   "file": "02.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 163,
+     "y": 439,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 260,
+     "y": 437,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 455,
+     "y": 247,
+     "state": "free"
+    }
+   }
+  },
+  {
+   "file": "03.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 162,
+     "y": 439,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 270,
+     "y": 436,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 438,
+     "y": 253,
+     "state": "free"
+    }
+   }
+  },
+  {
+   "file": "04.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 159,
+     "y": 438,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 251,
+     "y": 438,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 440,
+     "y": 258,
+     "state": "free"
+    }
+   }
+  },
+  {
+   "file": "05.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 157,
+     "y": 438,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "foot_r": {
+     "x": 258,
+     "y": 433,
+     "state": "free"
+    },
+    "hand_r": {
+     "x": 442,
+     "y": 256,
+     "state": "free"
+    }
+   }
+  },
+  {
+   "file": "06.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 178,
+     "y": 438,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 428,
+     "y": 246,
+     "state": "free"
+    }
+   }
+  },
+  {
+   "file": "07.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 184,
+     "y": 439,
+     "state": "planted",
+     "surface": "ground"
+    },
+    "hand_r": {
+     "x": 430,
+     "y": 238,
+     "state": "free"
+    }
+   }
+  },
+  {
+   "file": "08.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 166,
+     "y": 438,
+     "state": "free"
+    },
+    "hand_r": {
+     "x": 361,
+     "y": 367,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
+  },
+  {
+   "file": "09.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 159,
+     "y": 438,
+     "state": "free"
+    },
+    "hand_r": {
+     "x": 369,
+     "y": 366,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
+  },
+  {
+   "file": "10.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 131,
+     "y": 438,
+     "state": "free"
+    },
+    "knee_l": {
+     "x": 220,
+     "y": 426,
+     "state": "planted",
+     "surface": "ledge_top"
+    },
+    "hand_r": {
+     "x": 355,
+     "y": 421,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
+  },
+  {
+   "file": "11.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 130,
+     "y": 438,
+     "state": "free"
+    },
+    "knee_l": {
+     "x": 233,
+     "y": 425,
+     "state": "planted",
+     "surface": "ledge_top"
+    },
+    "hand_r": {
+     "x": 348,
+     "y": 421,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
+  },
+  {
+   "file": "12.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 219,
+     "y": 439,
+     "state": "free"
+    },
+    "hand_r": {
+     "x": 324,
+     "y": 421,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
+  },
+  {
+   "file": "13.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 211,
+     "y": 438,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
+  },
+  {
+   "file": "14.png",
+   "duration_ms": 110.7,
+   "contacts": {
+    "foot_l": {
+     "x": 240,
+     "y": 438,
+     "state": "planted",
+     "surface": "ledge_top"
+    }
+   }
+  }
+ ],
+ "scene": {
+  "units": "cell px of this action (game px / 0.4777)",
+  "source": "manifest old_scene; cap thickness 8 game px is an assumption (not recorded)",
+  "floor_y": 1243.46,
+  "props": [
+   {
+    "type": "ledge",
+    "id": "ledge",
+    "front_x": 967.13,
+    "back_x": 1394.18,
+    "top_y": 1046.68,
+    "cap": {
+     "overhang": 16.75,
+     "thickness": 16.75
+    }
+   }
+  ],
+  "anchor": [
+   256,
+   439.6
+  ],
+  "path": {
+   "type": "line",
+   "from": [
+    889.68,
+    1243.46
+   ],
+   "to": [
+    1063.43,
+    1046.68
+   ],
+   "timing": "played frame k at t = k/(n-1), as round(t*13) in the old demo"
+  }
+ },
+ "contacts_note": "Contacts by the cloud assistant (not the owner): feet from the drawing's own floor line, hands from skin-colour palms or fingertips, checked by eye. Frames 2-7 reaching hand marked free; planted hands/knees are expected on the ledge top; feet may be on any surface. Revised: the trailing foot in drawings 8-12 is free (hanging); its position at the cell bottom comes only from lowest-pixel alignment."
+}

@@ -84,7 +84,7 @@
     </div>
     <div class="row">
       <label>preview</label>
-      <select class="mode"><option value="inplace">in place</option><option value="moving">moving across ground</option></select>
+      <select class="mode"><option value="inplace">in place</option><option value="moving">moving across ground</option><option value="scene">scene: ledge / ladder + path</option></select>
       <label>travel</label>
       <select class="travel-mode">
         <option value="constant">constant px/frame</option>
@@ -121,6 +121,11 @@
           <label>hold</label><input class="e-hold" type="number" min="1" step="1">
           <label><input type="checkbox" class="e-drop"> drop</label></div>
         <div class="row"><span class="e-snapinfo" style="color:var(--muted)"></span></div>
+        <div class="row scene-row"><label>scene: ledge height</label><input class="s-height" type="number" step="1">
+          <label>front x</label><input class="s-front" type="number" step="1">
+          <label>rung spacing</label><input class="s-rung" type="number" step="1">
+          <button class="b-scene">Check scene</button></div>
+        <div class="scene-flags" style="color:var(--warn); max-height:120px; overflow:auto"></div>
         <div class="edits-note" style="color:var(--muted)"></div>
         <div style="color:var(--muted)">Frame order = the document's list; save, then "Re-run analysis" to update flags.</div>
       </div>
@@ -132,6 +137,8 @@
           <input class="c-custom" placeholder="other name" style="width:90px">
           <label>state</label>
           <select class="c-state"><option>planted</option><option>free</option><option>unknown</option></select>
+          <label>on</label>
+          <select class="c-surface"><option>ground</option><option>ledge_top</option><option>ledge_face</option><option>ladder_rung</option><option>ladder_rail</option></select>
         </div>
         <div style="color:var(--muted)">In-place preview, paused: click to place the selected point; drag a point to move it; shift-click deletes the nearest.</div>
         <table class="contacts"></table>
