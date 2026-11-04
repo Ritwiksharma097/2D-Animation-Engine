@@ -1,0 +1,26 @@
+{
+ "note": "Every tuning number of the mechanics sandbox. Placeholder shapes, no story or setting. Game px, ms.",
+ "exports": "../out/export",
+ "view": {"width": 1200, "height": 520},
+ "level": {
+  "format": "workbench-level/1", "name": "sandbox", "size": [1200, 520],
+  "floors": [{"id": "A", "x0": 0, "x1": 1200, "y": 470}],
+  "ledges": [{"id": "L1", "x0": 820, "x1": 980, "top": 376, "on": "A"}],
+  "platforms": [], "ladders": [],
+  "hotspots": [{"id": "apple", "x": 200, "on": "A#0", "kind": "item", "item": "apple", "use": "interact"},
+               {"id": "key", "x": 900, "on": "L1", "kind": "item", "item": "key", "use": "interact"}],
+  "covers": [{"id": "bush", "x0": 290, "x1": 390, "height": 150, "on": "A"}],
+  "rules": {"jump_max_gap": 140, "jump_max_rise": 12}
+ },
+ "ren": {"start_x": 80, "idle_hint_after_ms": 7000},
+ "exit": {"x_min": 1110, "surface": "A#1", "needs": "key"},
+ "throw": {"max_range": 450, "flight_ms": 600},
+ "guard": {
+  "start_x": 600,
+  "patrol": [430, 760], "wait_at_ends_ms": 1500,
+  "vision": {"range": 330, "halfAngleDeg": 28, "eye_height": 150, "target_height": 90},
+  "suspicion": {"rise_per_s": 1.6, "decay_per_s": 0.4, "suspicious_at": 0.3, "alert_at": 1.0, "look_ms": 2500},
+  "food": {"notice_range": 650}, "catch_range": 70
+ },
+ "caught": {"retry_after_ms": 1800}
+}

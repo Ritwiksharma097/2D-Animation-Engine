@@ -506,7 +506,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | 23. Owner-PC fixes + new Ren reactions | done |
 | 24. Levels and navigation | done |
 | 25. Interactions and guard AI | done (logic tested in Node; seen in the sandbox, step 26) |
-| 26. Mechanics sandbox | not started |
+| 26. Mechanics sandbox | done |
 | 27. Robustness and packaging | not started |
 | 28. ENGINE.md | not started |
 
@@ -557,6 +557,25 @@ Open owner decisions (not decided here; each lives in one place, listed in
   hurt_stumble, happy (all **unreviewed** art), guard angry, love, happy.
 - The guard has no look-around drawing; "suspicious" alternates his facing.
 
+## Step 26 notes
+
+- `sandbox/index.html` + `sandbox/tuning.json` (every number: level, cover, hotspots, exit, throw,
+  guard patrol / vision / suspicion / food / catch, idle hint, retry delay). One screen of
+  placeholder shapes, existing art only. Ren: click to walk / climb (planner), click the apple to take
+  it (interact pickup event), "throw apple" + click to land it; the bush blocks the guard's sight;
+  the guard walks to food and eats; take the key on the ledge, leave through the exit behind it.
+  Caught: Ren plays caught_game_over, guard angry, Retry. HUD: each character's clip with
+  "NOT OWNER-APPROVED (status)" in red, guard mode / suspicion / sight reason, inventory.
+- `sandbox_checks.py` 10/10 PASS: caught + retry; apple taken; in cover; the bush blocks sight
+  (forced check: guard facing Ren within range -> "blocked bush"); thrown apple -> eating; key taken
+  on the ledge; won; no page errors. Screenshots 90-93 looked at.
+- Bug found by it: chase re-issued the walk every frame, which restarted the walk clip at frame 0
+  so the guard never moved. Now it re-targets only when Ren moves > 30 px (`retarget_px`); Node
+  test added (behaviour 8/8).
+- Limits: the guard can't climb (his climb exports aren't used), so a chase stops at the ledge face;
+  vision is a 2D cone from his eye to Ren's mid-body, so very close below his eye line reads
+  "outside the cone"; the guard walk is the rejected one at the placeholder speed (its feet slide).
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -602,7 +621,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 5: next is step 26 (mechanics sandbox).
+Phase 5: next is step 27 (robustness and packaging).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

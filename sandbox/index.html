@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mechanics Sandbox</title>
+<style>
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; color:#1e1e1e; background:#f6f6f4; }
+  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; } h1 { font-size:16px; margin:0 0 4px; }
+  .note { color:#666; } .row { padding:6px 14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; width:calc(100% - 28px); height:auto; touch-action:manipulation; }
+  #hud { font:12px ui-monospace, monospace; white-space:pre; color:#333; } .bad { color:#c81e28; } .good { color:#1baf7a; }
+  button { font:inherit; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Mechanics sandbox (not the game): reach the key past the guard and get out</h1>
+  <div class="note">Placeholder shapes; existing art only. Click to walk / climb. Click the apple to pick it up, then "throw apple" and
+  click where it should land: he walks to food and eats it. The bush hides Ren from his sight. Being seen too long gets you caught.
+  Every number is in <code>sandbox/tuning.json</code>. The HUD names animations that aren't owner-approved.</div>
+</header>
+<div class="row"><button id="throw" disabled>throw apple</button> <button id="drop" disabled>drop apple</button> <button id="retry" hidden>retry</button>
+  <label><input type="checkbox" id="dbg"> debug overlay</label> <span id="msg"></span></div>
+<canvas id="cv" width="1200" height="520"></canvas>
+<div class="row"><div id="hud"></div></div>
+<script type="module">
+import { loadClips, Character, run } from "../runtime/anim.js";
+import { compileLevel, worldFromLevel, navGraph, goTo, planRoute, queueRoute, surfaceAt } from "../runtime/level.js";
+import { GuardBrain, Interactions, decideIdleHint, eventReach, sightBlockers } from "../runtime/behaviour.js";
+
+const T = await (await fetch("tuning.json", { cache: "no-store" })).json();
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const REN = { idle: "ren/idle", walk: "ren/walk_keypose", climb_up: "ren/climb_up", climb_down: "ren/climb_down", jump: "ren/jump",
+              interact: "ren/interact", caught: "ren/caught_game_over", look_around: "ren/look_around" };
+const GUARD = { idle: "guard/idle", walk: "guard/walk", eat: "guard/eating", angry: "guard/angry", love: "guard/love" };
+const clips = await loadClips(T.exports, [...new Set([...Object.values(REN), ...Object.values(GUARD)])]);
+let C, world, edges, ren, guard, brain, I, game, hint;
+const msg = (t, cls = "") => { const m = document.getElementById("msg"); m.textContent = t; m.className = cls; };
+
+function reset() {
+  C = compileLevel(T.level); world = worldFromLevel(C);
+  ren = new Character({ id: "ren", clips, world, x: T.ren.start_x, surface: C.regions[0].id, names: REN });
+  guard = new Character({ id: "guard", clips, world, x: T.guard.start_x, surface: C.regions[0].id, names: GUARD });
+  edges = navGraph(C, ren);
+  const covers = (T.level.covers || []).map(c => { const f = T.level.floors.find(f => f.id === c.on); return { id: c.id, x0: c.x0, x1: c.x1, y0: f.y - c.height, y1: f.y }; });
+  brain = new GuardBrain({ guard, config: T.guard, world, solids: [...sightBlockers(C), ...covers] });
+  I = new Interactions({ hotspots: JSON.parse(JSON.stringify(C.hotspots)) });
+  game = { state: "play", pendingTake: null, armed: null, covers, t: 0 };
+  hint = {};
+  brain.on("caught", () => {
+    game.state = "caught"; ren.clear(); if (ren.state !== "idle") ren.next(); ren.play("caught");
+    msg("caught! retry", "bad"); setTimeout(() => { document.getElementById("retry").hidden = false; }, T.caught.retry_after_ms);
+  });
+  guard.on("pickup", () => { I.hotspots = I.hotspots.filter(h => h.item !== "apple" || h.on !== guard.surface || Math.abs(h.x - (brain.food?.x ?? -1e9)) > 5); });
+  I.on("taken", e => { msg(`took the ${e.item}`, "good"); updateButtons(); });
+  I.on("landed", e => { brain.setFood({ x: e.hotspot.x }, eventReach(clips["guard/eating"], "pickup")); msg("the apple landed", ""); });
+  document.getElementById("retry").hidden = true; updateButtons(); msg("");
+  window.sb = { ren, guard, brain, I, game, C, world, T };
+}
+function updateButtons() { const has = I.inventory.has("apple"); document.getElementById("throw").disabled = !has; document.getElementById("drop").disabled = !has; }
+
+cv.addEventListener("click", ev => {
+  if (game.state !== "play") return;
+  const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) * cv.width / r.width, y = (ev.clientY - r.top) * cv.height / r.height;
+  if (game.armed === "throw") {
+    const s = surfaceAt(C, x, y); game.armed = null;
+    if (!s || Math.abs(x - ren.x) > T.throw.max_range) { msg(`too far (max ${T.throw.max_range} px)`, "bad"); return; }
+    I.throwItem(ren, "apple", x, s.id, { flightMs: T.throw.flight_ms }); updateButtons(); return;
+  }
+  if (ren.busy) return;
+  const h = I.hotspots.find(h => Math.abs(h.x - x) < 25 && Math.abs(world.surfaceY(h.on) - 12 - y) < 30);
+  if (h) {
+    if (h.on === ren.surface) I.take(ren, h.id);
+    else { const rt = planRoute(C, edges, { surface: ren.surface, x: ren.x }, { surface: h.on, x: h.x - 60 }); if (rt.ok) { queueRoute(ren, rt.steps); game.pendingTake = h.id; } else msg(`can't get there: ${rt.reason}`, "bad"); }
+    return;
+  }
+  const res = goTo(C, edges, ren, x, y);
+  if (!res.ok) msg(`can't get there: ${res.reason}`, "bad");
+});
+document.getElementById("throw").onclick = () => { game.armed = "throw"; msg("click where the apple should land"); };
+document.getElementById("drop").onclick = () => { I.drop(ren, "apple"); const h = I.hotspots[I.hotspots.length - 1]; brain.setFood({ x: h.x }, eventReach(clips["guard/eating"], "pickup")); updateButtons(); };
+document.getElementById("retry").onclick = reset;
+
+const status = k => clips[k]?.status_in_manifest ?? "?";
+function hud() {
+  const lines = [];
+  for (const [who, ch] of [["Ren", ren], ["guard", guard]]) {
+    const st = status(ch.clip.key);
+    lines.push(`${who.padEnd(6)} ${ch.state.padEnd(7)} ${ch.clip.key.padEnd(22)} ${st === "approved" ? "" : "NOT OWNER-APPROVED (" + st + ")"}`);
+  }
+  lines.push(`guard mode ${brain.state.mode ?? "-"}  suspicion ${(brain.state.suspicion ?? 0).toFixed(2)}  sees Ren: ${brain.last.seen ? "YES" : "no (" + brain.last.reason + ")"}`);
+  lines.push(`inventory: ${I.inventory.items.map(i => i.id).join(", ") || "-"}   game: ${game.state}`);
+  const el = document.getElementById("hud"); el.innerHTML = "";
+  for (const l of lines) { const d = document.createElement("div"); d.textContent = l; if (/NOT OWNER|YES/.test(l)) d.className = "bad"; el.appendChild(d); }
+}
+
+function cone() {
+  const e = brain.eye(), v = brain.cfg.vision, a = v.halfAngleDeg * Math.PI / 180, d = guard.dir;
+  ctx.fillStyle = brain.last.seen ? "rgba(200,30,40,0.18)" : "rgba(237,161,0,0.14)";
+  ctx.beginPath(); ctx.moveTo(e.x, e.y);
+  ctx.lineTo(e.x + d * v.range * Math.cos(a), e.y - v.range * Math.sin(a)); ctx.lineTo(e.x + d * v.range * Math.cos(a), e.y + v.range * Math.sin(a)); ctx.closePath(); ctx.fill();
+}
+
+reset();
+run([{ update: dt => {
+  if (game.state === "play") {
+    brain.update(dt, ren); I.update(dt);
+    if (game.pendingTake && !ren.busy) { const h = I.hotspots.find(h => h.id === game.pendingTake); game.pendingTake = null; if (h && h.on === ren.surface) I.take(ren, h.id); }
+    const ih = decideIdleHint(hint, !ren.busy, dt, { after_ms: T.ren.idle_hint_after_ms }); hint = ih.state;
+    for (const a of ih.actions) { ren.play(a.role); msg("(hint hook: Ren looks around)"); }
+    if (I.inventory.has(T.exit.needs) && ren.surface === T.exit.surface && ren.x >= T.exit.x_min) { game.state = "won"; msg("got out with the key!", "good"); document.getElementById("retry").hidden = false; }
+  }
+  ren.update(dt); guard.update(dt);
+} }], () => {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = "#d6ccba";
+  for (const f of T.level.floors) ctx.fillRect(f.x0, f.y, f.x1 - f.x0, cv.height - f.y);
+  for (const l of T.level.ledges) ctx.fillRect(l.x0, l.top, l.x1 - l.x0, cv.height - l.top);
+  ctx.fillStyle = "rgba(27,175,122,0.18)"; ctx.fillRect(T.exit.x_min, 0, cv.width - T.exit.x_min, T.level.floors[0].y);
+  ctx.fillStyle = "#1baf7a"; ctx.font = "12px system-ui"; ctx.fillText("EXIT", T.exit.x_min + 10, 20);
+  cone();
+  guard.draw(ctx); ren.draw(ctx);
+  for (const c of game.covers) { ctx.fillStyle = "rgba(60,120,60,0.85)"; ctx.fillRect(c.x0, c.y0, c.x1 - c.x0, c.y1 - c.y0); ctx.fillStyle = "#fff"; ctx.fillText("cover", c.x0 + 6, c.y0 + 14); }
+  for (const h of I.hotspots) { ctx.fillStyle = h.item === "apple" ? "#c81e28" : "#eda100"; ctx.beginPath(); ctx.arc(h.x, world.surfaceY(h.on) - 9, 9, 0, 7); ctx.fill(); }
+  for (const t of I.thrown ?? []) { const u = Math.min(1, t.t / t.flightMs), x = t.from.x + (t.to.x - t.from.x) * u, y0 = world.surfaceY(t.to.surface) - 9;
+    ctx.fillStyle = "#c81e28"; ctx.beginPath(); ctx.arc(x, t.from.y + (y0 - t.from.y) * u - 80 * Math.sin(Math.PI * u), 8, 0, 7); ctx.fill(); }
+  if (document.getElementById("dbg").checked) { ren.drawDebug(ctx); guard.drawDebug(ctx); }
+  if (game.state !== "play") { ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(0, 0, cv.width, 40); ctx.fillStyle = "#fff"; ctx.font = "bold 18px system-ui"; ctx.fillText(game.state === "won" ? "GOT OUT WITH THE KEY" : "CAUGHT", 20, 27); }
+  hud();
+});
+document.body.dataset.ready = "1";
+</script>
+</body>
+</html>

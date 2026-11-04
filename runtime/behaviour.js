@@ -58,10 +58,12 @@ export function decideGuard(state, p, dt, cfg = GUARD_DEFAULTS) {
   if (p.lovestruck && s.mode !== "lovestruck") { go("lovestruck", { do: "play", role: "love" }); return { state: s, actions: out }; }
   if (s.mode === "lovestruck") { if (!p.lovestruck) go("patrol", { do: "patrol" }); return { state: s, actions: out }; }
   if (s.mode === "chase" || s.suspicion >= S.alert_at && p.sees) {
-    if (s.mode !== "chase") go("chase", { do: "walk", x: p.renX, run: true });
+    if (s.mode !== "chase") { go("chase", { do: "walk", x: p.renX, run: true }); s.target = p.renX; }
     else if (Math.abs(p.renX - p.guardX) <= cfg.catch_range) go("caught", { do: "catch" });
     else if (!p.sees && s.suspicion < S.suspicious_at) go("suspicious", { do: "look" });
-    else out.push({ do: "walk", x: p.renX });
+    else if (Math.abs(p.renX - (s.target ?? p.renX)) > (cfg.retarget_px ?? 30) || p.guardIdle) {   // re-target only when Ren moved (re-issuing every frame restarts the walk)
+      out.push({ do: "walk", x: p.renX }); s.target = p.renX;
+    }
     return { state: s, actions: out };
   }
   if (p.foodX !== null && p.foodX !== undefined && Math.abs(p.foodX - p.guardX) <= cfg.food.notice_range && s.mode !== "eating") {
@@ -180,7 +182,7 @@ export class GuardBrain {
     const g = this.g, sight = this.look(ren);
     this.last = sight;
     const atFood = this.food && Math.abs(g.x - this.foodApproach) < 6 && !g.busy;
-    const { state, actions } = decideGuard(this.state, { sees: sight.seen, renX: ren?.x ?? 0, guardX: g.x, foodX: this.food?.x ?? null,
+    const { state, actions } = decideGuard(this.state, { sees: sight.seen, renX: ren?.x ?? 0, guardX: g.x, foodX: this.food?.x ?? null, guardIdle: !g.busy,
       atFood, doneEating: this.doneEating, lovestruck: this.lovestruck }, dt, this.cfg);
     if (state.mode !== this.state.mode) this.emit("mode", { from: this.state.mode, to: state.mode });
     this.state = state;

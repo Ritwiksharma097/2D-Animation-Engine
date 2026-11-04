@@ -74,3 +74,10 @@ test("take an item at the interact pickup event: walk so the hand meets it, inve
   I.inventory.add({ id: "apple2" }); const landed = []; I.on("landed", e => landed.push(e.hotspot.x));
   I.throwItem(c, "apple2", 300, "floor"); I.update(700); assert.deepEqual(landed, [300]);
 });
+
+test("chase does not re-issue the walk every frame (that would restart the walk clip forever)", () => {
+  let r = step({ mode: "chase", suspicion: 1.2, target: 300 }, P({ sees: true, renX: 310, guardX: 100 }), 16, 30);
+  assert.equal(r.actions.filter(a => a.do === "walk").length, 0);
+  r = step(r.state, P({ sees: true, renX: 360, guardX: 120 }));      // Ren moved 60 px: re-target once
+  assert.equal(r.actions.filter(a => a.do === "walk").length, 1);
+});

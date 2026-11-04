@@ -164,3 +164,8 @@ See `KRITA.md` (why there is no `.kra` writer).
 - Play: http://localhost:8000/out/export/level_play.html (click anywhere; Ren routes there).
 - Edit: http://localhost:8000/workbench/level_editor.html (save writes `levels/<name>.json`).
 - Tests: `node --test runtime/test/level.test.mjs`, `python workbench/tests/level_checks.py`.
+
+## Mechanics sandbox (not the game)
+
+http://localhost:8000/sandbox/index.html; tuning in `sandbox/tuning.json`.
+Test: `python workbench/tests/sandbox_checks.py`.
