@@ -116,7 +116,7 @@ def main():
             for i, ms in timing[:-1]:
                 held.setdefault(i, []).append(ms)
             mean = {i + 1: round(sum(m) / len(m)) for i, m in held.items()}
-            ok = abs(mean.get(1, 0) - 1000) < 60 and abs(mean.get(3, 0) - 400) < 40 and abs(mean.get(2, 0) - 83) < 30
+            ok = all(abs(mean.get(i + 1, 0) - d) < 40 for i, d in enumerate(durs))  # within ~2 refreshes of what was set
             check("durations drive playback", ok, f"set {durs} ms; measured mean hold per frame {mean}")
             page.screenshot(path=str(SHOTS / "12_durations.png"), full_page=True)
             # ---- edit layer: guard idle holds/drops from annotations/guard/idle.json

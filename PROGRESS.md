@@ -156,7 +156,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 - Page: per-frame dx / dy / hold / drop, action-level mirror and snap, "Suggest idle holds"
   (serve.py `POST /api/suggest-idle`), dropped entries shown dimmed, holds as "xN". `#...&b.raw=1`
   opens a viewer that ignores the document (the "before"). ui_checks.py now asserts 16 things
-  (16/16 pass): drops leave playback, hold x duration drive it, raw viewer plays 14 frames, snap
+  (16/16 pass; re-run after step 11): drops leave playback, hold x duration drive it, raw viewer plays 14 frames, snap
   shift equals 535 - lowest pixel, mirror flips contact display, dragging on a mirrored frame
   edits source coordinates, mirrored travel runs along the new facing.
 - Applied: `annotations/guard/idle.json` = auto-suggest (14 frames -> 6 held poses: 01, 02, 03,
