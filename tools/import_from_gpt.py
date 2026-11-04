@@ -14,13 +14,13 @@ OUT = ROOT / "assets"
 CELL = (640, 576)
 
 
-def split_sheet(sheet_path, dest, cols, rows, count):
+def split_sheet(sheet_path, dest, cols, rows, count, cell=CELL):
     sheet = Image.open(sheet_path).convert("RGBA")
-    assert sheet.size == (cols * CELL[0], rows * CELL[1]), (sheet_path, sheet.size)
+    assert sheet.size == (cols * cell[0], rows * cell[1]), (sheet_path, sheet.size)
     dest.mkdir(parents=True, exist_ok=True)
     for i in range(count):
-        x, y = (i % cols) * CELL[0], (i // cols) * CELL[1]
-        sheet.crop((x, y, x + CELL[0], y + CELL[1])).save(dest / f"{i + 1:02}.png")
+        x, y = (i % cols) * cell[0], (i // cols) * cell[1]
+        sheet.crop((x, y, x + cell[0], y + cell[1])).save(dest / f"{i + 1:02}.png")
 
 
 def main():
@@ -39,6 +39,10 @@ def main():
     split_sheet(rework / "sheets" / "walk_fourteen_draft.png", OUT / "ren" / "rejected_walk_fourteen", 7, 2, 14)
     split_sheet(rework / "sheets" / "walk_flatboy_reference.png", OUT / "ren" / "rejected_walk_flatboy", 5, 3, 15)
     split_sheet(rework / "sheets" / "idle_walk_blink.png", OUT / "ren" / "unverified_idle_blink", 7, 2, 14)
+    # The liked grounded ledge climb uses smaller 512 x 448 cells.
+    terra = SRC / "terra_demo"
+    split_sheet(terra / "climb_grounded_up.png", OUT / "ren" / "climb_up", 7, 2, 14, (512, 448))
+    split_sheet(terra / "climb_grounded_down.png", OUT / "ren" / "climb_down", 7, 2, 14, (512, 448))
 
     ref = OUT / "reference"
     ref.mkdir(parents=True, exist_ok=True)

@@ -132,6 +132,14 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 - Not verified: drag/shift-click contact editing, ping-pong playback, per-frame durations changing
   playback (display only). Nothing has been run on Windows or Python 3.14 yet.
 
+## Checked on the owner's Windows PC (local assistant, 2026-11-04)
+
+- Windows 11, Python 3.14.3: `python -m pytest workbench/tests` gives 14 passed. `python workbench/analyze.py --all` runs in about 9 s and its summaries match REPORT.md.
+- Opened `out/guard/walk/charts.png` and the annotated keypose strip at 41.9 px/frame; both are readable and agree with the report.
+- `python workbench/serve.py` + `#a=ren/walk_keypose&mode=moving&travel=41.9` loads with no console errors and shows the moving preview with contact markers.
+- Not checked locally: drag/shift-click editing, ping-pong, duration editing (now phase 2 step 6).
+- Added `ren/climb_up` and `ren/climb_down` (the liked grounded ledge climb, 512 x 448 cells, with the old scene geometry in the manifest) for phase 2.
+
 ## Next step
 
 All five steps are done. Suggested next steps, in order:

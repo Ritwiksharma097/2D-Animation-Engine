@@ -44,3 +44,23 @@ Out of scope for now: generating or redrawing art, rigs/Blender/Krita, game logi
 - Everything must also run on Windows with Python 3.14: use `pathlib`, no shell-specific scripts, and pin nothing that lacks 3.14 wheels. If Playwright or another dependency can't be installed in the cloud, say so in `PROGRESS.md` rather than claiming verification.
 - Keep code small and readable; add unit tests for the metric functions using synthetic frames (e.g. a drawn rectangle "foot" moving a known distance).
 - Document how to run everything in `README.md`.
+
+# Phase 2
+
+Phase 1 (steps 0-5 above) is done and was checked on the owner's Windows PC (see `PROGRESS.md`). Same rules apply: commit and push after each step, keep `PROGRESS.md` current, verify visually, report honestly. Work in this priority order; stop cleanly wherever the budget runs out.
+
+6. **Close phase 1's gaps.** Exercise with Playwright, and fix if broken: drag to move a contact, shift-click delete, ping-pong, per-frame durations actually changing playback speed. `analyze.py --all` should run every action in the manifest, not just five; any action it can't analyse should be skipped with a reason.
+7. **Non-destructive edit layer.** Fixes to an action are stored in its `annotations/` document and applied by analysis, preview and export, never by touching `assets/`. They are:
+   - frame order, holds (one drawing shown for several frames), dropped frames and per-frame durations
+   - per-frame x/y offset, plus a "snap to ground" that puts the planted foot (or the lowest pixel, failing that) on `ground_y`
+   - a mirror flag
+
+   Add an **auto-suggest** for idles: group near-duplicate frames into held poses and propose a calmer timing. Apply it to the guard idle and his floating walk baseline, and show before/after diagnostics. Whether the result looks right is for the owner to judge, so give them a link or command to see it.
+8. **Props and context for ledges and ladders.** In the workbench and the diagnostics, place a ledge (adjustable height and front edge) or a ladder (rails and rung spacing) in the scene. The action is drawn at an anchor that moves along a path (e.g. a straight line from floor to ledge top, as in the old demos). Hand and foot contacts can be marked as on a prop surface, and the tool flags a planted contact that isn't on any surface ("reaching into air", "pushing off nothing") or a body that intersects the prop. Note the cell size differs per action (`cell_size` in the manifest).
+   - **Calibrate on `ren/climb_up` and `ren/climb_down`.** These are the climbs the owner called "perfect"; the manifest's `old_scene` gives the exact ledge and path they were played with. Rebuild that scene first, annotate the contacts, and report what the tool says. Like the approved walk: don't tune it to pass.
+   - **Then judge the guard.** Run `guard/climb_up` and `guard/climb_down` (the owner couldn't judge them without a ledge) and `guard/ladder_up` (rejected) against the same kind of props. Find the ledge height and path that best fit his drawings, and report where contacts float or clip.
+9. **Per-region identity check.** Replace the whole-figure palette check with regions (hood, hair, face, sash/tabard, armour), located from the identity reference or by a few clicks in the workbench. Compare colour and size per region across frames and actions. Test it on Ren's jump, which visibly differs from the walk although the owner accepted it, and on the rejected walks.
+10. **Export for the game.** Write a packed sprite sheet plus JSON per action: frame rectangles, durations, the anchor, per-frame travel, contacts and props. Then make a small standalone playable page that uses only the exports: Ren walks on click (speed from contacts), climbs the ledge and jumps a gap. It should show that an exported walk doesn't slide. Use the Ren 4-pose walk with contact-derived travel, and state plainly that a 4-drawing walk will look choppy whatever the travel.
+11. **More annotations.** Annotate contacts for the guard walk and Ren's rejected fourteen walk, and compare annotated with heuristic results in `REPORT.md`.
+
+Out of scope: generating or redrawing art, rigs, the actual game.
