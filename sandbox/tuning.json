@@ -19,8 +19,11 @@
   "start_x": 600,
   "patrol": [430, 760], "wait_at_ends_ms": 1500,
   "vision": {"range": 330, "halfAngleDeg": 28, "eye_height": 150, "target_height": 90},
-  "suspicion": {"rise_per_s": 1.6, "decay_per_s": 0.4, "suspicious_at": 0.3, "alert_at": 1.0, "look_ms": 2500},
-  "food": {"notice_range": 650}, "catch_range": 70
+  "suspicion": {"rise_per_s": 0.9, "decay_per_s": 0.4, "suspicious_at": 0.3, "caught_at": 1.0, "look_ms": 2500},
+  "suspicion_rule": "the meter fills while he sees Ren (rise_per_s) or hears him (notice.rise_per_s); full (caught_at) = caught, wherever Ren is. Plain sight from empty: caught_at / rise_per_s = 1.1 s",
+  "notice": {"radius": 90, "still_radius": 50, "rise_per_s": 0.6, "bump_to": 0.5},
+  "food": {"notice_range": 650, "eat_loops": 6, "eat_note": "loops of guard/eating (1.17 s each): how long the apple distracts him"}
  },
+ "bodies": {"ren_radius": 30, "guard_radius": 34, "cover_rule": "Ren standing still inside a cover is passable and silent (placeholder until hiding spots)"},
  "caught": {"retry_after_ms": 1800}
 }

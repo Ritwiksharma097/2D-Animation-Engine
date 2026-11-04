@@ -34,11 +34,12 @@
 <canvas id="cv" width="1200" height="520"></canvas>
 <script type="module">
 import { loadClips, adaptClimb, World, Character, run } from "../../runtime/anim.js";
+import { setupStage, preloadClips } from "../../runtime/page.js";
 
-const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const cv = document.getElementById("cv"), W = 1200, H = 520, stage = setupStage(cv, W, H), ctx = stage.ctx;
 const GROUND = 470, GAP = 90, CLIMB_START = 420, LEDGE_W = 210;
-const clips = await loadClips(".", ["ren/walk_keypose", "ren/climb_up", "ren/climb_down", "ren/jump", "ren/idle", "guard/idle", "guard/walk"]);
-const world = new World({ floorY: GROUND, platforms: [{ id: "ledge", x0: 0, x1: 0, top: 0 }, { id: "far", x0: 0, x1: cv.width - 10, top: 0 }] });
+const clips = await preloadClips(".", ["ren/walk_keypose", "ren/climb_up", "ren/climb_down", "ren/jump", "ren/idle", "guard/idle", "guard/walk"]);
+const world = new World({ floorY: GROUND, platforms: [{ id: "ledge", x0: 0, x1: 0, top: 0 }, { id: "far", x0: 0, x1: W - 10, top: 0 }] });
 const ren = new Character({ id: "ren", clips, world, x: 70, names: { idle: "ren/idle", walk: "ren/walk_keypose", climb_up: "ren/climb_up", climb_down: "ren/climb_down", jump: "ren/jump" } });
 const guard = new Character({ id: "guard", clips, world, x: 300, names: { idle: "guard/idle", walk: "guard/walk" } });
 window.playtest = { ren, guard, world, clips };
@@ -61,8 +62,7 @@ document.getElementById("gscale").textContent = `guard scale ${gs.scale}${gs.sca
 let lastRefusal = "";
 ren.on("refused", e => { lastRefusal = e.reason; });
 
-cv.addEventListener("click", ev => {
-  const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) * cv.width / r.width, y = (ev.clientY - r.top) * cv.height / r.height;
+stage.on("tap", (x, y, ev) => {
   if (ren.busy) return;
   const L = world.platform("ledge"), F = world.platform("far");
   const onTop = y < L.top + 10, target = onTop && x >= F.x0 ? "far" : onTop && x >= L.x0 ? "ledge" : "floor";
@@ -94,10 +94,10 @@ function draw() {
     guard.play("idle").walkTo(Math.abs(guard.x - ends[0]) < Math.abs(guard.x - ends[1]) ? ends[1] : ends[0]);
   }
   const L = world.platform("ledge"), F = world.platform("far"), e = clips["ren/climb_up"].paths_by_height[String(ledgePct)];
-  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.fillStyle = "#d6ccba"; ctx.fillRect(0, GROUND, L.x0, cv.height - GROUND);
-  ctx.fillStyle = e.supported ? "#d6ccba" : e.supported_2x ? "#ead9b0" : "#e9b3b3"; ctx.fillRect(L.x0, L.top, L.x1 - L.x0, cv.height - L.top);
-  ctx.fillStyle = "#d6ccba"; ctx.fillRect(F.x0, F.top, F.x1 - F.x0, cv.height - F.top);
+  stage.begin(); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#d6ccba"; ctx.fillRect(0, GROUND, L.x0, H - GROUND);
+  ctx.fillStyle = e.supported ? "#d6ccba" : e.supported_2x ? "#ead9b0" : "#e9b3b3"; ctx.fillRect(L.x0, L.top, L.x1 - L.x0, H - L.top);
+  ctx.fillStyle = "#d6ccba"; ctx.fillRect(F.x0, F.top, F.x1 - F.x0, H - F.top);
   ctx.fillStyle = "#333"; ctx.font = "12px system-ui";
   ctx.fillText("floor", 10, GROUND + 18);
   ctx.fillText(`ledge ${ledgePct}% (${e.supported ? "supported" : e.supported_2x ? "marginal" : "NOT SUPPORTED"})`, L.x0 + 6, L.top + 18);

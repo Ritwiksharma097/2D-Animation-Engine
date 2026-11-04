@@ -610,6 +610,58 @@ Open owner decisions (not decided here; each lives in one place, listed in
   (all of phase 5, the Krita menu steps, real devices), and known limits. Checked its paths and
   commands against the code and the step notes; it adds no new behaviour.
 
+# Phase 6
+
+| Step | State |
+| --- | --- |
+| 29. Fixes from the phase 5 owner-PC check | done |
+| 30. Scenes and layering | not started |
+| 31. Sequences, emotes, sound hooks | not started |
+| 32. Objects with state, puzzles | not started |
+| 33. Level editor v2 | not started |
+| 34. Two-screen sandbox | not started |
+| 35. Art request packs | not started |
+| 36. `check_all.py` | not started |
+| 37. Performance | not started |
+| 38. Docs | not started |
+
+## Step 29 notes
+
+- **Caught rule (one place, `runtime/behaviour.js` `suspicionStep`):** the suspicion meter fills while
+  the guard sees Ren (`suspicion.rise_per_s`) or hears him (`notice.rise_per_s`); a bump sets it to at
+  least `notice.bump_to`; it drains otherwise. **Full meter (`caught_at`) = caught, wherever Ren is.**
+  The old "chase, catch within 70 px" is gone: that is why the owner escaped after being spotted (the
+  guard can't climb, so he never got within catch range of Ren on the far side of the ledge). The
+  trace confirmed it: the guard ate for only ~1.2 s (one play of `guard/eating`), patrolled back, saw
+  Ren on the ledge, and the old rule could not end in a catch.
+- Sandbox: meter bar over the guard's head ("sees you" / "hears you") and a text meter in the HUD
+  ("suspicion [####....] 0.46 / 1.00: caught when full"). Tuning: rise 0.9/s, so plain sight from
+  empty = 1.1 s. `food.eat_loops` 6 (~7 s distracted) is new: with one loop the sandbox could not be
+  won any more under the clear rule. That is game tuning, stated here, not a test tweak.
+- **Proximity:** hearing within `notice.radius` 90 px when Ren moves, `still_radius` 50 px when he
+  stands; a noise behind the guard makes him turn round. Anything within 90 px in front at the same
+  height is now **seen even below the cone** (phase 5's limit, which hid Ren right in front of him),
+  unless a prop blocks the line of sight. Ren keeping still inside a cover is silent and passable
+  (placeholder until step 30's hiding spots).
+- **Bodies:** `Character({radius})` registers with the World; a walker stops (on a frame boundary)
+  before another body ahead on the same surface, emitting `bump` / `bumped`; walking away is never
+  blocked. Radii 30 + 34 game px in `tuning.json`. Limit: the anchors stay apart, but wide poses
+  (Ren's `caught_game_over` lean, the guard's `angry` punch) still overlap visually (screenshot 98).
+  Stop gap is between radii and radii + one stride (Ren's contact-derived stride is ~47 px).
+- **Loading:** `anim.js loadImage` waits for `onload` (fires in background tabs), retries twice with a
+  cache-busting query on error/timeout (10 s), then rejects; `img.decode()` is no longer used. Tested by
+  replacing `decode` with a never-resolving promise on all four pages: all load.
+- **Shared page setup:** `runtime/page.js` `setupStage(canvas, w, h)` (DPR backing store, refit on
+  resize/zoom, `pointerup` taps in logical px, `begin(camX)`) and `preloadClips(base, keys)` (progress
+  bar, removed when done, error shown on failure). Used by the sandbox, play.html, guard_demo.html and
+  level_play.html.
+- **Hub:** `workbench/hub.html`; `serve.py` redirects `/` to it and lists `specs/` and `requests/` via
+  `POST /api/files`; `start_workbench.bat` opens it.
+- Checks: Node 26/26 (new: plain sight always ends in a catch from every mode and step size, a short
+  glimpse never does, hearing/bump, bodies). `phase6_fixes_checks.py` 23/23; `sandbox_checks.py`
+  10/10 (still winnable); robustness 20/20, play 16/16, guard_demo 7/7, level 8/8. Screenshots 96-99
+  looked at.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -662,13 +714,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 5 is done (steps 23-28). Next, on the owner's Windows PC:
-1. `git pull`, `python -m pytest workbench/tests`, `node --test runtime/test/runtime.test.mjs`
-   (and `level`, `behaviour`, `framerate` test files), then `start_workbench.bat`.
-2. Open http://localhost:8000/sandbox/index.html and play it once (caught, apple, cover, climb, key,
-   exit); try `workbench/level_editor.html`; look at the guard demo's red slide note.
-3. `python workbench/build_dist.py` and `python -m http.server -d dist 8080`; open the sandbox there.
-4. Owner decisions still open: see ENGINE.md section 3.
+Phase 6: next is step 30 (scenes and layering).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

@@ -12,8 +12,31 @@ export function makeClip(key, json, img = null) {
 /** Load `<base>/<character>/<action>.json` and its sheet. */
 export async function loadClip(base, key) {
   const j = await (await fetch(`${base}/${key}.json`)).json();
-  const img = new Image(); img.src = `${base}/${key.split("/")[0]}/${j.image}`; await img.decode();
+  const img = await loadImage(`${base}/${key.split("/")[0]}/${j.image}`);
   return makeClip(key, j, img);
+}
+
+/**
+ * Load an image and always settle. Waits for `onload` (which fires in background tabs, unlike `img.decode()`, which may
+ * never resolve while the window isn't drawn), retries on error or timeout with a cache-busting query, then rejects.
+ */
+export function loadImage(src, { timeoutMs = 10000, retries = 2 } = {}) {
+  return new Promise((resolve, reject) => {
+    let attempt = 0;
+    const go = () => {
+      const img = new Image(); let settled = false, timer = null;
+      const ok = () => { if (settled) return; settled = true; clearTimeout(timer); resolve(img); };
+      const fail = why => {
+        if (settled) return; settled = true; clearTimeout(timer);
+        if (attempt++ < retries) go(); else reject(new Error(`could not load ${src}: ${why}`));
+      };
+      img.onload = ok; img.onerror = () => fail("error");
+      timer = setTimeout(() => (img.complete && img.naturalWidth ? ok() : fail("timeout")), timeoutMs);
+      img.src = attempt ? `${src}${src.includes("?") ? "&" : "?"}retry=${attempt}` : src;
+      if (img.complete && img.naturalWidth) ok();
+    };
+    go();
+  });
 }
 
 /** Load several clips; `onProgress(loaded, total, key)` is called as each finishes (for a preload bar). */
@@ -77,11 +100,23 @@ export function adaptClimb(clip, heightGame, { strict = false } = {}) {
  */
 export class World {
   constructor({ floorY, floors = null, platforms = [], ladders = [], frontBandCell = 40 }) {
+    this.bodies = [];   // characters with a `radius` register here so they don't walk through each other
     // floors: walk regions [{id, x0, x1, y, left: "face"|"edge", right: "face"|"edge"}] (see runtime/level.js);
     // without them there is one endless floor called "floor" at floorY (the single-screen demos).
     this.floors = floors; this.floorY = floorY ?? floors?.[0]?.y; this.platforms = platforms; this.ladders = ladders; this.frontBandCell = frontBandCell;
   }
   region(id) { return this.floors?.find(f => f.id === id); }
+  /** The nearest other body ahead of `ch` (same surface, both standing or walking) closer than the two radii plus `adv`. */
+  bodyAhead(ch, adv) {
+    if (!ch.radius || ch.passable) return null;
+    let best = null;
+    for (const b of this.bodies) {
+      if (b === ch || !b.radius || b.passable || b.surface !== ch.surface || b.state === "climb" || b.state === "ladder" || b.state === "jump") continue;
+      const ahead = ch.dir * (b.x - ch.x);
+      if (ahead > 0 && ahead - adv < ch.radius + b.radius && (!best || ahead < best.ahead)) best = { body: b, ahead };
+    }
+    return best;
+  }
   /** y of the floor a platform stands on. */
   baseY(p) { return p.base ?? this.floorY; }
   /** Ladders: {id, x, top, rungSpacing, toSurface}; rungs every rungSpacing up from the floor. */
@@ -115,12 +150,13 @@ export class World {
  * named clip events (export `events`, e.g. "pickup", "bite", "takeoff") {clip, frame, point}.
  */
 export class Character {
-  constructor({ id, clips, world, x, surface = "floor", dir = 1, names = {}, turnMs = 120 }) {
+  constructor({ id, clips, world, x, surface = "floor", dir = 1, names = {}, turnMs = 120, radius = 0 }) {
     this.id = id; this.clips = clips; this.world = world; this.x = x; this.surface = surface; this.dir = dir;
     this.names = { idle: "idle", walk: "walk", climb_up: "climb_up", climb_down: "climb_down", jump: "jump", ladder: "ladder", ...names };
     this.y = world.surfaceY(surface); this.turnMs = turnMs;
     this.queue = []; this.cmd = null; this.state = "idle"; this.clip = this.c("idle"); this.k = 0; this.t = 0;
     this.pins = {}; this.drift = 0; this.maxDrift = 0; this.handlers = {}; this.travelOverride = null; this.rungError = 0;
+    this.radius = radius; if (radius) world.bodies.push(this);   // radius > 0: other bodies stop instead of walking through
   }
   c(role) { const k = this.names[role] ?? role, c = this.clips[k]; if (!c) throw new Error(`${this.id}: no clip for ${role} (${k})`); return c; }
   on(evt, fn) { (this.handlers[evt] ??= []).push(fn); return this; }
@@ -278,6 +314,8 @@ export class Character {
     if (this.state === "walk") {
       const adv = this.stepTravel();
       if (this.dir * (cmd.goal - this.x) < Math.max(adv, 1) * 0.5) { this.next(); return "stop"; }   // stop on a frame boundary, never overshoot
+      const hit = this.world.bodyAhead?.(this, adv);
+      if (hit) { this.emit("bump", { other: hit.body }); hit.body.emit("bumped", { other: this }); this.queue = []; this.next(); return "stop"; }
       this.x += this.dir * adv; this.k = (this.k + 1) % n; this.enterFrame(); this.updatePins(); return;
     }
     if (this.state === "climb") {

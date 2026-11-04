@@ -29,9 +29,7 @@ def main():
             ctx = br.new_context(viewport={"width": 900, "height": 700}, device_scale_factor=2, has_touch=True, is_mobile=True)
             page = ctx.new_page(); errs = []; page.on("pageerror", lambda e: errs.append(str(e)))
             page.goto(url); page.wait_for_selector("body[data-ready='1']")
-            check("preload progress reached all clips and hid itself",
-                  page.evaluate("document.getElementById('prog').value === document.getElementById('prog').max") and not page.locator("#loading").is_visible(),
-                  page.evaluate("document.getElementById('progtxt').textContent"))
+            check("preload bar finished and removed itself", page.locator(".preload").count() == 0)
             css_w, back_w = page.evaluate("[document.getElementById('cv').getBoundingClientRect().width, document.getElementById('cv').width]")
             check("canvas backing store is 2x its CSS width at DPR 2", abs(back_w - 2 * css_w) <= 2, f"css {css_w:.0f} backing {back_w}")
             box = page.locator("#cv").bounding_box(); k = box["width"] / 1200

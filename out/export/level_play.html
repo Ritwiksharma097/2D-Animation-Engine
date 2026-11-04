@@ -23,19 +23,20 @@
 <canvas id="cv" width="1200" height="520"></canvas>
 <script type="module">
 import { loadClips, Character, run } from "../../runtime/anim.js";
+import { setupStage, preloadClips } from "../../runtime/page.js";
 import { compileLevel, worldFromLevel, navGraph, goTo, Camera } from "../../runtime/level.js";
-const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const cv = document.getElementById("cv"), W = 1200, H = 520, stage = setupStage(cv, W, H), ctx = stage.ctx;
 const level = await (await fetch(new URLSearchParams(location.search).get("level") || "../../levels/demo.json", { cache: "no-store" })).json();
 const C = compileLevel(level), world = worldFromLevel(C);
-const clips = await loadClips(".", ["ren/walk_keypose", "ren/climb_up", "ren/climb_down", "ren/jump", "ren/idle"]);
+const clips = await preloadClips(".", ["ren/walk_keypose", "ren/climb_up", "ren/climb_down", "ren/jump", "ren/idle"]);
 const ren = new Character({ id: "ren", clips, world, x: 100, surface: C.regions[0].id,
   names: { idle: "ren/idle", walk: "ren/walk_keypose", climb_up: "ren/climb_up", climb_down: "ren/climb_down", jump: "ren/jump" } });
-const edges = navGraph(C, ren), cam = new Camera({ viewW: cv.width, levelW: level.size[0] });
+const edges = navGraph(C, ren), cam = new Camera({ viewW: W, levelW: level.size[0] });
 cam.snap(ren.x);
 window.lp = { ren, C, edges, cam, world };
 const msg = (t, cls = "") => { const m = document.getElementById("msg"); m.textContent = t; m.className = cls; };
-cv.addEventListener("click", ev => {
-  const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) * cv.width / r.width + cam.x, y = (ev.clientY - r.top) * cv.height / r.height;
+stage.on("tap", (x, y, ev) => {
+  x += cam.x;
   if (ren.busy) return;
   const res = goTo(C, edges, ren, x, y);
   window.lp.last = res;
@@ -44,11 +45,11 @@ cv.addEventListener("click", ev => {
 ren.on("refused", e => msg(`refused: ${e.reason}`, "bad"));
 run([ren], dt => {
   cam.update(ren.x, dt);
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.setTransform(1, 0, 0, 1, -cam.x, 0);
+  stage.begin(); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  stage.begin(cam.x);
   ctx.fillStyle = "#d6ccba";
-  for (const f of level.floors) ctx.fillRect(f.x0, f.y, f.x1 - f.x0, cv.height - f.y);
-  for (const l of level.ledges) ctx.fillRect(l.x0, l.top, l.x1 - l.x0, cv.height - l.top);
+  for (const f of level.floors) ctx.fillRect(f.x0, f.y, f.x1 - f.x0, H - f.y);
+  for (const l of level.ledges) ctx.fillRect(l.x0, l.top, l.x1 - l.x0, H - l.top);
   for (const p of level.platforms) ctx.fillRect(p.x0, p.top, p.x1 - p.x0, 14);
   ctx.strokeStyle = "#785a32"; ctx.lineWidth = 3;
   for (const l of C.ladders) { for (const xr of [l.x - 25, l.x + 25]) { ctx.beginPath(); ctx.moveTo(xr, world.surfaceY(l.from)); ctx.lineTo(xr, l.top - 20); ctx.stroke(); }
@@ -60,7 +61,7 @@ run([ren], dt => {
     ctx.beginPath(); ctx.moveTo(e.fromX, ya); ctx.quadraticCurveTo((e.fromX + e.toX) / 2, Math.min(ya, yb) - 40, e.toX, yb); ctx.stroke(); ctx.setLineDash([]);
   }
   ren.draw(ctx);
-  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#333"; ctx.font = "12px system-ui";
+  stage.begin(); ctx.fillStyle = "#333"; ctx.font = "12px system-ui";
   ctx.fillText(`camera x ${cam.x.toFixed(0)} / level ${level.size[0]}   Ren: ${ren.state} on ${ren.surface}`, 8, 16);
 });
 document.body.dataset.ready = "1";

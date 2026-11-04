@@ -39,34 +39,51 @@ export function sightBlockers(compiled) {
 export const GUARD_DEFAULTS = {
   patrol: [100, 900], wait_at_ends_ms: 1500,
   vision: { range: 320, halfAngleDeg: 28, eye_height: 150, target_height: 90 },
-  suspicion: { rise_per_s: 1.5, decay_per_s: 0.4, suspicious_at: 0.3, alert_at: 1.0, look_ms: 2500 },
-  food: { notice_range: 600 }, catch_range: 70,
+  suspicion: { rise_per_s: 0.9, decay_per_s: 0.4, suspicious_at: 0.3, caught_at: 1.0, look_ms: 2500 },
+  notice: { radius: 90, still_radius: 50, rise_per_s: 0.6, bump_to: 0.5 },
+  food: { notice_range: 600, eat_loops: 1 },
 };
 
 /**
- * One decision step. state: {mode, suspicion, timer, target}. perception: {sees, renX, foodX, guardX, lovestruck}.
- * Returns {state, actions}; actions are commands for the body: {do: "patrol"|"walk"|"turn"|"play"|"look"|"catch"|"stop", ...}.
- * Modes: patrol -> suspicious (look around) -> chase -> caught; any -> distracted (food) -> eat -> patrol; lovestruck (hook).
+ * The caught rule, in one place: the suspicion meter fills while the guard sees Ren (`suspicion.rise_per_s`) or hears him
+ * within `notice.radius` (`notice.rise_per_s`); a bump sets it to at least `notice.bump_to`. It drains at `decay_per_s`
+ * otherwise. When it reaches `caught_at`, Ren is caught, wherever he is (the guard doesn't have to reach him).
+ * In plain sight from an empty meter that takes caught_at / rise_per_s seconds.
+ */
+export function suspicionStep(value, p, dt, S, N) {
+  const secs = dt / 1000;
+  let v = value ?? 0;
+  if (p.sees) v += S.rise_per_s * secs; else if (p.heard) v += N.rise_per_s * secs; else v -= S.decay_per_s * secs;
+  if (p.bumped) v = Math.max(v, N.bump_to);
+  return Math.max(0, Math.min(S.caught_at, v));
+}
+
+/** Seconds of plain sight that fill the meter from `value`. */
+export const secondsToCatch = (cfg = GUARD_DEFAULTS, value = 0) => (cfg.suspicion.caught_at - value) / cfg.suspicion.rise_per_s;
+
+/**
+ * One decision step. state: {mode, suspicion, timer}. perception: {sees, heard, bumped, renX, foodX, guardX, guardDir, lovestruck, ...}.
+ * Returns {state, actions}; actions are commands for the body: {do: "patrol"|"walk"|"face"|"play"|"look"|"catch", ...}.
+ * Modes: patrol -> suspicious (looks around; faces a noise) -> caught when the meter is full;
+ * any -> distracted (food) -> eating -> patrol; lovestruck (hook).
  */
 export function decideGuard(state, p, dt, cfg = GUARD_DEFAULTS) {
-  const s = { ...state }, out = [], S = cfg.suspicion;
-  const secs = dt / 1000;
-  s.suspicion = Math.max(0, Math.min(1.5, (s.suspicion ?? 0) + (p.sees ? S.rise_per_s : -S.decay_per_s) * secs));
+  const s = { ...state }, out = [], S = { ...GUARD_DEFAULTS.suspicion, ...cfg.suspicion }, N = { ...GUARD_DEFAULTS.notice, ...(cfg.notice || {}) };
   s.timer = (s.timer ?? 0) + dt;
   const go = (mode, ...acts) => { s.mode = mode; s.timer = 0; out.push(...acts); };
   if (s.mode === "caught") return { state: s, actions: out };
   if (p.lovestruck && s.mode !== "lovestruck") { go("lovestruck", { do: "play", role: "love" }); return { state: s, actions: out }; }
   if (s.mode === "lovestruck") { if (!p.lovestruck) go("patrol", { do: "patrol" }); return { state: s, actions: out }; }
-  if (s.mode === "chase" || s.suspicion >= S.alert_at && p.sees) {
-    if (s.mode !== "chase") { go("chase", { do: "walk", x: p.renX, run: true }); s.target = p.renX; }
-    else if (Math.abs(p.renX - p.guardX) <= cfg.catch_range) go("caught", { do: "catch" });
-    else if (!p.sees && s.suspicion < S.suspicious_at) go("suspicious", { do: "look" });
-    else if (Math.abs(p.renX - (s.target ?? p.renX)) > (cfg.retarget_px ?? 30) || p.guardIdle) {   // re-target only when Ren moved (re-issuing every frame restarts the walk)
-      out.push({ do: "walk", x: p.renX }); s.target = p.renX;
-    }
+  s.suspicion = suspicionStep(s.suspicion, p, dt, S, N);
+  if (s.suspicion >= S.caught_at) { go("caught", { do: "catch" }); return { state: s, actions: out }; }
+  const behindHim = p.guardDir !== undefined && (p.renX - p.guardX) * p.guardDir < 0;
+  if ((p.heard || p.bumped) && !p.sees && behindHim && s.mode !== "eating") {   // a noise behind him: he turns to look
+    out.push({ do: "face", dir: -p.guardDir });
+    if (s.mode !== "suspicious") { s.mode = "suspicious"; s.timer = 0; }
     return { state: s, actions: out };
   }
-  if (p.foodX !== null && p.foodX !== undefined && Math.abs(p.foodX - p.guardX) <= cfg.food.notice_range && s.mode !== "eating") {
+  if (p.foodX !== null && p.foodX !== undefined && Math.abs(p.foodX - p.guardX) <= cfg.food.notice_range && s.mode !== "eating"
+      && s.suspicion < S.suspicious_at) {
     if (s.mode !== "distracted") go("distracted", { do: "walk", x: p.foodX, toFood: true });
     else if (p.atFood) go("eating", { do: "play", role: "eat" });
     return { state: s, actions: out };
@@ -166,7 +183,10 @@ export class Interactions {
 export class GuardBrain {
   constructor({ guard, config = {}, world, solids = [] }) {
     this.g = guard; this.world = world; this.solids = solids;
-    this.cfg = { ...GUARD_DEFAULTS, ...config, vision: { ...GUARD_DEFAULTS.vision, ...(config.vision || {}) }, suspicion: { ...GUARD_DEFAULTS.suspicion, ...(config.suspicion || {}) } };
+    this.cfg = { ...GUARD_DEFAULTS, ...config, vision: { ...GUARD_DEFAULTS.vision, ...(config.vision || {}) },
+      suspicion: { ...GUARD_DEFAULTS.suspicion, ...(config.suspicion || {}) }, notice: { ...GUARD_DEFAULTS.notice, ...(config.notice || {}) } };
+    this.bumped = false;
+    guard.on("bump", () => { this.bumped = true; }); guard.on("bumped", () => { this.bumped = true; });
     this.state = { mode: null, suspicion: 0 }; this.handlers = {}; this.last = { seen: false };
     this.end = 1; this.food = null; this.lovestruck = false;
     guard.on("done", e => { if (e.command.type === "play" && e.command.role === "eat") { this.doneEating = true; this.food = null; this.emit("ate", {}); } });
@@ -176,13 +196,30 @@ export class GuardBrain {
   eye() { return { x: this.g.x, y: this.g.y - this.cfg.vision.eye_height }; }
   look(ren) {
     if (!ren || ren.hidden) return { seen: false, reason: "no target" };
-    return canSee(this.eye(), this.g.dir, { x: ren.x, y: ren.y - this.cfg.vision.target_height }, this.cfg.vision, this.solids);
+    const target = { x: ren.x, y: ren.y - this.cfg.vision.target_height };
+    const r = canSee(this.eye(), this.g.dir, target, this.cfg.vision, this.solids);
+    // close in front (within notice.radius, same height) is seen even below the cone, unless a prop is in the way
+    if (r.reason === "outside the cone" && Math.abs(ren.y - this.g.y) < 60 && Math.abs(ren.x - this.g.x) <= this.cfg.notice.radius) {
+      const near = canSee(this.eye(), this.g.dir, target, { range: Infinity, halfAngleDeg: 90 }, this.solids);
+      if (near.seen) return { seen: true, reason: "close in front", distance: r.distance };
+    }
+    return r;
+  }
+  /**
+   * Hearing: Ren moving within notice.radius, or standing within notice.still_radius (game px, feet to feet, about the same
+   * height), even when he isn't seen. `ren.silent` (e.g. keeping still in a hiding spot) is never heard.
+   */
+  hear(ren) {
+    if (!ren || ren.hidden || ren.silent || Math.abs(ren.y - this.g.y) >= 60) return false;
+    const d = Math.abs(ren.x - this.g.x), moving = ren.state !== "idle" && ren.state !== "wait";
+    return d <= (moving ? this.cfg.notice.radius : this.cfg.notice.still_radius);
   }
   update(dt, ren) {
-    const g = this.g, sight = this.look(ren);
-    this.last = sight;
+    const g = this.g, sight = this.look(ren), heard = !sight.seen && this.hear(ren), bumped = this.bumped;
+    this.bumped = false;
+    this.last = { ...sight, heard, bumped };
     const atFood = this.food && Math.abs(g.x - this.foodApproach) < 6 && !g.busy;
-    const { state, actions } = decideGuard(this.state, { sees: sight.seen, renX: ren?.x ?? 0, guardX: g.x, foodX: this.food?.x ?? null, guardIdle: !g.busy,
+    const { state, actions } = decideGuard(this.state, { sees: sight.seen, heard, bumped, renX: ren?.x ?? 0, guardX: g.x, guardDir: g.dir, foodX: this.food?.x ?? null, guardIdle: !g.busy,
       atFood, doneEating: this.doneEating, lovestruck: this.lovestruck }, dt, this.cfg);
     if (state.mode !== this.state.mode) this.emit("mode", { from: this.state.mode, to: state.mode });
     this.state = state;
@@ -191,7 +228,7 @@ export class GuardBrain {
       const [x0, x1] = this.cfg.patrol; this.end = Math.abs(g.x - x1) < Math.abs(g.x - x0) ? 0 : 1;
       g.wait(this.cfg.wait_at_ends_ms).walkTo(this.end ? x1 : x0);
     }
-    if (state.mode === "suspicious" && !g.busy) g.wait(500).turn(-g.dir);   // no look-around drawing: alternate facing
+    if (state.mode === "suspicious" && !g.busy && !sight.seen && !heard) g.wait(500).turn(-g.dir);   // no look-around drawing: alternate facing; keeps staring while he sees Ren
   }
   act(a, ren) {
     const g = this.g;
@@ -199,7 +236,11 @@ export class GuardBrain {
     else if (a.do === "walk") {
       if (a.toFood) { const reach = this.foodReach ?? 0, dir = a.x >= g.x ? 1 : -1; this.foodApproach = a.x - dir * reach; g.clear(); if (g.state !== "idle") g.next(); g.walkTo(this.foodApproach); if (g.dir !== dir) g.turn(dir); }
       else { g.clear(); if (g.state === "walk" || g.state === "wait") g.next(); g.walkTo(a.x); }
-    } else if (a.do === "play") { g.clear(); if (g.state !== "idle" && g.state !== "play") g.next(); g.play(a.role); if (a.role === "eat") this.doneEating = false; }
+    } else if (a.do === "play") {
+      g.clear(); if (g.state !== "idle" && g.state !== "play") g.next();
+      g.play(a.role, { loops: a.role === "eat" ? this.cfg.food.eat_loops ?? 1 : 1 }); if (a.role === "eat") this.doneEating = false;
+    }
+    else if (a.do === "face") { if (g.dir !== a.dir && g.state !== "turn") { g.clear(); if (g.state === "walk" || g.state === "wait") g.next(); g.turn(a.dir); } }
     else if (a.do === "look") { g.clear(); if (g.state === "walk") g.next(); this.emit("suspicious", {}); }
     else if (a.do === "catch") { g.clear(); if (g.state !== "idle") g.next(); g.play("angry"); this.emit("caught", { ren }); }
   }

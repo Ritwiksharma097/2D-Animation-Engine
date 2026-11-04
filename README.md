@@ -172,6 +172,12 @@ See `KRITA.md` (why there is no `.kra` writer).
 http://localhost:8000/sandbox/index.html; tuning in `sandbox/tuning.json`.
 Test: `python workbench/tests/sandbox_checks.py`.
 
+## Hub
+
+`python workbench/serve.py` (or `start_workbench.bat`), then http://localhost:8000/ : one page linking
+the review page, sandbox, demos, level editor, regions, specs and docs. Check of the phase 6 fixes:
+`python workbench/tests/phase6_fixes_checks.py`.
+
 ## Static build (`dist/`)
 
 ```

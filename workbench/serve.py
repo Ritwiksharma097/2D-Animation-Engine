@@ -52,6 +52,11 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_GET(self):
+        if urlparse(self.path).path == "/":   # the hub links everything the owner uses
+            self.send_response(302); self.send_header("Location", "/workbench/hub.html"); self.end_headers(); return
+        return super().do_GET()
+
     def do_PUT(self):
         m = ANN_RE.match(urlparse(self.path).path)
         if not m:
@@ -173,6 +178,9 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(200, {"saved": analyze.rel(path)})
         if u.path == "/api/status":
             return self._json(200, STATUS)
+        if u.path == "/api/files":   # for the hub: spec sheets and art request packs that exist
+            files = [analyze.rel(f) for d in ("specs", "requests") for f in sorted((ROOT / d).rglob("*")) if f.is_file()]
+            return self._json(200, {"files": files})
         if u.path == "/api/scene":
             import props
             try:
@@ -270,6 +278,7 @@ def main():
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), partial(Handler, directory=str(ROOT)))
     if not a.no_prepare:
         threading.Thread(target=prepare_reports, daemon=True).start()
+    print(f"Hub:          http://localhost:{a.port}/workbench/hub.html")
     print(f"Owner review: http://localhost:{a.port}/workbench/review.html")
     print(f"Workbench:    http://localhost:{a.port}/workbench/")
     srv.serve_forever()

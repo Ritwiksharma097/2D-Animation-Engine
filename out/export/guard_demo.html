@@ -22,8 +22,9 @@
 <canvas id="cv" width="1200" height="420"></canvas>
 <script type="module">
 import { loadClips, World, Character, run } from "../../runtime/anim.js";
-const cv = document.getElementById("cv"), ctx = cv.getContext("2d"), GROUND = 380;
-const clips = await loadClips(".", ["guard/idle", "guard/walk", "guard/eating", "guard/ladder_up"]);
+import { setupStage, preloadClips } from "../../runtime/page.js";
+const cv = document.getElementById("cv"), W = 1200, H = 420, stage = setupStage(cv, W, H), ctx = stage.ctx, GROUND = 380;
+const clips = await preloadClips(".", ["guard/idle", "guard/walk", "guard/eating", "guard/ladder_up"]);
 const LS = clips["guard/ladder_up"].ladder, RS = LS.rung_spacing_px * clips["guard/ladder_up"].scale, RUNGS = 6;
 const world = new World({ floorY: GROUND, platforms: [{ id: "loft", x0: 1010, x1: 1190, top: GROUND - RUNGS * RS }],
   ladders: [{ id: "ladder", x: 1000, top: GROUND - RUNGS * RS, rungSpacing: RS, toSurface: "loft" }] });
@@ -41,8 +42,7 @@ guard.on("bite", () => { nom = 600; say("bite"); });
 guard.on("done", e => { if (e.command.type === "play" && e.command.role === "eat") say("finished eating: back to patrol"); });
 window.demo = { guard, world, clips, get food() { return food; } };
 
-cv.addEventListener("click", ev => {
-  const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) * cv.width / r.width;
+stage.on("tap", (x, y, ev) => {
   if (food) return;
   food = { x };
   const dir = x >= guard.x ? 1 : -1;
@@ -60,8 +60,8 @@ run([guard], dt => {
     const ends = [120, 900];
     guard.play("idle").walkTo(Math.abs(guard.x - ends[0]) < Math.abs(guard.x - ends[1]) ? ends[1] : ends[0]);
   }
-  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.fillStyle = "#d6ccba"; ctx.fillRect(0, GROUND, cv.width, cv.height - GROUND);
+  stage.begin(); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#d6ccba"; ctx.fillRect(0, GROUND, W, H - GROUND);
   const lo = world.platform("loft"), la = world.ladder("ladder"); ctx.fillRect(lo.x0, lo.top, lo.x1 - lo.x0, 14);
   ctx.strokeStyle = "#785a32"; ctx.lineWidth = 3;
   for (const xr of [la.x - 45, la.x + 45]) { ctx.beginPath(); ctx.moveTo(xr, GROUND); ctx.lineTo(xr, la.top - 30); ctx.stroke(); }

@@ -17,37 +17,32 @@
 <header>
   <h1>Mechanics sandbox (not the game): reach the key past the guard and get out</h1>
   <div class="note">Placeholder shapes; existing art only. Click to walk / climb. Click the apple to pick it up, then "throw apple" and
-  click where it should land: he walks to food and eats it. The bush hides Ren from his sight. Being seen too long gets you caught.
+  click where it should land: he walks to food and eats it. The bush hides Ren from his sight. The meter over the guard fills while he sees or hears Ren; when it is full Ren is caught, wherever he is. Ren and the guard can't walk through each other.
   Every number is in <code>sandbox/tuning.json</code>. The HUD names animations that aren't owner-approved.</div>
 </header>
 <div class="row"><button id="throw" disabled>throw apple</button> <button id="drop" disabled>drop apple</button> <button id="retry" hidden>retry</button>
   <label><input type="checkbox" id="dbg"> debug overlay</label> <span id="msg"></span></div>
-<div class="row" id="loading">loading animations <progress id="prog" max="1" value="0"></progress> <span id="progtxt"></span></div>
 <canvas id="cv" width="1200" height="520"></canvas>
 <div class="row"><div id="hud"></div></div>
 <script type="module">
-import { loadClips, Character, run, fitCanvas } from "../runtime/anim.js";
+import { Character, run } from "../runtime/anim.js";
+import { setupStage, preloadClips } from "../runtime/page.js";
 import { compileLevel, worldFromLevel, navGraph, goTo, planRoute, queueRoute, surfaceAt } from "../runtime/level.js";
 import { GuardBrain, Interactions, decideIdleHint, eventReach, sightBlockers } from "../runtime/behaviour.js";
 
 const T = await (await fetch("tuning.json", { cache: "no-store" })).json();
-const cv = document.getElementById("cv"), ctx = cv.getContext("2d"), W = 1200, H = 520;
-let view = fitCanvas(cv, W, H);   // backing store at devicePixelRatio, drawing in logical 1200x520 px
-addEventListener("resize", () => { view = fitCanvas(cv, W, H); });
+const cv = document.getElementById("cv"), W = 1200, H = 520, stage = setupStage(cv, W, H), ctx = stage.ctx;   // sharp at any DPR, refits on resize
 const REN = { idle: "ren/idle", walk: "ren/walk_keypose", climb_up: "ren/climb_up", climb_down: "ren/climb_down", jump: "ren/jump",
               interact: "ren/interact", caught: "ren/caught_game_over", look_around: "ren/look_around" };
 const GUARD = { idle: "guard/idle", walk: "guard/walk", eat: "guard/eating", angry: "guard/angry", love: "guard/love" };
-const clips = await loadClips(T.exports, [...new Set([...Object.values(REN), ...Object.values(GUARD)])], (n, total, key) => {
-  const p = document.getElementById("prog"); p.max = total; p.value = n; document.getElementById("progtxt").textContent = `${n}/${total} ${key}`;
-});
-document.getElementById("loading").hidden = true;
+const clips = await preloadClips(T.exports, [...new Set([...Object.values(REN), ...Object.values(GUARD)])], cv);
 let C, world, edges, ren, guard, brain, I, game, hint;
 const msg = (t, cls = "") => { const m = document.getElementById("msg"); m.textContent = t; m.className = cls; };
 
 function reset() {
   C = compileLevel(T.level); world = worldFromLevel(C);
-  ren = new Character({ id: "ren", clips, world, x: T.ren.start_x, surface: C.regions[0].id, names: REN });
-  guard = new Character({ id: "guard", clips, world, x: T.guard.start_x, surface: C.regions[0].id, names: GUARD });
+  ren = new Character({ id: "ren", clips, world, x: T.ren.start_x, surface: C.regions[0].id, names: REN, radius: T.bodies.ren_radius });
+  guard = new Character({ id: "guard", clips, world, x: T.guard.start_x, surface: C.regions[0].id, names: GUARD, radius: T.bodies.guard_radius });
   edges = navGraph(C, ren);
   const covers = (T.level.covers || []).map(c => { const f = T.level.floors.find(f => f.id === c.on); return { id: c.id, x0: c.x0, x1: c.x1, y0: f.y - c.height, y1: f.y }; });
   brain = new GuardBrain({ guard, config: T.guard, world, solids: [...sightBlockers(C), ...covers] });
@@ -66,10 +61,9 @@ function reset() {
 }
 function updateButtons() { const has = I.inventory.has("apple"); document.getElementById("throw").disabled = !has; document.getElementById("drop").disabled = !has; }
 
-// pointerup covers mouse, pen and touch taps (touch-action: manipulation removes the tap delay)
-cv.addEventListener("pointerup", ev => {
-  if (game.state !== "play" || (ev.pointerType === "mouse" && ev.button !== 0)) return;
-  const { x, y } = view.toLogical(ev.clientX, ev.clientY);
+// taps: mouse, pen and touch, in logical px (runtime/page.js)
+stage.on("tap", (x, y) => {
+  if (game.state !== "play") return;
   if (game.armed === "throw") {
     const s = surfaceAt(C, x, y); game.armed = null;
     if (!s || Math.abs(x - ren.x) > T.throw.max_range) { msg(`too far (max ${T.throw.max_range} px)`, "bad"); return; }
@@ -96,10 +90,12 @@ function hud() {
     const st = status(ch.clip.key);
     lines.push(`${who.padEnd(6)} ${ch.state.padEnd(7)} ${ch.clip.key.padEnd(22)} ${st === "approved" ? "" : "NOT OWNER-APPROVED (" + st + ")"}`);
   }
-  lines.push(`guard mode ${brain.state.mode ?? "-"}  suspicion ${(brain.state.suspicion ?? 0).toFixed(2)}  sees Ren: ${brain.last.seen ? "YES" : "no (" + brain.last.reason + ")"}`);
+  const S = brain.cfg.suspicion, v = brain.state.suspicion ?? 0, cells = 20, filled = Math.round(cells * v / S.caught_at);
+  lines.push(`suspicion [${"#".repeat(filled)}${".".repeat(cells - filled)}] ${v.toFixed(2)} / ${S.caught_at.toFixed(2)}: caught when full`);
+  lines.push(`guard mode ${brain.state.mode ?? "-"}  sees Ren: ${brain.last.seen ? "YES" : "no (" + brain.last.reason + ")"}${brain.last.heard ? "  HEARS Ren" : ""}${brain.last.bumped ? "  BUMP" : ""}`);
   lines.push(`inventory: ${I.inventory.items.map(i => i.id).join(", ") || "-"}   game: ${game.state}`);
   const el = document.getElementById("hud"); el.innerHTML = "";
-  for (const l of lines) { const d = document.createElement("div"); d.textContent = l; if (/NOT OWNER|YES/.test(l)) d.className = "bad"; el.appendChild(d); }
+  for (const l of lines) { const d = document.createElement("div"); d.textContent = l; if (/NOT OWNER|YES|HEARS|BUMP/.test(l)) d.className = "bad"; el.appendChild(d); }
 }
 
 function cone() {
@@ -109,9 +105,20 @@ function cone() {
   ctx.lineTo(e.x + d * v.range * Math.cos(a), e.y - v.range * Math.sin(a)); ctx.lineTo(e.x + d * v.range * Math.cos(a), e.y + v.range * Math.sin(a)); ctx.closePath(); ctx.fill();
 }
 
+// suspicion meter over the guard's head: the caught rule made visible
+function meter() {
+  const S = brain.cfg.suspicion, v = (brain.state.suspicion ?? 0) / S.caught_at, w = 80, x = guard.x - w / 2, y = guard.y - 200;
+  ctx.fillStyle = "rgba(0,0,0,0.12)"; ctx.fillRect(x, y, w, 9);
+  ctx.fillStyle = v >= 1 ? "#c81e28" : v >= S.suspicious_at / S.caught_at ? "#eb6834" : "#eda100"; ctx.fillRect(x, y, w * v, 9);
+  ctx.strokeStyle = "#555"; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, 9);
+  ctx.fillStyle = "#333"; ctx.font = "11px system-ui"; ctx.fillText(brain.last.seen ? "sees you" : brain.last.heard ? "hears you" : "", x, y - 4);
+}
+
 reset();
 run([{ update: dt => {
   if (game.state === "play") {
+    const inCover = ren.state === "idle" && game.covers.some(c => ren.x >= c.x0 && ren.x <= c.x1);
+    ren.passable = ren.silent = inCover;   // keeping still in cover: not heard, and the guard can pass in front
     brain.update(dt, ren); I.update(dt);
     if (game.pendingTake && !ren.busy) { const h = I.hotspots.find(h => h.id === game.pendingTake); game.pendingTake = null; if (h && h.on === ren.surface) I.take(ren, h.id); }
     const ih = decideIdleHint(hint, !ren.busy, dt, { after_ms: T.ren.idle_hint_after_ms }); hint = ih.state;
@@ -120,7 +127,7 @@ run([{ update: dt => {
   }
   ren.update(dt); guard.update(dt);
 } }], () => {
-  view.reset(ctx); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  stage.begin(); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = "#d6ccba";
   for (const f of T.level.floors) ctx.fillRect(f.x0, f.y, f.x1 - f.x0, H - f.y);
   for (const l of T.level.ledges) ctx.fillRect(l.x0, l.top, l.x1 - l.x0, H - l.top);
@@ -128,6 +135,7 @@ run([{ update: dt => {
   ctx.fillStyle = "#1baf7a"; ctx.font = "12px system-ui"; ctx.fillText("EXIT", T.exit.x_min + 10, 20);
   cone();
   guard.draw(ctx); ren.draw(ctx);
+  meter();
   for (const c of game.covers) { ctx.fillStyle = "rgba(60,120,60,0.85)"; ctx.fillRect(c.x0, c.y0, c.x1 - c.x0, c.y1 - c.y0); ctx.fillStyle = "#fff"; ctx.fillText("cover", c.x0 + 6, c.y0 + 14); }
   for (const h of I.hotspots) { ctx.fillStyle = h.item === "apple" ? "#c81e28" : "#eda100"; ctx.beginPath(); ctx.arc(h.x, world.surfaceY(h.on) - 9, 9, 0, 7); ctx.fill(); }
   for (const t of I.thrown ?? []) { const u = Math.min(1, t.t / t.flightMs), x = t.from.x + (t.to.x - t.from.x) * u, y0 = world.surfaceY(t.to.surface) - 9;

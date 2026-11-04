@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Workbench hub</title>
+<style>
+  body { margin:0; font:15px/1.5 system-ui, sans-serif; color:#1e1e1e; background:#f6f6f4; }
+  header { padding:14px 20px; background:#fff; border-bottom:1px solid #ddd; } h1 { font-size:20px; margin:0; }
+  .note { color:#666; font-size:13px; } main { padding:12px 20px; display:grid; gap:14px; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); }
+  section { background:#fff; border:1px solid #ddd; border-radius:6px; padding:10px 14px; }
+  h2 { font-size:15px; margin:0 0 6px; } ul { margin:0; padding-left:18px; } li { margin:4px 0; }
+  a { color:#1559b3; } code { background:#eee; padding:0 3px; border-radius:3px; font-size:13px; }
+  #status { font-size:13px; color:#8a5a00; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Animation workbench: everything in one place</h1>
+  <div class="note">Served by <code>python workbench/serve.py</code> (or <code>start_workbench.bat</code>). Placeholder shapes only; not the game.
+  <span id="status"></span></div>
+</header>
+<main>
+  <section><h2>Review</h2><ul>
+    <li><a href="review.html">Owner review</a>: every action, status, flags, verdicts, settings (scale, travel overrides)</li>
+    <li><a href="index.html">Frame workbench</a>: play/scrub, onion skin, contacts, edits, scenes</li>
+    <li><a href="regions.html">Identity regions</a>: click hood, face, tabard... per character</li>
+  </ul></section>
+  <section><h2>Play</h2><ul>
+    <li><a href="../sandbox/index.html">Mechanics sandbox</a>: reach the key past the guard</li>
+    <li><a href="../out/export/play.html">Ren playtest</a>: walk, climb, jump, ledge-height control</li>
+    <li><a href="../out/export/guard_demo.html">Guard demo</a>: patrol, food, ladder</li>
+    <li><a href="../out/export/level_play.html">Level playtest</a>: pathfinding and camera</li>
+  </ul></section>
+  <section><h2>Build</h2><ul>
+    <li><a href="level_editor.html">Level editor</a>: floors, ledges, platforms, ladders, hotspots</li>
+    <li>Static build for any host: <code>python workbench/build_dist.py</code>, then <code>python -m http.server -d dist 8080</code></li>
+  </ul></section>
+  <section><h2>Redraw specs and art requests</h2><ul id="specs"><li class="note">loading...</li></ul></section>
+  <section><h2>Docs</h2><ul>
+    <li><a href="../ENGINE.md">ENGINE.md</a>: architecture, adding characters / actions / levels, owner decisions</li>
+    <li><a href="../REPORT.md">REPORT.md</a>: what the analysis found</li>
+    <li><a href="../PROGRESS.md">PROGRESS.md</a>: step log, known problems, next step</li>
+    <li><a href="../KRITA.md">KRITA.md</a>: Krita round trip</li>
+  </ul></section>
+</main>
+<script>
+(async () => {
+  const ul = document.getElementById("specs");
+  let files = [];
+  try { files = (await (await fetch("/api/files", { method: "POST" })).json()).files || []; } catch { /* plain static server: no list */ }
+  const specs = files.filter(f => /^specs\/.*\.png$/.test(f)), reqs = [...new Set(files.filter(f => /^requests\/[^/]+\//.test(f)).map(f => f.split("/")[1]))];
+  ul.innerHTML = "";
+  for (const f of specs) { const li = document.createElement("li"); li.innerHTML = `<a href="../${f}">${f.split("/").pop()}</a> (pose-target sheet)`; ul.appendChild(li); }
+  for (const r of reqs) { const li = document.createElement("li"); li.innerHTML = `<a href="../requests/${r}/README.md">requests/${r}</a> (art request pack)`; ul.appendChild(li); }
+  if (!ul.children.length) ul.innerHTML = `<li class="note">no file list (start with serve.py)</li>`;
+  try {
+    const s = await (await fetch("/api/status", { method: "POST" })).json();
+    if (s.pending?.length) document.getElementById("status").textContent = ` Preparing ${s.pending.length} reports in the background...`;
+  } catch { /* no status endpoint */ }
+  document.body.dataset.ready = "1";
+})();
+</script>
+</body>
+</html>
