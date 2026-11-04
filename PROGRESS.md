@@ -621,8 +621,8 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | 33. Level editor v2 | done |
 | 34. Two-screen sandbox | done |
 | 35. Art request packs | done |
-| 36. `check_all.py` | not started |
-| 37. Performance | not started |
+| 36. `check_all.py` | written; quick mode passes; full run interrupted (paused by the owner) |
+| 37. Performance | in progress (uncommitted work committed as WIP, untested) |
 | 38. Docs | not started |
 
 ## Step 29 notes
@@ -861,7 +861,13 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 6: next is step 36 (`check_all.py`).
+Phase 6, paused by the owner during step 36's full run. Next:
+1. `python check_all.py` to the end (the interrupted run passed every job it reached except
+   `intake_review_checks`, which depended on a phase-4 intake that was deleted; it now makes its own).
+2. Step 37: run `python workbench/atlas.py`, wire `runtime/atlas.js` into the runner, measure
+   `sandbox/stress.html`, cut per-tick allocations (baseline `node runtime/bench/alloc.mjs 60`: ~140
+   minor GCs per simulated minute), re-measure.
+3. Step 38 docs.
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stress scene</title>
+<style>
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; color:#1e1e1e; background:#f6f6f4; }
+  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; } h1 { font-size:16px; margin:0 0 4px; } .note { color:#666; }
+  canvas { display:block; margin:8px 14px; background:#fff; border:1px solid #ddd; width:calc(100% - 28px); height:auto; }
+  #stats { font:13px ui-monospace, monospace; white-space:pre; padding:0 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Stress scene: Ren and <span id="n">10</span> guards</h1>
+  <div class="note">Placeholder level 6000 px wide, every guard with a brain (vision, hearing, patrol), Ren walking end to end, the camera
+  following, parallax layers and depth sorting. Reports the time between display frames and the time spent in update and draw.
+  <code>?n=20</code> for more guards, <code>&amp;atlas=0</code> to load per-clip sheets instead of atlases.</div>
+</header>
+<canvas id="cv" width="1200" height="520"></canvas>
+<div id="stats">measuring...</div>
+<script type="module">
+import { Character, makeStepper, loadClip } from "../runtime/anim.js";
+import { setupStage } from "../runtime/page.js";
+import { loadAtlasClips } from "../runtime/atlas.js";
+import { compileLevel, worldFromLevel, Camera } from "../runtime/level.js";
+import { GuardBrain } from "../runtime/behaviour.js";
+import { sceneFromLevel, drawLayers, sceneDrawables } from "../runtime/scene.js";
+
+const Q = new URLSearchParams(location.search), N = +(Q.get("n") ?? 10), W = 1200, H = 520, LW = 6000;
+document.getElementById("n").textContent = N;
+const cv = document.getElementById("cv"), stage = setupStage(cv, W, H), ctx = stage.ctx;
+const REN = { idle: "ren/idle", walk: "ren/walk_keypose" }, GUARD = { idle: "guard/idle", walk: "guard/walk", angry: "guard/angry" };
+const keys = [...Object.values(REN), ...Object.values(GUARD)];
+const t0 = performance.now();
+const clips = Q.get("atlas") === "0" ? Object.fromEntries(await Promise.all(keys.map(async k => [k, await loadClip("../out/export", k)])))
+                                     : (await loadAtlasClips("../out/export", keys)).clips;
+const loadMs = performance.now() - t0;
+const level = { format: "workbench-level/1", size: [LW, H], floors: [{ id: "A", x0: 0, x1: LW, y: 470 }],
+  layers: [{ id: "sky", parallax: 0, depth: -300, rects: [{ x: 0, y: 0, w: W, h: 470, color: "#eef2f5" }] },
+           { id: "far", parallax: 0.2, depth: -200, rects: Array.from({ length: 12 }, (_, i) => ({ x: i * 500, y: 280 + (i % 3) * 30, w: 380, h: 190, color: "#d9e2e6" })) },
+           { id: "near", parallax: 0.5, depth: -100, rects: Array.from({ length: 16 }, (_, i) => ({ x: i * 400, y: 360, w: 260, h: 110, color: "#c7d3c2" })) }],
+  occluders: Array.from({ length: 6 }, (_, i) => ({ id: `p${i}`, x0: 700 + i * 900, x1: 740 + i * 900, y0: 140, y1: 470, color: "#8c8c8c", alpha: 0.95 })),
+  hiding_spots: Array.from({ length: 5 }, (_, i) => ({ id: `c${i}`, on: "A", x0: 400 + i * 1100, x1: 490 + i * 1100, height: 110 })) };
+const C = compileLevel(level), world = worldFromLevel(C), scene = sceneFromLevel(level), cam = new Camera({ viewW: W, levelW: LW });
+const ren = new Character({ id: "ren", clips, world, x: 100, surface: C.regions[0].id, names: REN, radius: 30 });
+ren.silent = true;   // nobody catches him: the scene keeps running the same way
+const span = (LW - 400) / N;
+const guards = Array.from({ length: N }, (_, i) => new Character({ id: `g${i}`, clips, world, x: 300 + i * span, surface: C.regions[0].id, names: GUARD }));
+const brains = guards.map((g, i) => new GuardBrain({ guard: g, world, config: { patrol: [200 + i * span, 200 + i * span + span * 0.7], wait_at_ends_ms: 1200, vision: { range: 1 } } }));
+const actors = [ren, ...guards];
+let upd = 0;
+const step = makeStepper(dt => { if (!ren.busy) ren.walkTo(ren.x < LW / 2 ? LW - 200 : 200); for (const b of brains) b.update(dt, ren); for (const a of actors) a.update(dt); });
+const S = { frames: [], update: [], draw: [] };
+function draw() {
+  stage.begin(); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  drawLayers(ctx, scene.layers, cam.x, false);
+  stage.begin(cam.x); ctx.fillStyle = "#d6ccba"; ctx.fillRect(0, 470, LW, H - 470);
+  for (const it of sceneDrawables(scene, actors, { label: false })) it.draw(ctx);
+}
+let last = performance.now();
+function loop(now) {
+  const dt = now - last; last = now;
+  const a = performance.now(); step(Math.min(100, dt)); cam.update(ren.x, dt); const b = performance.now(); draw(); const c = performance.now();
+  S.frames.push(dt); S.update.push(b - a); S.draw.push(c - b);
+  if (S.frames.length > 600) for (const k in S) S[k].shift();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+const stat = arr => { const s = [...arr].sort((x, y) => x - y); return { avg: s.reduce((x, y) => x + y, 0) / s.length, p95: s[Math.floor(s.length * 0.95)] ?? 0, max: s[s.length - 1] ?? 0 }; };
+function report() {
+  const f = stat(S.frames.slice(10)), u = stat(S.update.slice(10)), d = stat(S.draw.slice(10));
+  const r = { guards: N, frames: S.frames.length, frame_ms: f, update_ms: u, draw_ms: d, fps: 1000 / f.avg, load_ms: loadMs, atlas: Q.get("atlas") !== "0",
+              dpr: devicePixelRatio, backing: [cv.width, cv.height] };
+  window.stress = r;
+  const fmt = o => `avg ${o.avg.toFixed(2)}  p95 ${o.p95.toFixed(2)}  max ${o.max.toFixed(2)}`;
+  document.getElementById("stats").textContent =
+    `frame interval ms: ${fmt(f)}   (${r.fps.toFixed(0)} fps)\nupdate ms:         ${fmt(u)}   (fixed 240 Hz steps, ${N} brains + ${N + 1} characters)\n` +
+    `draw ms:           ${fmt(d)}\nloaded in ${loadMs.toFixed(0)} ms (${r.atlas ? "atlases" : "per-clip sheets"}); canvas ${cv.width}x${cv.height} at DPR ${devicePixelRatio}`;
+}
+setInterval(report, 500);
+document.body.dataset.ready = "1";
+</script>
+</body>
+</html>

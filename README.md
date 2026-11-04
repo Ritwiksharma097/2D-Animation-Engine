@@ -36,6 +36,21 @@ English; `flags` are only ever "suspect"; `limits` says what each heuristic cann
 
 ## Tests
 
+Everything in one command (pytest, every Node test, every Playwright check script, the `dist/` build and
+check), with a pass/fail table and the time of each job:
+
+```
+python check_all.py
+```
+
+One-time setup for the browser checks: `python -m playwright install chromium` (downloads the browser
+Playwright drives; without it the browser jobs are reported as skipped, with this hint). The runtime
+tests need Node 18+ (https://nodejs.org); without it the Node jobs are skipped. Options: `--only
+<text>` (jobs whose name contains it), `--skip-browser` (pytest + Node only, under a minute),
+`--list`, `--timeout <s>`. Logs: `out/check_all/<job>.log`, `out/check_all/summary.json`.
+
+Just the unit tests:
+
 ```
 python -m pytest workbench/tests
 ```

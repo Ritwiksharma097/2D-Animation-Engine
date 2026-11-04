@@ -6,7 +6,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from screenshot_workbench import ROOT, SHOTS, free_port, launch  # noqa: E402
 
 
+def make_intake(name="demo_synthetic"):
+    """A synthetic sheet through the real intake command, so the check doesn't depend on leftover files in incoming/."""
+    import numpy as np
+    from PIL import Image
+    from test_intake import sheet
+    src = ROOT / "out" / f"_{name}_sheet.png"; Image.fromarray(sheet()).save(src)
+    subprocess.run([sys.executable, str(ROOT / "workbench/intake.py"), str(src), "--character", "guard", "--action", name,
+                    "--replaces", "walk", "--spec", "specs/guard_walk.json", "--no-images"], cwd=ROOT, check=True, capture_output=True)
+    return src
+
+
+def cleanup(name, src):
+    import shutil
+    for d in [ROOT / "incoming" / "guard" / name, ROOT / "out" / "incoming" / "guard" / name]:
+        shutil.rmtree(d, ignore_errors=True)
+    src.unlink(missing_ok=True)
+
+
 def main(key="guard/incoming__demo_synthetic", replaces="guard/walk"):
+    name = key.split("__")[1]
+    made = None if (ROOT / "incoming" / "guard" / name).exists() else make_intake(name)
     port = free_port()
     srv = subprocess.Popen([sys.executable, str(ROOT / "workbench/serve.py"), "--port", str(port), "--no-prepare"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(1); fails = 0
@@ -30,6 +50,7 @@ def main(key="guard/incoming__demo_synthetic", replaces="guard/walk"):
             br.close()
     finally:
         srv.terminate()
+        if made: cleanup(name, made)
     return 1 if fails else 0
 
 
