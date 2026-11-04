@@ -109,7 +109,8 @@ def guard_walk():
     act = A.load_action("guard", "walk")         # edited (snapped to ground)
     H = figure_height(act.frames)
     ground = act.ground_y
-    cx = 310.0
+    import intake
+    cx = round(float(np.median([intake.head_x(f) for f in act.frames])), 1)   # targets centred where intake puts the head
     frames_spec, S, v = walk_targets(H, cx, ground)
     # faint silhouette: the current drawing closest in stride to each target (scale and costume reference only)
     strides = [A.foot_clusters(f)["stride"] for f in act.frames]
@@ -119,7 +120,7 @@ def guard_walk():
         k = int(np.argmin([abs(s - want[fs["pose"]]) for s in strides]))
         ghosts.append(act.frames[k]); fs["source"] = f"faint: current frame {k + 1} (scale/costume only)"
     spec = {"format": "workbench-spec/1", "character": "guard", "action": "walk", "replaces": "guard/walk (rejected)",
-            "cell_size": [640, 576], "ground_y": ground, "figure_height_px": round(H, 1), "step_length_px": round(S, 1),
+            "cell_size": [640, 576], "ground_y": ground, "head_x": cx, "figure_height_px": round(H, 1), "step_length_px": round(S, 1),
             "travel_px_per_frame": round(v, 2), "frames": frames_spec,
             "criteria": {**walk_criteria(8, v, S, ground), "no_flags": ["stance_not_moving", "slide_unavoidable", "out_of_order"],
                          "identity_note": "Region colour/size checks are left out for the guard: his only reference is concept art whose tabard differs from every sprite; compare with his approved actions by eye."},

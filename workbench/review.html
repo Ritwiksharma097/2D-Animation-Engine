@@ -32,12 +32,14 @@
   .chars { margin:10px 16px 0; padding:8px 12px; background:var(--panel); border:1px solid var(--line); border-radius:6px; display:grid; gap:6px; }
   .chars input[type=number] { width:80px; } .warnb { color:var(--warn); font-weight:600; }
   .pend { color:#9a6b00; font-weight:600; }
+  .card.incoming { border:2px solid #2a78d6; margin-left:40px; }
+  .newtag { background:#2a78d6; color:#fff; border-radius:4px; padding:1px 6px; font-size:12px; }
 </style>
 </head>
 <body>
 <header>
   <h1>Owner review: every action</h1>
-  <label>show <select id="filter"><option value="all">all</option><option value="flagged">with tool flags</option><option value="unreviewed">not reviewed yet</option><option value="edited">edited</option></select></label>
+  <label>show <select id="filter"><option value="all">all</option><option value="flagged">with tool flags</option><option value="unreviewed">not reviewed yet</option><option value="edited">edited</option><option value="incoming">new, awaiting owner</option></select></label>
   <span id="prep"></span> <a href="regions.html" target="_blank">identity regions</a>
   <span class="muted">Your verdicts save to annotations/_reviews.json. Nothing here changes the drawings.</span>
 </header>
@@ -137,9 +139,48 @@ async function card(c, a, info) {
   return el;
 }
 
+async function incomingCard(n) {
+  const out = `../out/incoming/${n.character}/${n.action}/`, key = n.key;
+  let rep = null;
+  if (n.out.includes("report.json")) try { rep = await json(out + "report.json"); } catch {}
+  const flags = rep?.flags || [], byCode = {};
+  for (const f of flags) (byCode[f.code] ??= []).push(f);
+  const sc = rep?.spec_check;
+  const imgs = Object.values(rep?.images || {}).filter(f => n.out.includes(f)).map(f => `<a href="${out}${f}" target="_blank">${esc(f.replace(".png", "").replace(/_/g, " "))}</a>`);
+  const rv = reviews.reviews[key] || {};
+  const el = document.createElement("section");
+  el.className = "card incoming"; el.dataset.flagged = flags.length ? "1" : ""; el.dataset.reviewed = rv.verdict ? "1" : ""; el.dataset.edited = "";
+  el.innerHTML = `
+    <div><img class="thumb" loading="lazy" src="../incoming/${n.character}/${n.action}/01.png" alt="${esc(key)} first frame"></div>
+    <div>
+      <h2><span class="newtag">NEW, awaiting owner</span> ${esc(n.character)}/${esc(n.action)}</h2>
+      <div class="muted">${n.frames} frames from ${esc(n.source)}${n.replaces ? ` · would replace <b>${esc(n.replaces)}</b>` : ""} · in incoming/ (not in assets/)</div>
+      ${sc ? `<div><b>Spec</b> ${esc(sc.spec)}: ${sc.meets_all_measurable ? "<span class='saved'>meets every measurable criterion</span> (still check by eye)" :
+        "<span class='err'>misses " + sc.criteria.filter(c => !c.meets).map(c => esc(c.criterion)).join("; ") + "</span>"}</div>` : ""}
+      <div><b>Tool says</b> ${flags.length ? "(suspect, never a pass):" : rep ? ": no flags (that is not a pass)." : ": <span class='muted'>no report</span>"}</div>
+      <ul class="flags">${Object.entries(byCode).map(([code, fs]) => `<li>${esc(PLAIN[code] || code)}</li>`).join("")}</ul>
+      <div class="links muted">images: ${imgs.join(" ") || "none"}</div>
+    </div>
+    <div class="verdict">
+      <label>your verdict <select class="v"><option value="">(none)</option><option>approved</option><option>needs work</option><option>rejected</option><option>unsure</option></select></label>
+      <textarea class="cmt" placeholder="comment on the new frames"></textarea>
+      <button class="save">Save</button> <span class="msg muted">${rv.updated ? "saved " + esc(rv.updated) : ""}</span>
+    </div>`;
+  el.querySelector(".v").value = rv.verdict || ""; el.querySelector(".cmt").value = rv.comment || "";
+  el.querySelector(".save").onclick = async () => {
+    const m = el.querySelector(".msg");
+    try {
+      const r = await fetch("/api/review", { method: "POST", body: JSON.stringify({ key, verdict: el.querySelector(".v").value, comment: el.querySelector(".cmt").value }) });
+      if (!r.ok) throw new Error((await r.json()).error);
+      m.className = "msg saved"; m.textContent = "saved";
+    } catch (e) { m.className = "msg err"; m.textContent = "not saved: " + e.message; }
+  };
+  return el;
+}
+
 function applyFilter() {
   const f = $("#filter").value;
-  for (const el of cards) el.style.display = f === "all" || (f === "flagged" && el.dataset.flagged) || (f === "unreviewed" && !el.dataset.reviewed) || (f === "edited" && el.dataset.edited) ? "" : "none";
+  for (const el of cards) el.style.display = f === "all" || (f === "flagged" && el.dataset.flagged) || (f === "unreviewed" && !el.dataset.reviewed) || (f === "edited" && el.dataset.edited) || (f === "incoming" && el.classList.contains("incoming")) ? "" : "none";
 }
 
 function renderSettings() {
@@ -169,7 +210,11 @@ async function render() {
   renderSettings();
   const list = $("#list"); list.innerHTML = ""; cards = [];
   for (const [c, ch] of Object.entries(manifest.characters))
-    for (const [a, info] of Object.entries(ch.actions)) { const el = await card(c, a, info); cards.push(el); list.appendChild(el); }
+    for (const [a, info] of Object.entries(ch.actions)) {
+      const el = await card(c, a, info); cards.push(el); list.appendChild(el);
+      for (const n of (inv?.incoming || []).filter(n => n.replaces === `${c}/${a}`)) { const e2 = await incomingCard(n); cards.push(e2); list.appendChild(e2); }
+    }
+  for (const n of (inv?.incoming || []).filter(n => !n.replaces)) { const e2 = await incomingCard(n); cards.push(e2); list.prepend(e2); }
   applyFilter();
   document.body.dataset.ready = "1";
 }

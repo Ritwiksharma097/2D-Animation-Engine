@@ -130,7 +130,15 @@ class Handler(SimpleHTTPRequestHandler):
                 od = analyze.OUT / c / ac
                 inv[f"{c}/{ac}"] = {"out": sorted(f.name for f in od.iterdir()) if od.is_dir() else [],
                                     "annotation": (analyze.ANNOTATIONS / c / f"{ac}.json").exists(), "edited": edited(c, ac)}
-            return self._json(200, {"actions": inv, "reviews": load_reviews(), "settings": settings.load(),
+            incoming = []
+            for reg_path in sorted((ROOT / "incoming").glob("*/*/intake.json")):
+                reg = json.loads(reg_path.read_text(encoding="utf-8"))
+                od = analyze.OUT / "incoming" / reg["character"] / reg["action"]
+                incoming.append({"key": f"{reg['character']}/incoming__{reg['action']}", "character": reg["character"], "action": reg["action"],
+                                 "replaces": reg.get("replaces"), "status": reg.get("status"), "frames": len(reg.get("frames", [])),
+                                 "source": reg.get("source"), "spec": reg.get("spec"), "created": reg.get("created"),
+                                 "out": sorted(f.name for f in od.iterdir()) if od.is_dir() else []})
+            return self._json(200, {"actions": inv, "incoming": incoming, "reviews": load_reviews(), "settings": settings.load(),
                                     "pending": STATUS["pending"], "running": STATUS["running"], "failed": STATUS["failed"]})
         if u.path == "/api/settings":
             import settings

@@ -393,7 +393,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | Step | State |
 | --- | --- |
 | 18. Owner-PC fixes | done |
-| 19. Art intake | not started |
+| 19. Art intake | done |
 | 20. Runtime ("engine") | not started |
 | 21. Ladders end to end | not started |
 | 22. Krita round trip | not started |
@@ -419,6 +419,32 @@ Open owner decisions (not decided here; each lives in one place, listed in
   after preparation, no error responses, guard UNCONFIRMED, scale saves, re-export uses it,
   characters apart, stage width, no page errors). Restores `_settings.json` and the exports.
   Screenshots 60-62 looked at.
+
+## Step 19 notes
+
+- `workbench/intake.py <sheet|folder> --character C --action A [--replaces X] [--grid CxR] [--spec S]`:
+  background keyed out from the border colour when there is no transparency; figures by grid or by
+  connected components (pieces under 20% of the largest join the nearest figure, so detached effects
+  and props stay; reading order rows then left-to-right); uniform scale to the replaced action's
+  median height (or the identity reference); each frame placed like the assets: head centre (median
+  x of the top third) at the target head x, lowest pixel on ground_y; writes `incoming/C/A/` +
+  `intake.json`; analyses (as a walk if it replaces one) and runs spec_check into `out/incoming/`.
+  With a spec that has `head_x`, the head is aligned to the spec (the guard spec now records 318).
+- Round trip: ren/rejected_walk_fourteen re-packed into a 7x2 sheet (cropped, re-spaced) came
+  back with every frame within +-1 px of its original position (5 of 14 identical) via the grid; via
+  a white-background sheet and connected components also +-1 px, but soft edges are lost (blended
+  into white, so ~4% of edge alpha differs). The +-1 px are the original assets' own alignment
+  rounding.
+- Synthetic guard sheet drawn to the spec, shrunk to 60%, irregular spacing, white background:
+  8 figures found, rescaled to his height, analysed as a walk: recommended travel 37.0 px/frame (the
+  spec's 37.2), slide ~2 px per loop. Spec check misses only "distinct poses" (the rectangle drawing's
+  two contact poses are identical silhouettes), as expected.
+- Review page: intakes appear as "NEW, awaiting owner" cards right after the action they would
+  replace, with spec result and images; filter "new, awaiting owner". `intake_review_checks.py`
+  3/3 PASS; screenshot 63 looked at. Demo intakes were removed afterwards (no synthetic art left
+  in `incoming/`). 2 new unit tests (`test_intake.py`, 26 total).
+- Limits: background keying is a hard colour threshold with a soft ramp, not real matting; a figure
+  touching another merges into one; contacts are not used for alignment yet (heads/ground only).
 
 ## Known problems
 
@@ -458,7 +484,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 4: next is step 19 (art intake).
+Phase 4: next is step 20 (runtime/).
 
 Phase 3 follow-ups (older list):
 1. On Windows: double-click `start_workbench.bat` (never run here) and review every action;

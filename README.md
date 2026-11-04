@@ -130,3 +130,12 @@ python workbench/spec_check.py specs/guard_walk.json path\to\new_frames   # meet
 
 http://localhost:8000/workbench/regions.html (with `serve.py`): click seeds on the identity
 reference, Save, then Check any action. Test: `python workbench/tests/regions_checks.py`.
+
+## Art intake (new frames)
+
+```
+python workbench/intake.py path\to\sheet.png --character guard --action walk_v2 --replaces walk --spec specs/guard_walk.json
+python workbench/intake.py path\to\frames_folder --character ren --action walk_8 --replaces walk_keypose
+```
+
+Writes `incoming/<character>/<action>/` (never `assets/`); the review page shows it as "new, awaiting owner".

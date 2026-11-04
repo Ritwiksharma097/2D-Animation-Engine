@@ -184,3 +184,11 @@ Values the owner decides, in one place. `characters.<name>.game_scale` (game px 
 review page shows and edits it. `open_decisions` records where each open decision lives
 (guard ledge reading, Ren's climb step-in, walk timing, new frames), so each stays changeable in
 one place.
+
+## Intake registry (`incoming/<character>/<action>/intake.json`)
+
+`format: workbench-intake/1`; `status` ("new, awaiting owner"); `source` (sheet or folder);
+`method` (grid CxR, connected components, folder); `replaces`; `spec`; `fitted_to` (target height,
+cell, ground y, head x and where they came from); `scale` (uniform); `frames[]` with `file`,
+`offset` (where the trimmed figure was placed in the cell), `size`, `clipped_by_cell`; `alignment`.
+Reviews of intakes use the key `<character>/incoming__<action>`.

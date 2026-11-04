@@ -8,6 +8,7 @@
   576
  ],
  "ground_y": 535.0,
+ "head_x": 318.0,
  "figure_height_px": 413.5,
  "step_length_px": 148.9,
  "travel_px_per_frame": 37.21,
@@ -18,12 +19,12 @@
    "leading_leg": "l",
    "contacts": {
     "heel_l": {
-     "x": 384.4,
+     "x": 392.4,
      "y": 535.0,
      "state": "planted"
     },
     "toe_r": {
-     "x": 235.6,
+     "x": 243.6,
      "y": 535.0,
      "state": "planted"
     }
@@ -37,12 +38,12 @@
    "leading_leg": "l",
    "contacts": {
     "foot_l": {
-     "x": 347.2,
+     "x": 355.2,
      "y": 535.0,
      "state": "planted"
     },
     "toe_r": {
-     "x": 254.2,
+     "x": 262.2,
      "y": 526.7,
      "state": "free"
     }
@@ -56,12 +57,12 @@
    "leading_leg": "l",
    "contacts": {
     "foot_l": {
-     "x": 310.0,
+     "x": 318.0,
      "y": 535.0,
      "state": "planted"
     },
     "foot_r": {
-     "x": 310.0,
+     "x": 318.0,
      "y": 510.2,
      "state": "free"
     }
@@ -75,12 +76,12 @@
    "leading_leg": "l",
    "contacts": {
     "toe_l": {
-     "x": 272.8,
+     "x": 280.8,
      "y": 535.0,
      "state": "planted"
     },
     "heel_r": {
-     "x": 373.3,
+     "x": 381.3,
      "y": 518.5,
      "state": "free"
     }
@@ -94,12 +95,12 @@
    "leading_leg": "r",
    "contacts": {
     "heel_r": {
-     "x": 384.4,
+     "x": 392.4,
      "y": 535.0,
      "state": "planted"
     },
     "toe_l": {
-     "x": 235.6,
+     "x": 243.6,
      "y": 535.0,
      "state": "planted"
     }
@@ -113,12 +114,12 @@
    "leading_leg": "r",
    "contacts": {
     "foot_r": {
-     "x": 347.2,
+     "x": 355.2,
      "y": 535.0,
      "state": "planted"
     },
     "toe_l": {
-     "x": 254.2,
+     "x": 262.2,
      "y": 526.7,
      "state": "free"
     }
@@ -132,12 +133,12 @@
    "leading_leg": "r",
    "contacts": {
     "foot_r": {
-     "x": 310.0,
+     "x": 318.0,
      "y": 535.0,
      "state": "planted"
     },
     "foot_l": {
-     "x": 310.0,
+     "x": 318.0,
      "y": 510.2,
      "state": "free"
     }
@@ -151,12 +152,12 @@
    "leading_leg": "r",
    "contacts": {
     "toe_r": {
-     "x": 272.8,
+     "x": 280.8,
      "y": 535.0,
      "state": "planted"
     },
     "heel_l": {
-     "x": 373.3,
+     "x": 381.3,
      "y": 518.5,
      "state": "free"
     }
