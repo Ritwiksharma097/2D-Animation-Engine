@@ -17,7 +17,8 @@ pip install -r requirements.txt
 ```
 python workbench/analyze.py guard walk
 python workbench/analyze.py ren walk_keypose --travel 41.9
-python workbench/analyze.py --all
+python workbench/analyze.py --all          # every action in the manifest
+python workbench/analyze.py --report-set   # the five in REPORT.md
 ```
 
 Arguments are a character and action name from `assets/manifest.json`. `--travel` is the travel per
@@ -63,3 +64,6 @@ at http://localhost:8000/workbench/, but then Save downloads the JSON instead of
 
 Screenshots for visual checks: `python workbench/tests/screenshot_workbench.py` (needs
 `pip install playwright` and `python -m playwright install chromium` on a fresh machine).
+
+Interaction checks (assert drag, shift-click delete, ping-pong, durations):
+`python workbench/tests/ui_checks.py`.

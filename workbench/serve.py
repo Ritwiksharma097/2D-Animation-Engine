@@ -29,6 +29,10 @@ ANN_RE = re.compile(rf"^/annotations/({NAME})/({NAME})\.json$")
 
 
 class Handler(SimpleHTTPRequestHandler):
+    def log_message(self, fmt, *args):  # only log errors, not every GET
+        if args and str(args[1])[:1] not in ("2", "3") and "favicon" not in str(args[0]) and "/annotations/" not in str(args[0]) and "/out/" not in str(args[0]):
+            super().log_message(fmt, *args)
+
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
         super().end_headers()

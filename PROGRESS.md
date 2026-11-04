@@ -118,6 +118,33 @@ pose); both rejected Ren walks slide heavily and have larger heads than the idle
 keypose walk is best on every measure except slide: at the old 41.9 px/frame it slides ~90 game px
 per loop because the drawings imply ~89 px per drawing. Disagreements are listed in REPORT.md.
 
+# Phase 2
+
+| Step | State |
+| --- | --- |
+| 6. Close phase 1 gaps | done |
+| 7. Non-destructive edit layer | not started |
+| 8. Ledge / ladder props | not started |
+| 9. Per-region identity | not started |
+| 10. Game export + playable page | not started |
+| 11. More annotations | not started |
+
+## Step 6 notes
+
+- `python workbench/tests/ui_checks.py` drives Chromium and **asserts** 9 things (9/9 pass in the
+  cloud): drag moves a contact by exactly the mouse delta and adds no point; shift-click deletes the
+  nearest point and the table updates; unsaved edits don't reach disk; ping-pong order
+  1..14..2,1,2.. both by stepping and while playing; durations typed into the timeline drive
+  playback (set 1000/83/400/83 ms, measured 1002/74/400/83 ms: the 74 is frame 1's overshoot carried
+  into frame 2 at 60 fps refresh granularity). No bugs were found in these paths; nothing needed fixing.
+- `analyze.py --all` now runs every action in the manifest (19; ~40 s with images). Each is checked
+  first (folder exists, PNGs present, alpha channel, one frame size) and skipped with the reason if
+  not; analysis exceptions are also caught and reported as skips. Currently 0 skipped.
+  `--report-set` runs the five from REPORT.md.
+- Per-action `cell_size` / `ground_y` from the manifest are now used by analysis and by the page
+  (climbs are 512x448, ground 439.6). Screenshot `13_climb_up_cell512.png` checked.
+- serve.py no longer logs every successful GET.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,

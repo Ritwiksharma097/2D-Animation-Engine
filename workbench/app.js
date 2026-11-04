@@ -59,7 +59,8 @@ class Viewer {
       img: await loadImage(`${ASSETS}${this.info.dir}/${f.file}`),
     })));
     $(this.el, ".loop-mode").value = this.ann?.loop_mode || (this.info.loop ? "loop" : "once");
-    this.groundY = this.ann?.ground_anchor?.y ?? manifest.conventions.ground_y;
+    this.cell = this.info.cell_size || manifest.conventions.cell_size;
+    this.groundY = this.ann?.ground_anchor?.y ?? this.info.ground_y ?? manifest.conventions.ground_y;
     const walk = this.report?.metrics?.walk;
     const t = this.ann?.travel;
     const tm = $(this.el, ".travel-mode"), tp = $(this.el, ".travel-px");
@@ -191,8 +192,8 @@ class Viewer {
   // ---------------- drawing
   resize() {
     const z = this.zoom;
-    const w = this.mode === "moving" ? STAGE_W : manifest.conventions.cell_size[0];
-    this.cv.width = Math.round(w * z); this.cv.height = Math.round(manifest.conventions.cell_size[1] * z);
+    const w = this.mode === "moving" ? STAGE_W : this.cell[0];
+    this.cv.width = Math.round(w * z); this.cv.height = Math.round(this.cell[1] * z);
   }
 
   tinted(i, colour) {
@@ -233,7 +234,7 @@ class Viewer {
       }
     } else {
       ctx.setLineDash([6 / z, 6 / z]); ctx.strokeStyle = "#bbb";
-      ctx.beginPath(); ctx.moveTo(320, 0); ctx.lineTo(320, 576); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(this.cell[0] / 2, 0); ctx.lineTo(this.cell[0] / 2, this.cell[1]); ctx.stroke(); ctx.setLineDash([]);
       ctx.fillText(`ground y=${gy}`, 6, gy - 6);
     }
     // onion skin (in place only; in moving mode it would need past world offsets)
@@ -374,7 +375,7 @@ class Viewer {
     else travel = { mode: "from_contacts" };
     return {
       format: "workbench-action/1", character: this.char, action: this.action, source_dir: this.info.dir,
-      cell_size: manifest.conventions.cell_size, loop_mode: this.loopMode,
+      cell_size: this.cell, loop_mode: this.loopMode,
       default_duration_ms: +$(this.el, ".all-ms").value || 83, ground_anchor: { y: this.groundY }, facing: "right", travel,
       frames: this.frames.map(f => {
         const o = { file: f.file, duration_ms: f.duration_ms };

@@ -139,7 +139,7 @@ def load_action(character: str, action: str, travel: float | None = None,
         character=character, action=action, files=files,
         frames=[load_rgba(f) for f in files], durations_ms=durations,
         loop_mode=loop_mode,
-        ground_y=float((ann or {}).get("ground_anchor", {}).get("y", man["conventions"].get("ground_y", 535))),
+        ground_y=float((ann or {}).get("ground_anchor", {}).get("y", info.get("ground_y", man["conventions"].get("ground_y", 535)))),
         facing=(ann or {}).get("facing", "right"),
         travel=travel, travel_source=t_src, travel_mode=t_mode,
         game_scale=ch.get("game_scale_in_old_demos"),
@@ -692,8 +692,33 @@ def run(character: str, action: str, travel: float | None = None, images: bool =
     return rep
 
 
-DEFAULT_SET = [("guard", "walk"), ("guard", "idle"), ("ren", "walk_keypose"),
-               ("ren", "rejected_walk_fourteen"), ("ren", "rejected_walk_flatboy")]
+REPORT_SET = [("guard", "walk"), ("guard", "idle"), ("ren", "walk_keypose"),
+              ("ren", "rejected_walk_fourteen"), ("ren", "rejected_walk_flatboy")]
+
+
+def all_actions() -> list[tuple[str, str]]:
+    man = load_manifest()
+    return [(c, a) for c, ch in man["characters"].items() for a in ch["actions"]]
+
+
+def why_unusable(character: str, action: str) -> str | None:
+    """Reason an action can't be analysed, or None if it can."""
+    info = load_manifest()["characters"][character]["actions"][action]
+    src = ASSETS / info["dir"]
+    if not src.is_dir():
+        return f"folder {info['dir']} is missing"
+    files = sorted(src.glob("*.png"))
+    if not files:
+        return f"no PNG frames in {info['dir']}"
+    sizes = set()
+    for f in files:
+        with Image.open(f) as im:
+            sizes.add(im.size)
+            if "A" not in im.getbands():
+                return f"{f.name} has no alpha channel"
+    if len(sizes) > 1:
+        return f"frames have different sizes {sorted(sizes)}"
+    return None
 
 
 def main(argv=None):
@@ -703,17 +728,35 @@ def main(argv=None):
     p.add_argument("character", nargs="?")
     p.add_argument("action", nargs="?")
     p.add_argument("--travel", type=float, help="travel per frame in cell px (overrides manifest)")
-    p.add_argument("--all", action="store_true", help="analyse the standard real-data set")
+    p.add_argument("--all", action="store_true", help="analyse every action in the manifest")
+    p.add_argument("--report-set", action="store_true", help="only the five actions discussed in REPORT.md")
     p.add_argument("--no-images", action="store_true")
     p.add_argument("--no-annotations", action="store_true", help="ignore annotations/ and use heuristics")
     a = p.parse_args(argv)
-    todo = DEFAULT_SET if a.all else [(a.character, a.action)]
-    if not a.all and not (a.character and a.action):
-        p.error("give CHARACTER ACTION or --all")
+    if a.all:
+        todo = all_actions()
+    elif a.report_set:
+        todo = REPORT_SET
+    elif a.character and a.action:
+        todo = [(a.character, a.action)]
+    else:
+        p.error("give CHARACTER ACTION, --all or --report-set")
+    skipped = []
     for c, ac in todo:
-        rep = run(c, ac, a.travel, not a.no_images, not a.no_annotations)
+        reason = why_unusable(c, ac)
+        if reason is None:
+            try:
+                rep = run(c, ac, a.travel, not a.no_images, not a.no_annotations)
+            except Exception as e:  # keep going; report what failed and why
+                reason = f"analysis failed: {e!r}"
+        if reason:
+            skipped.append((c, ac, reason))
+            print(f"SKIPPED {c}/{ac}: {reason}\n")
+            continue
         print(rep["summary"])
         print(f"  -> {(OUT / c / ac / 'report.json').relative_to(ROOT)}\n")
+    if len(todo) > 1:
+        print(f"{len(todo) - len(skipped)} analysed, {len(skipped)} skipped" + "".join(f"\n  {c}/{ac}: {r}" for c, ac, r in skipped))
 
 
 if __name__ == "__main__":
