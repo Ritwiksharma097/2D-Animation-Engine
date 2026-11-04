@@ -273,7 +273,7 @@
  ],
  "scene": {
   "units": "cell px of this action (game px / 0.4777)",
-  "source": "manifest old_scene; cap thickness 8 game px is an assumption (not recorded)",
+  "source": "terra_demo/index.html climb transition code (per-pose hand anchoring), the path the owner saw; ledge from manifest old_scene; cap thickness 8 game px is an assumption",
   "floor_y": 1243.46,
   "props": [
    {
@@ -293,6 +293,68 @@
    439.6
   ],
   "path": {
+   "type": "points",
+   "points": [
+    [
+     1063.48,
+     1046.73
+    ],
+    [
+     1052.7,
+     1060.8
+    ],
+    [
+     1048.93,
+     1065.73
+    ],
+    [
+     1015.47,
+     1066.73
+    ],
+    [
+     988.53,
+     1066.73
+    ],
+    [
+     937.13,
+     1120.73
+    ],
+    [
+     914.73,
+     1119.73
+    ],
+    [
+     903.79,
+     1243.51
+    ],
+    [
+     888.33,
+     1243.51
+    ],
+    [
+     869.33,
+     1243.51
+    ],
+    [
+     872.33,
+     1243.51
+    ],
+    [
+     872.33,
+     1243.51
+    ],
+    [
+     876.33,
+     1243.51
+    ],
+    [
+     889.72,
+     1243.51
+    ]
+   ],
+   "timing": "played frame k at t=k/13; positions sampled from the original terra_demo climb code (hand pinned to the ledge per pose)"
+  },
+  "path_straight_line_assumption": {
    "type": "line",
    "from": [
     1063.43,

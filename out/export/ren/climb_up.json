@@ -460,55 +460,55 @@
    0.0
   ],
   [
-   13.37,
-   -15.14
+   -13.39,
+   0.0
   ],
   [
-   26.73,
-   -30.27
+   -17.39,
+   0.0
   ],
   [
-   40.1,
-   -45.41
+   -17.39,
+   0.0
   ],
   [
-   53.46,
-   -60.55
+   -20.39,
+   0.0
   ],
   [
-   66.83,
-   -75.68
+   -1.39,
+   0.0
   ],
   [
-   80.19,
-   -90.82
+   14.07,
+   0.0
   ],
   [
-   93.56,
-   -105.96
+   25.01,
+   -123.78
   ],
   [
-   106.92,
-   -121.1
+   47.41,
+   -122.78
   ],
   [
-   120.29,
-   -136.23
+   98.81,
+   -176.78
   ],
   [
-   133.65,
-   -151.37
+   125.75,
+   -176.78
   ],
   [
-   147.02,
-   -166.51
+   159.21,
+   -177.78
   ],
   [
-   160.38,
-   -181.64
+   162.98,
+   -182.71
   ],
   [
-   173.75,
+   173.76,
    -196.78
   ]
  ],
@@ -516,15 +516,15 @@
   {
    "type": "ledge",
    "id": "ledge",
-   "front_x": 77.45,
-   "back_x": 504.5,
-   "top_y": -196.78,
+   "front_x": 77.41,
+   "back_x": 504.46,
+   "top_y": -196.83,
    "cap": {
     "overhang": 16.75,
     "thickness": 16.75
    }
   }
  ],
- "floor_y": 0.0,
- "path_source": "line: manifest old_scene; cap thickness 8 game px is an assumption (not recorded)"
+ "floor_y": -0.05,
+ "path_source": "points: terra_demo/index.html climb transition code (per-pose hand anchoring), the path the owner saw; ledge from manifest old_scene; cap thickness 8 game px is an assumption"
 }

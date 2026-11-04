@@ -299,6 +299,13 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 - Not checked locally: drag/shift-click editing, ping-pong, duration editing (now phase 2 step 6).
 - Added `ren/climb_up` and `ren/climb_down` (the liked grounded ledge climb, 512 x 448 cells, with the old scene geometry in the manifest) for phase 2.
 
+## Phase 2 checked on the owner's Windows PC (local assistant, 2026-11-04)
+
+- Python 3.14.3: 23 tests pass; `analyze.py --all` analyses 19 actions, 0 skipped. `assets/` unchanged by phase 2.
+- **Correction to phase 2's climb finding.** The brief said the old demo moved Ren in a straight line; it didn't. `terra_demo/index.html` pins his hand to the ledge per pose. The real per-frame points are now in `annotations/ren/climb_*.json` (`scene.path`, type `points`), and the manifest's `old_scene` is corrected. With them, `props.py ren climb_up` shows feet on the floor in frames 1-7 and hands/knees on the ledge after that (looked at `out/ren/climb_up/scene.png`); remaining: a 6-9 game px sink in frames 12-13, and clip flags from fingers curling over the cap. `climb_down` still has flags (see phase 3, step 12).
+- Re-ran `export.py --demo` so `play.html` uses the real path. Playtest checked in the browser: walk, then climb onto the ledge, no console errors. Bug: clicking the floor near the ledge lets Ren walk into the ledge face.
+- Not rechecked locally: the guard idle edit, the Playwright UI scripts.
+
 ## Next step
 
 Phase 2 steps 6-11 are done. Suggested next steps, in order:

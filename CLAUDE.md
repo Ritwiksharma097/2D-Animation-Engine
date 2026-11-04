@@ -64,3 +64,24 @@ Phase 1 (steps 0-5 above) is done and was checked on the owner's Windows PC (see
 11. **More annotations.** Annotate contacts for the guard walk and Ren's rejected fourteen walk, and compare annotated with heuristic results in `REPORT.md`.
 
 Out of scope: generating or redrawing art, rigs, the actual game.
+
+# Phase 3
+
+Phases 1-2 are done; see `PROGRESS.md` (including the owner-PC check of phase 2). Same rules: commit and push after each step, keep `PROGRESS.md` current, verify visually, report honestly, stop cleanly when the budget runs out.
+
+12. **Correct the climb calibration.** Phase 2 tested Ren's climbs against a straight-line path, which was the brief's mistake: the old demo pinned his hand to the ledge pose by pose. The manifest's `old_scene` now describes the real path, and `annotations/ren/climb_*.json` `scene.path` holds its exact per-frame points (the straight line is kept as `path_straight_line_assumption`). With the real path, climb up shows feet on the floor in frames 1-7 and hands/knees on the ledge after that; remaining issues are a 6-9 game px sink in frames 12-13 and clip flags from fingers curling over the cap. Then:
+    - Fix `ren/climb_down`: it still flags feet 124 px off the floor in frames 6-7 and feet labelled `ledge_top` in frames 13-14 that are on the floor. Check whether its contact labels are wrong or whether the down drawings really don't match the up table.
+    - Reduce clip over-reporting where it is a drawing convention (fingers over the ledge corner, a near limb in front of the ledge face), and say what you allow and why.
+    - Rewrite REPORT.md's climb section: withdraw the "perfect climb floats" finding and explain the cause.
+    - Redo the guard climb fits with a contact-pinned path (`from_contacts` or per-pose points) rather than a straight line.
+    - Playtest bug: clicking the floor near the ledge lets Ren walk into the ledge face; stop walking before solids.
+13. **One climb, different ledge heights.** This is the owner's long-standing question. For a given ledge height, generate the climb path from the planted contacts (hands pinned on the ledge, feet on the floor, then knees/feet on the top). Sweep Ren's climb over roughly 60-140% of the original height and report the range where contacts stay on surfaces and the body doesn't visibly clip, with scene images at a few heights. In the playtest, add a ledge-height control that uses this, and visibly mark heights outside the supported range. State plainly that outside that range the drawings won't work: it needs new drawings or another climb category (step-up, pull-up).
+14. **Redraw specs, not art.** For drawings that must be redone, produce a pose-target sheet whoever draws them can follow (Krita or image generation):
+    - The guard walk: 8 frames (contact, down, passing, up, twice, with legs swapping), each with foot target positions on the ground line, stride and bob scaled from his height, over a faint silhouette of his current drawing, plus the measurable criteria a new set must pass in `analyze.py`.
+    - Ren's 4-pose walk: the 4 in-betweens the owner asked for, with foot targets such that 8 frames at the old 41.9 px/frame don't slide.
+    - Make it easy to check new frames: drop them in a folder, run one command, get the report against the spec.
+15. **Owner review page.** One page (served by `serve.py`) listing every action with thumbnail, the owner's status and feedback, the tool's flags in plain English, links to the workbench view and diagnostic images, and before/after for edited actions. Let the owner record a verdict and comment per action, saved to `annotations/_reviews.json`. The owner should be able to review everything without running commands beyond starting the server. Add a `start_workbench.bat` that starts the server and opens this page on Windows.
+16. **Playtest completeness.** Climb down, walking left (mirrored), jump timing in the export, Ren's idle while standing, and the guard patrolling on the same floor with his edited idle and walk at a consistent scale. Add a toggle that shows contact pins and drift.
+17. **Identity regions by clicking in the page**, saved to `_identity.json`.
+
+Out of scope: generating or redrawing art, rigs, the actual game.
