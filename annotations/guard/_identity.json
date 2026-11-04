@@ -1,0 +1,44 @@
+{
+ "format": "workbench-identity/1",
+ "character": "guard",
+ "reference": "guard/concept.png",
+ "note": "Seeds are reference-image pixels. Regions learn colour and vertical band from the reference.",
+ "regions": {
+  "helmet": {
+   "seed": [
+    698,
+    179
+   ]
+  },
+  "armour": {
+   "seed": [
+    587,
+    438
+   ]
+  },
+  "tabard": {
+   "seed": [
+    754,
+    753
+   ]
+  },
+  "face": {
+   "seed": [
+    745,
+    308
+   ]
+  },
+  "moustache": {
+   "seed": [
+    800,
+    308
+   ]
+  },
+  "gloves": {
+   "seed": [
+    606,
+    772
+   ]
+  }
+ }
+}

@@ -1,0 +1,56 @@
+{
+ "format": "workbench-identity/1",
+ "character": "ren",
+ "reference": "ren/idle/01.png",
+ "note": "Seeds are reference-image pixels. Regions learn colour and vertical band from the reference.",
+ "regions": {
+  "hood": {
+   "seed": [
+    319,
+    142
+   ]
+  },
+  "hair": {
+   "seed": [
+    392,
+    142
+   ]
+  },
+  "face": {
+   "seed": [
+    369,
+    199
+   ]
+  },
+  "tunic": {
+   "seed": [
+    319,
+    272
+   ]
+  },
+  "sleeves": {
+   "seed": [
+    296,
+    299
+   ]
+  },
+  "satchel": {
+   "seed": [
+    269,
+    341
+   ]
+  },
+  "trousers": {
+   "seed": [
+    319,
+    417
+   ]
+  },
+  "boots": {
+   "seed": [
+    311,
+    521
+   ]
+  }
+ }
+}

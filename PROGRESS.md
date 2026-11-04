@@ -125,7 +125,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 | 6. Close phase 1 gaps | done |
 | 7. Non-destructive edit layer | done |
 | 8. Ledge / ladder props | done (findings below; guard fits are heuristic) |
-| 9. Per-region identity | not started |
+| 9. Per-region identity | done (seeded from the reference; no click UI) |
 | 10. Game export + playable page | not started |
 | 11. More annotations | not started |
 
@@ -220,6 +220,29 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
   (9-38 px here). The top-most-glove hand detector is unreliable (lands on the helmet in some
   frames), so hand results there are weak.
 
+## Step 9 notes (per-region identity)
+
+- `workbench/regions.py`: seeds in `annotations/<c>/_identity.json` (Ren: hood, hair, face,
+  tunic, sleeves, satchel, trousers, boots; guard: helmet, armour, tabard, face, moustache, gloves;
+  picked by me on a gridded view of each reference and colour-checked). `analyze.py` now flags
+  `region_colour_drift` / `region_size_drift` / `region_missing` instead of the whole-figure
+  palette flags. Region seeds are set by CLI (`regions.py seed`), **not by clicks in the page**
+  (not built). 4 new tests (`test_props_regions.py`, 23 total pass). First version was
+  inconsistent (reference vs itself gave 2.7x for the tunic); fixed so the reference scores 1.00x /
+  dE 0 by construction.
+- Results (`out/report_examples/phase2/ren_regions.png`, looked at; overlays land on the right
+  parts, face only half covered because shaded skin falls outside the tolerance):
+  approved walk: all regions dE 0.7-2.9, sizes 0.71-1.49x (pose: legs apart, satchel swings).
+  **Ren jump** (accepted, "look differs"): colour shifted in nearly every region, hood 6.7, tunic
+  6.8, hair 5.8, face 5.1, sleeves 5.2, boots 5.1 dE: agrees with the owner's note; it is a
+  palette shift, not a size change. **Flatboy**: hair 1.51x, face 1.21x / dE 5.0, sleeves dE 8.9:
+  agrees ("character changed"); hair stays under the 1.6x limit so only the sleeves are flagged.
+  **Fourteen**: indistinguishable from the approved walk, again (same as phase 1).
+  Ren climb (older style): face 0.32x / dE 9.7, sleeves dE 7.9: agrees with "identity differs".
+  Guard (`guard_regions.png`): every sprite action's tabard is ~6-8 dE from the concept and smaller
+  (0.13-0.55x); the concept art's blue differs from the sprites' or the sash band doesn't match the
+  sprite pose. Weak evidence because the reference is concept art.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -244,7 +267,7 @@ per loop because the drawings imply ~89 px per drawing. Disagreements are listed
 
 ## Next step
 
-Phase 2: next is step 9 (per-region identity).
+Phase 2: next is step 10 (export + playable page).
 
 Phase 1 follow-ups (older list):
 1. On the Windows PC: `pip install -r requirements.txt`, `python -m pytest workbench/tests`,

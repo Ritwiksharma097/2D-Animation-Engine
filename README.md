@@ -92,3 +92,10 @@ python workbench/tests/scene_checks.py                   # page screenshots + li
 
 In the page choose preview "scene". Ledge height / front and rung spacing are editable (live with
 serve.py). New contacts get the surface chosen next to "on".
+
+## Per-region identity
+
+```
+python workbench/regions.py init ren      # default seeds on the identity reference
+python workbench/regions.py compare ren walk_keypose jump rejected_walk_flatboy
+```

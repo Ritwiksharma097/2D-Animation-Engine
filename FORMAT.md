@@ -141,3 +141,17 @@ cell px (Ren's climbs: game px / 0.4777). Checked by `workbench/props.py` and dr
   6 px of any surface), `contact_off_surface` (planted contact > 6 px from its surface: "reaching
   into air" for hands, "pushing off nothing" for feet), `contact_in_prop`, and
   `planted_contact_slides` (a planted contact moves > 6 px along its surface between frames).
+
+## Identity regions (`annotations/<character>/_identity.json`)
+
+```json
+{"format": "workbench-identity/1", "character": "ren", "reference": "ren/idle/01.png",
+ "regions": {"hood": {"seed": [319, 142]}, "hair": {"seed": [392, 142]}}}
+```
+
+Seeds are pixels of the identity reference. `workbench/regions.py` learns each region's colour (Lab
+mean of a 7x7 patch at the seed) and vertical band (the extent of the seed's connected same-colour
+patch in the reference, as a fraction of figure height, +-0.06). In any frame the region is every
+opaque pixel within 14 Lab units of that colour inside the band. Per region and action: share of the
+figure relative to the reference's share (flag outside 0.6-1.6) and mean colour distance (flag
+> 6 Lab). These replace the whole-figure palette flags in reports.

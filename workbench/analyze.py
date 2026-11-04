@@ -53,7 +53,7 @@ LIMITS = {
     "duplicates": "Near-duplicate poses use a fixed silhouette threshold (3%); two drawings that differ only inside the outline (eyes, mouth) count as duplicates of pose even if detail differs.",
     "order": "Out-of-order detection looks for frames closer to a non-neighbour than to both neighbours. In a side-view walk the frame half a cycle later is expected to look similar (legs swapped), so those partners are excluded and reported separately.",
     "geometry": "Height, width and baseline come from the opaque-pixel bounding box; raised arms, a swinging bag or a cropped frame change them without the character changing.",
-    "identity": "Identity drift is judged only by size, two crude proportions and colour palette. It cannot see a changed face, hood shape or costume detail if colours and size stay similar. A reference in a different pose or scale (guard concept art) makes size comparisons meaningless, so they are skipped there.",
+    "identity": "Identity drift is judged by size, two crude proportions and per-region colour/size (regions.py; see region_limits). It cannot see a changed face, hood shape or costume detail if colours and size stay similar. A reference in a different pose or scale (guard concept art) makes size comparisons meaningless, so they are skipped there.",
     "feet": "Feet are estimated as opaque clusters in the bottom 12% of the figure. Overlapping feet merge into one cluster, long robes or shadows are mistaken for feet, and the contact point is the middle of the sole, so a normal heel-to-toe roll reads as a few pixels of slide.",
     "slide": "Without annotations, the planted foot in each step is assumed to be whichever pairing of ground contacts would slide least. The reported slide is therefore a lower bound: the real slide may be larger if the wrong foot was matched. With annotations, contacts are matched by name and every shared planted contact must stay put; the result is only as good as the clicked points.",
     "stride": "Stride is the horizontal spread of foot clusters; a lifted foot above the foot band does not count, so passing poses read as stride 0 by construction.",
@@ -518,6 +518,9 @@ def walk_analysis(act: Action, foot: list[dict]) -> dict:
 
 # ---------------------------------------------------------------- whole report
 
+_REGION_MODELS: dict = {}
+
+
 def analyze(act: Action) -> dict:
     n = len(act.frames)
     loop = act.loop_mode == "loop"
@@ -597,12 +600,18 @@ def analyze(act: Action) -> dict:
             "head_width_ratio_rel": [g["head_width_ratio"] / rg["head_width_ratio"] for g in geo],
             "bulk_rel": [g["bulk"] / rg["bulk"] for g in geo],
         })
-        bad_tv = [i for i, v in enumerate(tv) if v > TH["palette_tv"]]
-        bad_de = [i for i, v in enumerate(de) if v > TH["palette_de"]]
-        if bad_tv:
-            flag("palette_drift", bad_tv, f"Colour proportions differ from the identity reference (total variation {min(tv):.2f}-{max(tv):.2f}, limit {TH['palette_tv']}).")
-        if bad_de:
-            flag("palette_new_colours", bad_de, f"Colours not in the reference palette (extra mean error up to {max(de):.1f} Lab units).")
+        # whole-figure palette numbers stay as data; flags come from per-region checks (regions.py) when seeded
+        import regions as rg
+        model = _REGION_MODELS.setdefault(act.character, rg.region_model(act.character))
+        if model:
+            _, rsum, rflags = rg.action_regions(act, model)
+            identity["regions"] = rsum
+            identity["region_limits"] = rg.LIMITS
+            for f in rflags:
+                flags.append({**f, "frames": [int(x) for x in f["frames"]]})
+        else:
+            identity["regions"] = None
+            identity["region_limits"] = f"no seeds: python workbench/regions.py init {act.character}"
         if same_cell:
             hr = identity["height_ratio"]
             bad = [i for i, v in enumerate(hr) if abs(v - 1) > TH["ref_height_rel"]]
