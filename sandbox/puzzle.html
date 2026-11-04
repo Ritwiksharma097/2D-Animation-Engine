@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puzzle room</title>
+<style>
+  body { margin:0; font:14px/1.4 system-ui, sans-serif; color:#1e1e1e; background:#f6f6f4; }
+  header { padding:8px 14px; background:#fff; border-bottom:1px solid #ddd; } h1 { font-size:16px; margin:0 0 4px; }
+  .note { color:#666; } .row { padding:6px 14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  canvas { display:block; margin:0 14px; background:#fff; border:1px solid #ddd; cursor:pointer; width:calc(100% - 28px); height:auto; }
+  #hud { font:12px ui-monospace, monospace; white-space:pre; color:#333; } .bad { color:#c81e28; } .good { color:#1baf7a; }
+  #inv button.sel { outline:2px solid #1559b3; background:#dfe9f7; } [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Puzzle room (not the game): objects with state, item use, save and restore</h1>
+  <div class="note">Placeholder shapes. Click an object to use it (Ren walks over and reaches for it). Click an inventory item, then an object,
+  to use the item on it. Progress is saved in this browser; "reset" starts over. Level and rules: <code>levels/puzzle_room.json</code>.</div>
+</header>
+<div class="row"><b>inventory:</b> <span id="inv">-</span> <button id="reset">reset</button> <span id="msg"></span></div>
+<canvas id="cv" width="1200" height="520"></canvas>
+<div class="row"><div id="hud"></div></div>
+<script type="module">
+import { Character, run } from "../runtime/anim.js";
+import { setupStage, preloadClips } from "../runtime/page.js";
+import { compileLevel, worldFromLevel } from "../runtime/level.js";
+import { objectsFromLevel, initialState, builtinRules, resolve, lintPuzzle, ObjectBodies, store } from "../runtime/objects.js";
+import { Emotes } from "../runtime/emote.js";
+
+const KEY = "workbench.puzzle_room.v1", W = 1200, H = 520;
+const level = await (await fetch("../levels/puzzle_room.json", { cache: "no-store" })).json();
+const cv = document.getElementById("cv"), stage = setupStage(cv, W, H), ctx = stage.ctx;
+const REN = { idle: "ren/idle", walk: "ren/walk_keypose", interact: "ren/interact" };
+const clips = await preloadClips("../out/export", Object.values(REN), cv);
+const C = compileLevel(level), objects = objectsFromLevel(level), rules = [...(level.puzzle || []), ...builtinRules(objects)];
+const lint = lintPuzzle(level);
+let st, world, ren, emotes, selected = null, pending = null, won = false;
+const msg = (t, cls = "") => { const m = document.getElementById("msg"); m.textContent = t; m.className = cls; };
+
+function start(saved) {
+  st = saved?.state ?? initialState(objects);
+  world = worldFromLevel(C);
+  ren = new Character({ id: "ren", clips, world, x: saved?.ren?.x ?? 60, dir: saved?.ren?.dir ?? 1, surface: C.regions[0].id, names: REN, radius: 30 });
+  new ObjectBodies(world, objects, () => st, () => C.regions[0].id);
+  emotes = new Emotes({ ren }, { headroom: { ren: 175 } });
+  won = false; selected = null; pending = null; inventoryUi();
+  window.pz = { get st() { return st; }, get ren() { return ren; }, get pending() { return pending; }, objects, act, lint, get won() { return won; } };
+}
+const save = () => store.save(KEY, { state: st, ren: { x: ren.x, dir: ren.dir } });
+
+function act(action) {
+  const r = resolve(action, rules, st);
+  st = r.state;
+  for (const e of r.events) {
+    if (e.type === "message") msg(e.value, /locked|dark|won't|don't|nothing/.test(e.value) ? "bad" : "good");
+    if (e.type === "give") emotes.show("ren", "!", 900);
+  }
+  if (!r.rule && !action.use) msg("nothing to do with it");
+  if (/locked|dark|won't|nothing/.test(r.events.find(e => e.type === "message")?.value ?? "")) emotes.show("ren", "?", 900);
+  inventoryUi(); save();
+  return r;
+}
+
+function inventoryUi() {
+  const el = document.getElementById("inv"); el.innerHTML = "";
+  if (!st.inventory.length) el.textContent = "-";
+  for (const it of st.inventory) {
+    const b = document.createElement("button"); b.textContent = it; b.className = selected === it ? "sel" : "";
+    b.onclick = () => { selected = selected === it ? null : it; inventoryUi(); msg(selected ? `use the ${it} on...` : ""); };
+    el.appendChild(b);
+  }
+}
+
+stage.on("tap", (x, y) => {
+  if (ren.busy || won) return;
+  const o = objects.find(o => Math.abs(x - o.x) <= Math.max(30, o.width / 2 + 10) && y > 470 - o.height - 30);
+  if (!o) { selected = null; inventoryUi(); ren.walkTo(x); return; }
+  const side = ren.x <= o.x ? -1 : 1, stand = o.x + side * (o.kind === "door" ? 55 : 45);
+  ren.walkTo(stand);
+  pending = { o, stand, action: selected ? { use: selected, on: o.id } : { interact: o.id } };
+  selected = null; inventoryUi();
+});
+document.getElementById("reset").onclick = () => { store.clear(KEY); start(null); msg("reset: a fresh room"); };
+
+const S = id => st.states[id];
+function drawObject(o) {
+  const y = 470, s = S(o.id);
+  ctx.save();
+  if (o.kind === "door") {
+    if (s === "open") { ctx.strokeStyle = "#8b6a4a"; ctx.lineWidth = 3; ctx.strokeRect(o.x - o.width / 2, y - o.height, o.width, o.height); }
+    else { ctx.fillStyle = "#8b6a4a"; ctx.fillRect(o.x - o.width / 2, y - o.height, o.width, o.height); }
+    if (s === "locked") { ctx.fillStyle = "#eda100"; ctx.fillRect(o.x - 7, y - 80, 14, 12); ctx.strokeStyle = "#eda100"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(o.x, y - 80, 5, Math.PI, 0); ctx.stroke(); }
+  } else if (o.kind === "chest") {
+    ctx.fillStyle = "#9a6b3c"; ctx.fillRect(o.x - o.width / 2, y - o.height, o.width, o.height);
+    ctx.fillStyle = "#7a5a3a";
+    if (s === "open") { ctx.save(); ctx.translate(o.x - o.width / 2, y - o.height); ctx.rotate(-1.1); ctx.fillRect(0, -10, o.width, 10); ctx.restore(); }
+    else ctx.fillRect(o.x - o.width / 2 - 3, y - o.height - 10, o.width + 6, 12);
+  } else if (o.kind === "lever") {
+    ctx.fillStyle = "#666"; ctx.fillRect(o.x - 14, y - 10, 28, 10);
+    ctx.strokeStyle = s === "on" ? "#1baf7a" : "#c81e28"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(o.x, y - 8); ctx.lineTo(o.x + (s === "on" ? 22 : -22), y - o.height); ctx.stroke();
+  } else if (o.kind === "lamp") {
+    ctx.fillStyle = "#555"; ctx.fillRect(o.x - 3, y - o.height, 6, o.height);
+    ctx.fillStyle = s === "on" ? "#ffd54a" : "#999"; ctx.beginPath(); ctx.arc(o.x, y - o.height, 11, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = "#333"; ctx.font = "11px system-ui"; ctx.fillText(`${o.id}: ${s}`, o.x - 26, y + 16);
+  ctx.restore();
+}
+
+function hud() {
+  const lines = [`states  ${Object.entries(st.states).map(([k, v]) => `${k}=${v}`).join("  ")}`,
+                 `flags   ${JSON.stringify(st.flags)}   inventory [${st.inventory.join(", ")}]   saved in localStorage "${KEY}"`,
+                 `Ren     ${ren.state} x ${ren.x.toFixed(0)}${pending ? `  -> ${JSON.stringify(pending.action)}` : ""}`,
+                 lint.length ? `LEVEL PROBLEMS: ${lint.join("; ")}` : "level lint: no problems"];
+  const el = document.getElementById("hud"); el.innerHTML = "";
+  for (const l of lines) { const d = document.createElement("div"); d.textContent = l; if (/PROBLEMS/.test(l)) d.className = "bad"; el.appendChild(d); }
+}
+
+const saved = store.load(KEY);
+start(saved);
+if (saved) msg("restored your saved progress (reset to start over)");
+ren.on("pickup", () => { if (pending?.reached) { const a = pending.action; pending = null; act(a); } });
+run([{ update: dt => {
+  if (pending && !pending.reached && !ren.busy) {
+    if (Math.abs(ren.x - pending.stand) > 35) {   /* walks stop on a frame boundary, up to half a stride (~24 px) from the goal */ msg("can't reach it from here", "bad"); emotes.show("ren", "?", 900); pending = null; }
+    else { pending.reached = true; const dir = pending.o.x >= ren.x ? 1 : -1; if (ren.dir !== dir) ren.turn(dir); ren.play("interact"); }
+  }
+  if (!won && S("door") === "open" && ren.x >= level.exit.x_min) { won = true; msg("out through the door: puzzle solved", "good"); emotes.show("ren", "heart", 1500); save(); }
+  emotes.update(dt);
+  ren.update(dt);
+} }], () => {
+  stage.begin(); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "rgba(27,175,122,0.15)"; ctx.fillRect(level.exit.x_min, 0, W - level.exit.x_min, 470);
+  ctx.fillStyle = "#1baf7a"; ctx.font = "12px system-ui"; ctx.fillText("EXIT", level.exit.x_min + 10, 20);
+  ctx.fillStyle = "#d6ccba"; ctx.fillRect(0, 470, W, H - 470);
+  for (const o of objects) drawObject(o);
+  ren.draw(ctx);
+  const lamp = objects.find(o => o.kind === "lamp");   // the lamp lights its span; off, that corner is dark
+  if (S(lamp.id) === "off") { ctx.fillStyle = "rgba(20,20,30,0.72)"; ctx.fillRect(lamp.lights[0], 0, lamp.lights[1] - lamp.lights[0], 470); ctx.fillStyle = "#ccc"; ctx.fillText("dark", lamp.lights[0] + 8, 20); }
+  emotes.draw(ctx);
+  hud();
+});
+document.body.dataset.ready = "1";
+</script>
+</body>
+</html>

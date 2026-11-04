@@ -26,6 +26,7 @@ INDEX = """<!doctype html>
 <ul>
 <li><a href="sandbox/index.html">Mechanics sandbox</a>: reach the key past the guard</li>
 <li><a href="sandbox/scenes.html">Scene demo</a>: layers, hiding spot, doors</li>
+<li><a href="sandbox/puzzle.html">Puzzle room</a>: objects, item use, save</li>
 <li><a href="out/export/play.html">Ren playtest</a>: walk, climb, jump, ledge-height control</li>
 <li><a href="out/export/guard_demo.html">Guard demo</a>: patrol, food, ladder</li>
 <li><a href="out/export/level_play.html">Level demo</a>: pathfinding and camera</li>

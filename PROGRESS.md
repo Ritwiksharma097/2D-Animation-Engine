@@ -617,7 +617,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 | 29. Fixes from the phase 5 owner-PC check | done |
 | 30. Scenes and layering | done |
 | 31. Sequences, emotes, sound hooks | done |
-| 32. Objects with state, puzzles | not started |
+| 32. Objects with state, puzzles | done |
 | 33. Level editor v2 | not started |
 | 34. Two-screen sandbox | not started |
 | 35. Art request packs | not started |
@@ -706,6 +706,28 @@ Open owner decisions (not decided here; each lives in one place, listed in
 - Limits: the sounds were not heard (cloud, headless); only that they were triggered and that an
   AudioContext started. Sequences have no branching or dialogue text, by design (minimal text).
 
+## Step 32 notes
+
+- `runtime/objects.js`: `objectsFromLevel`, `initialState`, `check` (flags, has, lacks, state, all, any,
+  not), `apply` (set, toggle, flag, give, take, message, sequence, emote, sound; pure, returns events),
+  `builtinRules` (door / chest / lever / lamp behaviour), `resolve` (explicit rules first, `else`
+  branches, refuses items Ren doesn't hold), `lintPuzzle`, `ObjectBodies` (closed blocking doors are
+  solids), `store` (localStorage save/load/clear, safe without storage). FORMAT.md "Objects and puzzles".
+- Bug found by the Node tests: the built-in unlock rule didn't check that Ren holds the key; `resolve`
+  now refuses to use an item that isn't in the inventory.
+- `sandbox/puzzle.html` + `levels/puzzle_room.json`: lever -> gate, lamp lights a dark corner, chest
+  (only when lit) gives the key, the key unlocks the door (used up), then the exit. Inventory buttons
+  select an item to use on the next object. Ren walks over and plays `ren/interact`; the action
+  resolves at its `pickup` event (a placeholder reach for levers and doors too). Progress is saved after
+  every action and restored on reload; "reset" clears it.
+- Checks: Node objects tests 6 (conditions, effects, the whole puzzle, else / order, lint, blocking
+  door); `puzzle_checks.py` 15/15 (run twice), including "the chest is out of reach behind the closed
+  gate" and reload restoring states, inventory and Ren's x. Screenshots c0-c2 looked at.
+- Test races fixed on the way (not page bugs): a walk stops up to half a stride (~24 px) from its goal,
+  so "reached" allows 35 px; the test waits for the pending action as well as `busy`.
+- Limits: one reach animation for everything (no lever-pull or door drawings); the dark corner is a flat
+  overlay, not lighting, and doesn't affect the guard yet.
+
 ## Known problems
 
 - `proportion_bulk` (area / height^2 vs idle) is flagged on every walk including the approved one,
@@ -758,7 +780,7 @@ Open owner decisions (not decided here; each lives in one place, listed in
 
 ## Next step
 
-Phase 6: next is step 32 (objects with state, simple puzzles).
+Phase 6: next is step 33 (level editor v2).
 
 Phase 4 follow-ups (older list):
 1. On Windows: `start_workbench.bat`; run `phase4_fixes_checks.py`, `intake_review_checks.py`,

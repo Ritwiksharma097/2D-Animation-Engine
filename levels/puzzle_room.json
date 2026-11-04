@@ -1,0 +1,19 @@
+{
+ "format": "workbench-level/1", "name": "puzzle_room", "size": [1200, 520],
+ "floors": [{"id": "A", "x0": 0, "x1": 1200, "y": 470}],
+ "ledges": [], "platforms": [], "ladders": [], "hotspots": [],
+ "objects": [
+  {"id": "lever1", "kind": "lever", "x": 150, "on": "A", "controls": {"gate": ["open", "closed"]}},
+  {"id": "gate", "kind": "door", "x": 420, "on": "A", "state": "closed", "blocks": true, "note": "opened by lever1 only"},
+  {"id": "lamp", "kind": "lamp", "x": 600, "on": "A", "lights": [470, 900]},
+  {"id": "chest", "kind": "chest", "x": 780, "on": "A", "contains": ["key"]},
+  {"id": "door", "kind": "door", "x": 1000, "on": "A", "state": "locked", "locked_by": "key", "consume": true, "blocks": true}
+ ],
+ "puzzle": [
+  {"id": "gate_by_lever", "when": {"interact": "gate"}, "then": [{"message": "it won't move by hand: there must be a lever"}]},
+  {"id": "dark_chest", "when": {"interact": "chest"}, "if": {"state": {"lamp": "off"}}, "then": [{"message": "too dark to find the latch"}]}
+ ],
+ "exit_needs": [],
+ "exit": {"x_min": 1100, "needs_state": {"door": "open"}},
+ "rules": {"jump_max_gap": 140, "jump_max_rise": 12}
+}
