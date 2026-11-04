@@ -1,0 +1,46 @@
+{
+  "_about": "Imported from the old GPT project by tools/import_from_gpt.py. Status and feedback are the owner's verdicts; do not upgrade them without the owner's say-so.",
+  "conventions": {
+    "cell_size": [640, 576],
+    "ground_y": 535,
+    "alignment_used_by_gpt": "Each frame was scaled uniformly per action, then placed so the head's horizontal centre (median x of the top ~30-38% of opaque pixels) and the lowest opaque pixel line up across frames. Feet were NOT aligned to contact points, which is one suspected cause of sliding.",
+    "facing": "right; left-facing versions were made by mirroring",
+    "frame_files": "NN.png, 1-based, transparent RGBA"
+  },
+  "characters": {
+    "ren": {
+      "description": "Young hooded thief: green hood, brown hair, cream sleeves, dark trousers, boots, brown satchel.",
+      "identity_reference": "ren/idle/01.png",
+      "game_scale_in_old_demos": 0.4777,
+      "actions": {
+        "idle": {"dir": "ren/idle", "frames": 1, "status": "approved", "feedback": "Accepted as an identity match for the walk. It is one still drawing (GPT repeated it 14 times), so later the owner noted the idle 'does nothing'."},
+        "walk_keypose": {"dir": "ren/walk_keypose", "frames": 4, "status": "approved", "loop": true, "old_timing": "advanced one drawing per 20 game px of travel (= ~41.9 cell px)", "feedback": "Liked. Owner wants extra in-between frames for smoothness without losing identity or the poses."},
+        "jump": {"dir": "ren/jump", "frames": 14, "status": "accepted", "loop": false, "old_timing": "12 fps; position driven by an arc in code", "feedback": "Positive response in the platform-jump demo. Note the character's look differs from the walk (identity drift) even though it was accepted."},
+        "rejected_walk_fourteen": {"dir": "ren/rejected_walk_fourteen", "frames": 14, "status": "rejected", "loop": true, "old_timing": "one frame per 80/14 game px (= ~12 cell px)", "feedback": "Owner preferred the 4-pose walk over this. Earlier complaints about generated Ren walks: unstable proportions, too thin, hood/hair/colour changes, uneven motion, sliding."},
+        "rejected_walk_flatboy": {"dir": "ren/rejected_walk_flatboy", "frames": 15, "status": "rejected", "loop": true, "old_timing": "one frame per 8 game px (= ~16.7 cell px)", "feedback": "Character changed and slid; owner explicitly preferred the 4-pose walk."},
+        "unverified_idle_blink": {"dir": "ren/unverified_idle_blink", "frames": 14, "status": "unverified", "loop": true, "feedback": "Never reviewed by the owner. Built with repeated cells."}
+      }
+    },
+    "guard": {
+      "description": "Grumpy mustached guard: silver armour and helmet, blue sash/tabard, brown belt and gloves, sheathed sword.",
+      "identity_reference": "guard/concept.png",
+      "actions": {
+        "idle": {"dir": "guard/idle", "frames": 14, "status": "rejected", "loop": true, "feedback": "Much too fast. Analysis suggests only ~3-4 distinct drawings."},
+        "walk": {"dir": "guard/walk", "frames": 14, "status": "rejected", "loop": true, "feedback": "Same problem as idle. Frames repeat similar steps; no clear passing pose; first priority to diagnose."},
+        "happy": {"dir": "guard/happy", "frames": 14, "status": "approved", "loop": false, "feedback": "Great."},
+        "interact": {"dir": "guard/interact", "frames": 14, "status": "approved", "loop": false, "feedback": "Great."},
+        "eating": {"dir": "guard/eating", "frames": 14, "status": "approved", "loop": false, "feedback": "Good."},
+        "love": {"dir": "guard/love", "frames": 14, "status": "approved", "loop": false, "feedback": "Lovestruck: good."},
+        "angry": {"dir": "guard/angry", "frames": 14, "status": "approved", "loop": false, "feedback": "Annoyed: good."},
+        "jump": {"dir": "guard/jump", "frames": 14, "status": "approved", "loop": false, "feedback": "Good."},
+        "ladder_up": {"dir": "guard/ladder_up", "frames": 14, "status": "rejected", "loop": true, "feedback": "Bad. Ladder down was this sequence reversed; also bad."},
+        "climb_up": {"dir": "guard/climb_up", "frames": 14, "status": "unjudged", "loop": false, "feedback": "Owner could not judge without a ledge to see contact. Frame 08 was swapped for an earlier pose because the generated one was cropped."},
+        "climb_down": {"dir": "guard/climb_down", "frames": 14, "status": "unjudged", "loop": false, "feedback": "Owner could not judge without a ledge."}
+      }
+    }
+  },
+  "reference": {
+    "reference/ren_identity_drift_example.png": "Side-by-side of Ren's old actions showing costume, proportion, face and colour changes between actions; the kind of drift the tools should catch.",
+    "reference/GPT_HANDOFF.md": "Full history of the project before this repo."
+  }
+}

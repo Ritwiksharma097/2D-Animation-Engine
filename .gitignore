@@ -1,0 +1,7 @@
+.claude/
+out/*
+!out/report_examples/
+__pycache__/
+*.pyc
+node_modules/
+.venv/
